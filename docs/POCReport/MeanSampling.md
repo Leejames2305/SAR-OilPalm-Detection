@@ -25,7 +25,7 @@
 
 The main notebook's per-tree ML model reaches `PR-AUC ~0.15` under *honest* spatial-block CV
 (no-skill baseline ~0.09) and Recall(Unhealthy) ~ 0 on held-out spatial blocks
-(`docs/POCReport/feature_poc_report.md`, `workflow_audit_report.md`). The leading hypothesis is
+(`docs/POCReport/FeatureTests.md`, `PipelineAudit.md`). The leading hypothesis is
 that disease spreads regionally — a patch of trees turns Unhealthy together, so a single tree's
 isolated label is noisy.
 
@@ -120,7 +120,7 @@ estate, Mann-Whitney `p<0.05` appears even at `|d|` ~ 0.1–0.2 (e.g. Palong HH 
    whole-region means; widening the window smooths the weak local signal. A plot/region-labeling
    reframe built on "means over larger neighbourhoods" is therefore unlikely to help.
 
-4. **Better next probes** (consistent with `workflow_audit_report.md`):
+4. **Better next probes** (consistent with `PipelineAudit.md`):
    - **multi-temporal / change** SAR (disease is a change response, not an absolute level);
    - **detrended local-anomaly** features (tree value minus its background ring), rather than
      absolute means;
