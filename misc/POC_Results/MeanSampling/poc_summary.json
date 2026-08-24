@@ -1,0 +1,101 @@
+{
+  "bucket": "sar-oilpalm",
+  "scene": "ALOS2-HBQR1_1__D-ORBIT__ALOS2650583560-260610_Cal_ML_Spk_TC",
+  "locations": [
+    "Palong_Basemap",
+    "Serting_Basemap"
+  ],
+  "windows_sampled": [
+    3,
+    5,
+    7,
+    9,
+    11,
+    15,
+    21
+  ],
+  "headline_windows": [
+    3,
+    5
+  ],
+  "per_location": {
+    "Palong_Basemap": {
+      "best_band": "VH",
+      "best_window": 5,
+      "best_cohens_d": -0.356,
+      "best_mannwhitney_p": 0.0035082495598302275,
+      "n_significant_band_window_pairs": 5
+    },
+    "Serting_Basemap": {
+      "best_band": "VV",
+      "best_window": 5,
+      "best_cohens_d": 0.274,
+      "best_mannwhitney_p": 0.001172867280133847,
+      "n_significant_band_window_pairs": 11
+    }
+  },
+  "pooled_headline": [
+    {
+      "window": 3,
+      "HH": {
+        "cohens_d": -0.1845,
+        "mwu_p": 0.01577161863611991,
+        "frac_unhealthy_below_healthy_median": 0.5734,
+        "n_h": 3484,
+        "n_u": 354
+      },
+      "HV": {
+        "cohens_d": -0.0977,
+        "mwu_p": 0.9128885767120622,
+        "frac_unhealthy_below_healthy_median": 0.4944,
+        "n_h": 3484,
+        "n_u": 354
+      },
+      "VV": {
+        "cohens_d": -0.0751,
+        "mwu_p": 0.9368415660618318,
+        "frac_unhealthy_below_healthy_median": 0.5085,
+        "n_h": 3484,
+        "n_u": 354
+      },
+      "VH": {
+        "cohens_d": -0.2321,
+        "mwu_p": 0.01842982160244421,
+        "frac_unhealthy_below_healthy_median": 0.5339,
+        "n_h": 3484,
+        "n_u": 354
+      }
+    },
+    {
+      "window": 5,
+      "HH": {
+        "cohens_d": -0.1622,
+        "mwu_p": 0.07369655063565855,
+        "frac_unhealthy_below_healthy_median": 0.5339,
+        "n_h": 3484,
+        "n_u": 354
+      },
+      "HV": {
+        "cohens_d": -0.0869,
+        "mwu_p": 0.5202021934500998,
+        "frac_unhealthy_below_healthy_median": 0.4972,
+        "n_h": 3484,
+        "n_u": 354
+      },
+      "VV": {
+        "cohens_d": -0.0963,
+        "mwu_p": 0.807805253410666,
+        "frac_unhealthy_below_healthy_median": 0.5113,
+        "n_h": 3484,
+        "n_u": 354
+      },
+      "VH": {
+        "cohens_d": -0.2462,
+        "mwu_p": 0.04011205094245101,
+        "frac_unhealthy_below_healthy_median": 0.5311,
+        "n_h": 3484,
+        "n_u": 354
+      }
+    }
+  ]
+}
