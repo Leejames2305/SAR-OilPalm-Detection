@@ -1,4 +1,6 @@
-data/
+data/Label-status
+data/SHP-files
+
 misc/
 
 .env
