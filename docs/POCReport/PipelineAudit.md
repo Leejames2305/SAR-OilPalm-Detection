@@ -8,7 +8,6 @@ attempted but this machine has no PyPI access, so the modeling POCs reproduce th
 with a logistic-regression proxy and a nearest-neighbour classifier; the exact RandomForest
 numbers are in docs/POCReport/feature_poc_report.md.
 
----
 
 ## 0. TL;DR
 
@@ -28,7 +27,7 @@ numbers are in docs/POCReport/feature_poc_report.md.
    estate as a CV fold (LOCO). Feature selection / SMOTE / tuning cannot fix the absent
    transferable signal.
 
----
+
 
 ## 1. How the current state (dev + top-20) was reached
 
@@ -38,8 +37,6 @@ numbers are in docs/POCReport/feature_poc_report.md.
        \-- dev: + H/alpha/Yamaguchi decomposition (78 feats)
                 + dedup -> impute -> mutual-info top-20 selection (SelectKBest k=20)
                 + SPATIAL-BLOCK CV introduced and reported as the HONEST headline (~PR-AUC 0.15)
-
----
 
 ## 2. What the data actually says (measured)
 
@@ -114,7 +111,6 @@ Because disease is spatially contiguous, a regional/hotspot framing carries real
 signal even though the strict per-tree spatial split fails. (15 cells is small - treat as
 headroom, not a final number.)
 
----
 
 ## 3. Why dev "looks worse than main" (direct answer)
 
@@ -134,7 +130,6 @@ headroom, not a final number.)
 > 'Unhealthy' is at the information ceiling of this dataset.** The pipeline and feature
 > engineering are not the bottleneck.
 
----
 
 ## 4. Recommended solutions (ranked by expected impact)
 
