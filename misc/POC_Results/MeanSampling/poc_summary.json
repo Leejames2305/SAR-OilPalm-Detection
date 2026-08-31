@@ -1,6 +1,7 @@
 {
   "bucket": "sar-oilpalm",
   "scene": "ALOS2-HBQR1_1__D-ORBIT__ALOS2650583560-260610_Cal_ML_Spk_TC",
+  "band_scale": "linear power (no dB)",
   "locations": [
     "Palong_Basemap",
     "Serting_Basemap"
@@ -97,5 +98,61 @@
         "n_u": 354
       }
     }
-  ]
+  ],
+  "indices": {
+    "definitions": {
+      "RVI": "8*HV / (HH + VV + 2*HV)   [quad-pol, linear power]",
+      "RFDI": "(HH - HV) / (HH + HV)     [linear power]"
+    },
+    "windows": [
+      3,
+      5
+    ],
+    "per_location": {
+      "Palong_Basemap": {
+        "RFDI_W3": {
+          "cohens_d": -0.0903,
+          "mwu_p": 0.5025881174853976,
+          "frac_unhealthy_below_healthy_median": 0.48
+        },
+        "RFDI_W5": {
+          "cohens_d": -0.0819,
+          "mwu_p": 0.5879997647137241,
+          "frac_unhealthy_below_healthy_median": 0.505
+        },
+        "RVI_W3": {
+          "cohens_d": 0.0878,
+          "mwu_p": 0.5056107813894466,
+          "frac_unhealthy_below_healthy_median": 0.51
+        },
+        "RVI_W5": {
+          "cohens_d": 0.0819,
+          "mwu_p": 0.5288146471779022,
+          "frac_unhealthy_below_healthy_median": 0.495
+        }
+      },
+      "Serting_Basemap": {
+        "RFDI_W3": {
+          "cohens_d": -0.1446,
+          "mwu_p": 0.13733952950386955,
+          "frac_unhealthy_below_healthy_median": 0.526
+        },
+        "RFDI_W5": {
+          "cohens_d": -0.1857,
+          "mwu_p": 0.0242401302872024,
+          "frac_unhealthy_below_healthy_median": 0.5584
+        },
+        "RVI_W3": {
+          "cohens_d": 0.1406,
+          "mwu_p": 0.17317668637994277,
+          "frac_unhealthy_below_healthy_median": 0.4805
+        },
+        "RVI_W5": {
+          "cohens_d": 0.1882,
+          "mwu_p": 0.02750488295276852,
+          "frac_unhealthy_below_healthy_median": 0.4286
+        }
+      }
+    }
+  }
 }

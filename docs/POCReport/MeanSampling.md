@@ -1,6 +1,10 @@
-# Mean-Sampling POC — Can 'Unhealthy' Trees Be Seen Statistically in SAR Backscatter?
+# Mean-Sampling POC — Can 'Unhealthy' Trees Be Seen Statistically in SAR Linear-Power Backscatter?
 
 **Run:** standalone notebook `misc/notebook/POC_MeanSampling.ipynb` on Colab. **Artifacts generated:** `misc/POC_Results/MeanSampling/*` 
+
+**Scale:** the scene was re-uploaded to GCS with **linear (power) bands only**; the notebook and
+every statistic in this report operate on **linear power** (no dB). The linear-power rerun
+reproduced the earlier run's numbers exactly — see §5 — so all conclusions below are unchanged.
 
 ## TL;DR
 
@@ -29,7 +33,8 @@ The main notebook's per-tree ML model reaches `PR-AUC ~0.15` under *honest* spat
 that disease spreads regionally — a patch of trees turns Unhealthy together, so a single tree's
 isolated label is noisy.
 
-This POC therefore asks two simple, non-ML questions against the **raw backscatter TiFF**:
+This POC therefore asks two simple, non-ML questions against the **linear-power backscatter
+GeoTIFF** (the scene was re-uploaded to GCS with **linear (power) bands only** — no dB bands):
 
 - If we sample mean backscatter at every tree coordinate with a **3x3** and **5x5** mean window,
   do Healthy and Unhealthy separate (central tendency, spread, distribution)?
@@ -38,11 +43,14 @@ This POC therefore asks two simple, non-ML questions against the **raw backscatt
 
 ### Design (mirrors main.ipynb)
 - **Scene:** `ALOS2-HBQR1_1__D-ORBIT__ALOS2650583560-260610_Cal_ML_Spk_TC` from
-  `gs://sar-oilpalm/data/SAR-scenes/`.
+  `gs://sar-oilpalm/data/SAR-scenes/` — **linear power scale** (`band_scale` is recorded in
+  `poc_summary.json`).
 - **Labels:** `<estate> Classification.csv` (`id / Long / Lat / Class`), reprojected EPSG:4326 ->
   raster CRS.
 - **Bands:** HH, HV, VV, VH. Windows: 3, 5, 7, 9, 11, 15, 21 px (odd, centred on the tree;
-  nodata / `<= -99` masked).
+  nodata / non-finite / `<= 0` samples masked — linear power is strictly positive, so the old
+  dB `<= -99` rule no longer applies). All statistics are computed **directly on the linear
+  power values**; log axes in the plots are display-only.
 - **Classes:** Healthy vs Unhealthy. Middle is kept in the wide CSV but excluded from the tests.
 - **Statistics per (estate, band, window):** n, mean, std, median; **Cohen's d** (pooled SD,
   var `ddof=1`); **Mann-Whitney U** p (asymptotic); `frac_unhealthy_below_healthy_median`
@@ -69,7 +77,7 @@ The Healthy vs Unhealthy contrast uses **3838** trees (3484 + 354), ratio **9.8:
 | Palong | **VH** | 5 | **-0.356**| 0.0035 | **lower** |
 | Palong | VV   | 3   | -0.255    | 0.0345 | lower |
 | Serting| **HV** | 5 | **+0.243**| 0.0015 | **higher** |
-| Serting | **VV** | 5| **+0.270**| 0.0012 | **higher** |
+| Serting | **VV** | 5| **+0.274**| 0.0012 | **higher** |
 
 Pooled across estates (`poc_summary.json`), only HH and VH clear `p<0.05` at the headline
 windows — and only because the larger **Palong** estate dominates the pooled sample.
@@ -129,12 +137,21 @@ estate, Mann-Whitney `p<0.05` appears even at `|d|` ~ 0.1–0.2 (e.g. Palong HH 
 
 ## 5) Sanity & reproducibility notes
 
-- All 16 rows of `stats_h_vs_u.csv` were reproduced independently from `backscatter_means.csv`
-  (pooled SD with `ddof=1`, MW-U asymptotic) — 0 mismatches.
+- **Scale is confirmed linear power.** The scene was re-uploaded to GCS with linear (power) bands
+  only and the notebook overhauled to sample and analyse linear power (nodata = non-finite or
+  `<= 0`; window statistics are means of linear power). All sampled values are strictly positive
+  (~0.008–1.1, per-band medians ~0.02–0.16), consistent with a power scale.
+- **The linear rerun reproduces the previous run exactly.** Every number in this report (headline
+  d / p, pooled effects, window trend, per-estate significance counts) is identical to the
+  pre-rerun results, to the last stored digit. The earlier "near-linear, not dB" suspicion about
+  the sampled values was therefore correct — the previous scene was already effectively on the
+  linear scale, so no conclusion changes.
+- All 16 rows of `stats_h_vs_u.csv` were re-derived independently from `backscatter_means.csv`
+  (pooled SD with `ddof=1`, MW-U asymptotic) — 0 mismatches (re-verified on the linear rerun).
 - 0% missing samples per band/window (every tree mapped inside the raster).
-- The sampled values are positive (~0.02–0.17) — a near-linear (not dB) scale in these
-  samples, so the comparison is scale-relative (matches the small raw HH values in the
-  `dataset_*_w3_v4.csv` outputs).
+- Plots: boxplot y-axes use a **log scale** and the KDE panels are drawn on `log10(power)` —
+  display only, for readability of the right-skewed linear distributions. No analysis number is
+  derived from a log-transformed value.
 - Per-estate significance counts: Palong 5/28 and Serting 11/28 band-by-window pairs reach
   `p<0.05`, but all with small |d|.
 
@@ -146,4 +163,42 @@ in a mean-sampled, intensity-only per-tree classifier for Unhealthy: the sample-
 weak, opposite-signed across estates, and diluted by bigger windows. The highest-value next
 step is a multi-temporal change or detrended local-anomaly probe, each analysed separately per
 estate, under the existing spatial-block honest-CV protocol.
+
+## 7) Addendum — RVI/RFDI extension & the Middle-class investigation
+
+Follow-up probes after the main POC, run on the linear-power rerun artifacts. Analysis scripts:
+`misc/analysis/middle_class_analysis.py`, `misc/analysis/middle_predictive.py` (repo `.venv`).
+
+### 7a) RVI / RFDI (window means, W3 & W5, per-estate evaluation)
+
+- **RVI `8·HV/(HH+VV+2HV)` and RFDI `(HH−HV)/(HH+HV)` cannot indicate Unhealthy trees** at
+  per-tree granularity: AUC 0.45–0.55, class shift ≤ 0.19 SD, spatial-block-CV PR-AUC ≈ baseline.
+- Root cause: the two indices are nearly redundant (corr ≈ −0.99) — both collapse to the HH/HV
+  polarisation ratio, cancelling the absolute-brightness information where the (weak) signal lives.
+- Family-wise permutation test (full 112-candidate sweep re-run per permutation) says the small
+  cross-pol signal that does exist is real but minuscule: best AUC ≈ 0.58 vs chance, p ≈ 0.008.
+
+### 7b) What the "Middle" class actually is (and why it can't help classification)
+
+Three hypotheses tested (intermediate health state / label noise / independent class), per estate:
+
+- **Spectrally inconsistent**: on raw bands Palong shows a genuine graded ordering
+  H > M > U (Jonckheere–Terpstra p down to 4.8e-6 on VH W3), but Serting does not replicate it
+  (orderings absent or inverted). Mixture fits put Middle mostly Healthy-like at Serting and
+  ~50/50 H/U at Palong — no consistent spectral identity.
+- **Spatially unambiguous — Middle is the disease front** (replicates at both estates):
+  median distance Middle→nearest Unhealthy is **14.6 m** vs 26.5 m (Palong) / 20.7 m (Serting)
+  for Healthy trees; Middle trees have ~2.5× more Unhealthy neighbours within 30 m.
+- **Exploiting it does not improve detection** (all under honest spatial-block CV, scored on H/U):
+  folding M into the target (U+M vs H) dilutes the signal (median |AUC−0.5| gain −0.017);
+  augmenting training with M as weak positives (w = 0.5/1.0) consistently lowers ROC
+  (Palong HGB 0.606 → 0.562–0.590; Serting 0.500 → 0.462–0.492).
+
+- **Interpretation:** Middle is a *spatially*-defined label — annotators ring diseased patches with
+it — so its ground truth encodes neighbourhood structure that a single-date 6.4 m SAR snapshot
+does not contain. This independently confirms why spatial-block CV collapses every per-tree model,
+and reinforces the Section-6 recommendation: the remaining live direction is **multi-temporal
+change** (for which the clustered-patches-plus-transition-rim label structure is well suited).
+Operationally, the Middle ring remains valuable as the spread-risk perimeter once a diseased
+patch is identified.
 ---
