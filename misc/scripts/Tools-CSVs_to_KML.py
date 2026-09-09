@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from kml_utils import CLASS_STYLE_RGB, write_kml
+from Shared_KML_utils import CLASS_STYLE_RGB, write_kml
 
 # --- Defaults ---------------------------------------------------------------
 REPO_ROOT = Path(__file__).resolve().parents[2]
