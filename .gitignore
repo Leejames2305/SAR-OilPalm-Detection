@@ -3,3 +3,6 @@ data/SHP-files
 data/Source
 
 .env
+
+__pycache__/
+*.py[cod]
