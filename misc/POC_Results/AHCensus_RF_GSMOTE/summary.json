@@ -1,6 +1,6 @@
 {
   "notebook": "POC_AHCensus_RF_GSMOTE",
-  "generated": "2026-09-10 11:22:09",
+  "generated": "2026-09-12 09:29:17",
   "gcs": {
     "bucket": "sar-oilpalm",
     "scene": "ALOS2-HBQR1_1__D-ORBIT__ALOS2650583560-260610_Cal_ML_Spk_TC",
@@ -35,13 +35,13 @@
         "RVI_meanW3",
         "RFDI_meanW3",
         "RFDI_VH_meanW3",
-        "HA_Aniso_meanW3",
-        "HA_Iso_meanW3",
+        "HA_Entropy_meanW3",
+        "HA_Anisotropy_meanW3",
         "HA_Alpha_meanW3",
-        "YA_Double_meanW3",
-        "YA_Vol_meanW3",
-        "YA_Surf_meanW3",
-        "YA_He_meanW3"
+        "YA_Yamaguchi_dbl_r_meanW3",
+        "YA_Yamaguchi_vol_g_meanW3",
+        "YA_Yamaguchi_surf_b_meanW3",
+        "YA_Yamaguchi_hlx_meanW3"
       ],
       "reason": "kept in the dataset CSV for future Polarized-RVI work; not model inputs"
     },
@@ -183,8 +183,8 @@
         ""
       ],
       "bands_used": [
-        "Aniso",
-        "Iso",
+        "Entropy",
+        "Anisotropy",
         "Alpha"
       ],
       "band_indices": [
@@ -214,10 +214,10 @@
         ""
       ],
       "bands_used": [
-        "Double",
-        "Vol",
-        "Surf",
-        "He"
+        "Yamaguchi_dbl_r",
+        "Yamaguchi_vol_g",
+        "Yamaguchi_surf_b",
+        "Yamaguchi_hlx"
       ],
       "band_indices": [
         0,
@@ -238,8 +238,10 @@
       "blocks": 16,
       "backscatter_missing": 0,
       "backscatter_missing_pct": 0.0,
-      "halpha_missing": 2511,
-      "yama_missing": 2511,
+      "halpha_missing": 0,
+      "halpha_missing_pct": 0.0,
+      "yama_missing": 0,
+      "yama_missing_pct": 0.0,
       "lon_min": 102.431326,
       "lon_max": 102.440552,
       "lat_min": 2.944913,
@@ -254,8 +256,10 @@
       "blocks": 11,
       "backscatter_missing": 0,
       "backscatter_missing_pct": 0.0,
-      "halpha_missing": 2171,
-      "yama_missing": 2171,
+      "halpha_missing": 0,
+      "halpha_missing_pct": 0.0,
+      "yama_missing": 0,
+      "yama_missing_pct": 0.0,
       "lon_min": 102.667087,
       "lon_max": 102.672334,
       "lat_min": 2.742206,
@@ -270,8 +274,10 @@
       "blocks": 8,
       "backscatter_missing": 0,
       "backscatter_missing_pct": 0.0,
-      "halpha_missing": 1667,
-      "yama_missing": 1667,
+      "halpha_missing": 0,
+      "halpha_missing_pct": 0.0,
+      "yama_missing": 0,
+      "yama_missing_pct": 0.0,
       "lon_min": 102.486894,
       "lon_max": 102.490058,
       "lat_min": 2.950342,

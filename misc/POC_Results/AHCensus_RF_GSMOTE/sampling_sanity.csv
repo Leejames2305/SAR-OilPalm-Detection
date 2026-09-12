@@ -1,4 +1,4 @@
-estate,n,n_healthy,n_unhealthy,blocks,backscatter_missing,backscatter_missing_pct,halpha_missing,yama_missing,lon_min,lon_max,lat_min,lat_max,pos_rate
-AHCensus_Basemap,2511,2351,160,16,0,0.0,2511,2511,102.431326,102.440552,2.944913,2.949334,0.0637
-Palong_Basemap,2171,1971,200,11,0,0.0,2171,2171,102.667087,102.672334,2.742206,2.746081,0.0921
-Serting_Basemap,1667,1513,154,8,0,0.0,1667,1667,102.486894,102.490058,2.950342,2.954165,0.0924
+estate,n,n_healthy,n_unhealthy,blocks,backscatter_missing,backscatter_missing_pct,halpha_missing,halpha_missing_pct,yama_missing,yama_missing_pct,lon_min,lon_max,lat_min,lat_max,pos_rate
+AHCensus_Basemap,2511,2351,160,16,0,0.0,0,0.0,0,0.0,102.431326,102.440552,2.944913,2.949334,0.0637
+Palong_Basemap,2171,1971,200,11,0,0.0,0,0.0,0,0.0,102.667087,102.672334,2.742206,2.746081,0.0921
+Serting_Basemap,1667,1513,154,8,0,0.0,0,0.0,0,0.0,102.486894,102.490058,2.950342,2.954165,0.0924
