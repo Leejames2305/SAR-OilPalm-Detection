@@ -21,4 +21,4 @@ Key things about current project structure:
 
 You are highly encouraged to read the `./docs/AgentPlan & POCReport` to understand what has been tried and findings from it. 
 
-For any quick, local Python analysis, use `.venv` setup in this project. Update/Modify it if missing any essential packages needed. 
+For any quick, local Python analysis, use `.venv` (uv managed) setup in this project. Update/Modify it if missing any essential packages needed. 
