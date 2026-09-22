@@ -11,7 +11,7 @@ with app.setup:
 @app.cell
 def _():
     mo.md("""
-    Welcome !
+    Welcome ! Updated yay
     """)
     return
 
