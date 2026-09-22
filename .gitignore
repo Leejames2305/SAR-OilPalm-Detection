@@ -1,6 +1,6 @@
-data/Label-status
-data/SHP-files
-data/Source
+data/Labels
+data/SHPs
+data/ZIPs
 
 .env
 
