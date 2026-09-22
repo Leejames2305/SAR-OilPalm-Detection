@@ -20,25 +20,12 @@
     },
     {
       "id": "Hbol",
-      "code_hash": "02e670f376fe1d69bb33c7f3aef28683",
+      "code_hash": "a4cb4efa675b6c74f0839b99bf5d0365",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Welcome !</span></span>"
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "72cf196d-3cf8-4f7b-8307-f753870e1737",
-      "code_hash": null,
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Welcome ! Updated yay</span></span>"
           }
         }
       ],

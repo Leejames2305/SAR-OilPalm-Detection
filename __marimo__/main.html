@@ -252,7 +252,7 @@
     Object.defineProperty(window, "__MARIMO_EXPORT_CONTEXT__", {
         value: Object.freeze({
             trusted: true,
-            notebookCode: "import marimo\n\n__generated_with = \"0.24.2\"\napp = marimo.App(auto_download=[\"html\"])\n\nwith app.setup:\n    # Initialization code that runs import marimo as mobefore all other cells\r\n    import marimo as mo\n\n\n@app.cell\ndef _():\n    mo.md(\"\"\"\n    Welcome !\n    \"\"\")\n    return\n\n\n@app.cell\ndef _():\n    return\n\n\nif __name__ == \"__main__\":\n    app.run()\n",
+            notebookCode: "import marimo\n\n__generated_with = \"0.24.2\"\napp = marimo.App(auto_download=[\"html\"])\n\nwith app.setup:\n    # Initialization code that runs import marimo as mobefore all other cells\r\n    import marimo as mo\n\n\n@app.cell\ndef _():\n    mo.md(\"\"\"\n    Welcome ! Updated yay\n    \"\"\")\n    return\n\n\nif __name__ == \"__main__\":\n    app.run()\n",
         }),
         writable: false,
         configurable: false,
@@ -275,8 +275,8 @@
             "appConfig": {"auto_download": ["html"], "sql_output": "auto", "width": "compact"},
             "layout": null,
             "view": {"showAppCode": true},
-            "notebook": {"cells": [{"code": "# Initialization code that runs import marimo as mobefore all other cells\r\nimport marimo as mo", "code_hash": "5d4dce09b7c8a59cc01cf851be60252b", "config": {"column": null, "disabled": false, "hide_code": false}, "id": "setup", "name": "setup"}, {"code": "mo.md(\"Welcome !\")", "code_hash": "02e670f376fe1d69bb33c7f3aef28683", "config": {"column": null, "disabled": false, "hide_code": false}, "id": "Hbol", "name": "_"}, {"code": "", "code_hash": null, "config": {"column": null, "disabled": false, "hide_code": false}, "id": "72cf196d-3cf8-4f7b-8307-f753870e1737", "name": "_"}], "metadata": {"marimo_version": "0.24.2"}, "version": "1"},
-            "session": {"cells": [{"code_hash": "5d4dce09b7c8a59cc01cf851be60252b", "console": [], "id": "setup", "outputs": [{"data": {"text/plain": ""}, "type": "data"}]}, {"code_hash": "02e670f376fe1d69bb33c7f3aef28683", "console": [], "id": "Hbol", "outputs": [{"data": {"text/markdown": "\u003Cspan class=\"markdown prose dark:prose-invert contents\"\u003E\u003Cspan class=\"paragraph\"\u003EWelcome !\u003C/span\u003E\u003C/span\u003E"}, "type": "data"}]}, {"code_hash": null, "console": [], "id": "72cf196d-3cf8-4f7b-8307-f753870e1737", "outputs": [{"data": {"text/plain": ""}, "type": "data"}]}], "metadata": {"marimo_version": "0.24.2", "script_metadata_hash": null}, "version": "1"},
+            "notebook": {"cells": [{"code": "# Initialization code that runs import marimo as mobefore all other cells\r\nimport marimo as mo", "code_hash": "5d4dce09b7c8a59cc01cf851be60252b", "config": {"column": null, "disabled": false, "hide_code": false}, "id": "setup", "name": "setup"}, {"code": "mo.md(\"Welcome ! Updated yay\")", "code_hash": "a4cb4efa675b6c74f0839b99bf5d0365", "config": {"column": null, "disabled": false, "hide_code": false}, "id": "Hbol", "name": "_"}], "metadata": {"marimo_version": "0.24.2"}, "version": "1"},
+            "session": {"cells": [{"code_hash": "5d4dce09b7c8a59cc01cf851be60252b", "console": [], "id": "setup", "outputs": [{"data": {"text/plain": ""}, "type": "data"}]}, {"code_hash": "a4cb4efa675b6c74f0839b99bf5d0365", "console": [], "id": "Hbol", "outputs": [{"data": {"text/markdown": "\u003Cspan class=\"markdown prose dark:prose-invert contents\"\u003E\u003Cspan class=\"paragraph\"\u003EWelcome ! Updated yay\u003C/span\u003E\u003C/span\u003E"}, "type": "data"}]}], "metadata": {"marimo_version": "0.24.2", "script_metadata_hash": null}, "version": "1"},
             "runtimeConfig": null
         }),
         writable: false,
@@ -285,9 +285,9 @@
     </script>
   
 <marimo-code hidden="">
-    import%20marimo%0A%0A__generated_with%20%3D%20%220.24.2%22%0Aapp%20%3D%20marimo.App(auto_download%3D%5B%22html%22%5D)%0A%0Awith%20app.setup%3A%0A%20%20%20%20%23%20Initialization%20code%20that%20runs%20import%20marimo%20as%20mobefore%20all%20other%20cells%0D%0A%20%20%20%20import%20marimo%20as%20mo%0A%0A%0A%40app.cell%0Adef%20_()%3A%0A%20%20%20%20mo.md(%22%22%22%0A%20%20%20%20Welcome%20!%0A%20%20%20%20%22%22%22)%0A%20%20%20%20return%0A%0A%0A%40app.cell%0Adef%20_()%3A%0A%20%20%20%20return%0A%0A%0Aif%20__name__%20%3D%3D%20%22__main__%22%3A%0A%20%20%20%20app.run()%0A
+    import%20marimo%0A%0A__generated_with%20%3D%20%220.24.2%22%0Aapp%20%3D%20marimo.App(auto_download%3D%5B%22html%22%5D)%0A%0Awith%20app.setup%3A%0A%20%20%20%20%23%20Initialization%20code%20that%20runs%20import%20marimo%20as%20mobefore%20all%20other%20cells%0D%0A%20%20%20%20import%20marimo%20as%20mo%0A%0A%0A%40app.cell%0Adef%20_()%3A%0A%20%20%20%20mo.md(%22%22%22%0A%20%20%20%20Welcome%20!%20Updated%20yay%0A%20%20%20%20%22%22%22)%0A%20%20%20%20return%0A%0A%0Aif%20__name__%20%3D%3D%20%22__main__%22%3A%0A%20%20%20%20app.run()%0A
 </marimo-code>
 
-<marimo-code-hash hidden="">8f50e033d0d59ce9da4218cde7b1e173</marimo-code-hash>
+<marimo-code-hash hidden="">12e8ffebc5abec2f8b7ba0e551899be6</marimo-code-hash>
 </body>
 </html>
