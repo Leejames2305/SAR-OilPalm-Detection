@@ -1396,6 +1396,8 @@ def _():
 @app.cell
 def _(PROCESSED_DIR, PROJECT_ROOT):
     shutil.make_archive(str(PROCESSED_DIR), "zip", root_dir=str(PROJECT_ROOT), base_dir="data/Processed")
+
+    shutil.make_archive(str(PROJECT_ROOT / "__marimo__"), "zip", root_dir=str(PROJECT_ROOT), base_dir="__marimo__")
     return
 
 
