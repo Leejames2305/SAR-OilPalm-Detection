@@ -835,7 +835,7 @@ def _(ACTIVE_LOCATIONS, WINDOW, dataset_path_for, stats_select):
         coords_LOC[_loc] = _df[["Long", "Lat"]].copy()
         _rows.append({"location": _loc, "trees": len(_df), "unhealthy": int((_df["y"] == 1).sum()), "features": len(feats)})
     mo.ui.table(pd.DataFrame(_rows))
-    return FEATURE_COLS, X_LOC, coords_LOC, y_LOC
+    return X_LOC, coords_LOC, y_LOC
 
 
 @app.cell(hide_code=True)
@@ -987,7 +987,7 @@ def _(GSMOTE_DEFAULTS, GeometricSMOTE):
             out.append(m)
         return pd.DataFrame(out)
 
-    return compute_metrics, find_best_threshold, run_holdout, run_spatial_cv
+    return run_holdout, run_spatial_cv
 
 
 @app.cell(hide_code=True)
@@ -1097,7 +1097,7 @@ def _(RANDOM_STATE, tabfm_model, y_LOC):
 
     def _rf_build(loc, params=None):
         kw = {
-            "n_estimators": 500,
+            "n_estimators": 2000,
             "class_weight": {0: 1.0, 1: _pos_weight(loc)},
             "random_state": RANDOM_STATE,
             "n_jobs": -1,
@@ -1107,17 +1107,18 @@ def _(RANDOM_STATE, tabfm_model, y_LOC):
         return RandomForestClassifier(**kw)
 
     RF_GRID = {
-        "n_estimators": [300],
-        "max_depth": [None, 10],
+        "n_estimators": [2000],
+        "max_depth": [None, 10, 20, 30],
+        "min_samples_split": [2, 5, 10],
         "min_samples_leaf": [1, 2],
-        "max_features": ["sqrt", 0.5],
+        "max_features": ["sqrt", 0.5, 1.0],
     }
 
     def _xgb_build(loc, params=None):
         kw = {
-            "n_estimators": 500,
+            "n_estimators": 2000,
             "max_depth": 6,
-            "learning_rate": 0.1,
+            "learning_rate": 0.05,
             "tree_method": "hist",
             "scale_pos_weight": _pos_weight(loc),
             "eval_metric": "aucpr",
@@ -1132,9 +1133,11 @@ def _(RANDOM_STATE, tabfm_model, y_LOC):
             return XGBClassifier(device="cpu", **kw)
 
     XGB_GRID = {
-        "n_estimators": [300],
-        "max_depth": [3, 6],
-        "learning_rate": [0.1],
+        "n_estimators": [2000],
+        "max_depth": [3, 6, 9, 12],
+        "min_child_weight": [1, 5],
+        "subsample": [0.6, 0.8, 1.0],
+        "learning_rate": [0.05],
     }
 
     def _tabfm_standard():
@@ -1142,14 +1145,14 @@ def _(RANDOM_STATE, tabfm_model, y_LOC):
             raise RuntimeError("TabFM model is not loaded. Load it in the TabFM cell first.")
         from tabfm import TabFMClassifier
 
-        return TabFMClassifier(model=tabfm_model, batch_size=1, cache_context=True, maybe_quantize_kv_cache=True, keep_cache_on_device=False, n_estimators=4)
+        return TabFMClassifier(model=tabfm_model, batch_size=128, cache_context=True, maybe_quantize_kv_cache=True, keep_cache_on_device=True, n_estimators=16)
 
     def _tabfm_ensemble():
         if tabfm_model is None:
             raise RuntimeError("TabFM model is not loaded. Load it in the TabFM cell first.")
         from tabfm import TabFMClassifier
 
-        return TabFMClassifier.ensemble(model=tabfm_model, batch_size=1, cache_context=True, maybe_quantize_kv_cache=True, keep_cache_on_device=False, n_estimators=4)
+        return TabFMClassifier.ensemble(model=tabfm_model, batch_size=128, cache_context=True, maybe_quantize_kv_cache=True, keep_cache_on_device=True, n_estimators=16)
 
     CLASSIFIERS = {
         "RandomForest": {"configs": ("default", "tuned"), "grid": RF_GRID, "build": _rf_build, "gs_n_jobs": -1},
