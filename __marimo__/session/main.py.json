@@ -7,7 +7,7 @@
   "cells": [
     {
       "id": "setup",
-      "code_hash": "5d4dce09b7c8a59cc01cf851be60252b",
+      "code_hash": "748bcdf28de7391ad65720b66258505c",
       "outputs": [
         {
           "type": "data",
@@ -20,12 +20,155 @@
     },
     {
       "id": "Hbol",
-      "code_hash": "a4cb4efa675b6c74f0839b99bf5d0365",
+      "code_hash": "f1ee81ec9b2b0bf6b175481223e06795",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Welcome ! Updated yay</span></span>"
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"oil-palm-disease-classification-using-alos-2-sar\">Oil Palm Disease Classification using ALOS-2 SAR</h1>\n<span class=\"paragraph\">Reactive Marimo port of the original <code>main.ipynb</code>. Runs on <strong>Molab</strong>\nand locally via the VSCode Marimo extension.</span>\n<span class=\"paragraph\"><strong>Pipeline map</strong></span>\n<ul>\n<li><strong>Section 0</strong> (below): global configuration. Every control is reactive:\n  change a value and all dependent cells update.</li>\n<li><strong>Section 1</strong>: environment, data inventory, GCS sync via SA-key upload.</li>\n<li><strong>Section 2</strong>: CRS-aware SAR sampling per location, with visual QA.</li>\n<li><strong>Section 3</strong>: per-location datasets, GSMOTE toggle, spatial-block CV.</li>\n<li><strong>Section 4</strong>: classifier registry (RF, XGBoost, TabFM) and shared\n  evaluation harness.</li>\n</ul></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "8aabe93c676ab3acfbe687c702419fdd",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"section-0-global-configuration\">Section 0 \u2014 Global configuration</h2>\n<span class=\"paragraph\">Single source of truth for the whole notebook. Downstream cells read these\ncontrols, so dragging a slider re-runs sampling, QA, splits and results.\nExpensive steps additionally sit behind run buttons so nothing heavy fires\non an accidental drag.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "41f23e136d61066805f9f8d47b7a3ab2",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><marimo-ui-element object-id='vblA-0' random-id='e390e913-8fe4-7a7c-99f8-ec7e5caa1677'><marimo-multiselect data-initial-value='[&quot;Census&quot;,&quot;Serting&quot;,&quot;Palong&quot;]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eLocations (each location is modelled independently)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-options='[&quot;Census&quot;,&quot;Serting&quot;,&quot;Palong&quot;]' data-full-width='false' data-disabled='false'></marimo-multiselect></marimo-ui-element><marimo-ui-element object-id='vblA-1' random-id='dacd9921-55d0-3699-7362-7920fc5e6c34'><marimo-slider data-initial-value='3' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eSampling window N x N (default 3x3)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='1' data-stop='7' data-step='2' data-steps='[]' data-debounce='false' data-disabled='false' data-orientation='&quot;horizontal&quot;' data-show-value='false' data-include-input='false' data-full-width='false'></marimo-slider></marimo-ui-element><marimo-ui-element object-id='vblA-2' random-id='48bb93ac-250e-bc76-648d-b31c84195a9d'><marimo-multiselect data-initial-value='[&quot;mean&quot;,&quot;std&quot;,&quot;min&quot;,&quot;max&quot;,&quot;p25&quot;,&quot;p50&quot;]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eWindow statistics (POC finding: max, min and percentiles carry the signal)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-options='[&quot;mean&quot;,&quot;std&quot;,&quot;min&quot;,&quot;max&quot;,&quot;p25&quot;,&quot;p50&quot;]' data-full-width='false' data-disabled='false'></marimo-multiselect></marimo-ui-element><marimo-ui-element object-id='vblA-3' random-id='f089f4a4-ae30-8afb-814b-1aa89f1d9950'><marimo-slider data-initial-value='20' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eHoldout test size (percent)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='10' data-stop='40' data-step='5' data-steps='[]' data-debounce='false' data-disabled='false' data-orientation='&quot;horizontal&quot;' data-show-value='false' data-include-input='false' data-full-width='false'></marimo-slider></marimo-ui-element><marimo-ui-element object-id='vblA-4' random-id='d46e5576-06c3-9f21-fef4-a6e7c8387194'><marimo-number data-initial-value='42' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eRandom seed&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-debounce='false' data-full-width='false' data-disabled='false'></marimo-number></marimo-ui-element><marimo-ui-element object-id='vblA-5' random-id='1e8704f5-e1b2-38ed-a955-f1bc0f31a686'><marimo-checkbox data-initial-value='true' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eApply GSMOTE inside training folds (toggle, default on)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-disabled='false'></marimo-checkbox></marimo-ui-element><marimo-ui-element object-id='vblA-6' random-id='dc646a47-17cd-41eb-3b8f-85fe3a4f942a'><marimo-multiselect data-initial-value='[&quot;RandomForest&quot;,&quot;XGBoost&quot;,&quot;TabFM&quot;]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eClassifiers (registry lives in Section 4: add one entry to plug in a new model)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-options='[&quot;RandomForest&quot;,&quot;XGBoost&quot;,&quot;TabFM&quot;]' data-full-width='false' data-disabled='false'></marimo-multiselect></marimo-ui-element></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "583353769d044a458ca8dd431b252b54",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "a09764c8a73f6303db56bbdd31fcc347",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"section-1-environment-data-inventory-gcs-sync\">Section 1 \u2014 Environment, data inventory, GCS sync</h2>\n<span class=\"paragraph\">Local-first: if <code>data/SAR-scenes/</code> and <code>data/Labels/</code> are present (the\nnormal case for a repo checkout), nothing needs downloading and the sync\ncells below stay idle. On a fresh runtime such as Molab, upload the\nservice-account key and press sync to pull the missing files from GCS.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "b1ad4e0bbf7e4469885684c5786c23fb",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Xref",
+      "code_hash": "dcdf2cf0d70451ded6f3454e13f1fa77",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>SAR scenes on disk</strong></span></span><marimo-ui-element object-id='Xref-0' random-id='90c48538-bc1b-6b7e-d0a5-d93ad79f5f1a'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;location&#92;&quot;:&#92;&quot;Census&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;intensity&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Census_260610_Cal_ML_Spk_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:3.02},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;location&#92;&quot;:&#92;&quot;Census&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;halpha&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Census_260610_Cal_ML_Spk_HAlphaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.29},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;location&#92;&quot;:&#92;&quot;Census&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;yama&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Census_260610_Cal_ML_Spk_YamaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.57},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;location&#92;&quot;:&#92;&quot;Serting&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;intensity&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Serting_260610_Cal_ML_Spk_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.76},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;location&#92;&quot;:&#92;&quot;Serting&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;halpha&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Serting_260610_Cal_ML_Spk_HAlphaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.09},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;location&#92;&quot;:&#92;&quot;Serting&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;yama&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Serting_260610_Cal_ML_Spk_YamaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.34},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;location&#92;&quot;:&#92;&quot;Palong&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;intensity&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Palong_260610_Cal_ML_Spk_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.97},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;location&#92;&quot;:&#92;&quot;Palong&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;halpha&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Palong_260610_Cal_ML_Spk_HAlphaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.25},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;location&#92;&quot;:&#92;&quot;Palong&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;yama&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Palong_260610_Cal_ML_Spk_YamaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.49}]&quot;' data-total-rows='9' data-total-columns='5' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;location&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;product&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;file&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;found&quot;,[&quot;boolean&quot;,&quot;bool&quot;]],[&quot;size_mb&quot;,[&quot;number&quot;,&quot;float64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Label balance on disk</strong> (pos_rate is the no-skill PR-AUC baseline)</span></span><marimo-ui-element object-id='Xref-1' random-id='b17d12ed-a70c-dfb3-3b2c-974024e1a78a'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;location&#92;&quot;:&#92;&quot;Census&#92;&quot;,&#92;&quot;year&#92;&quot;:2026,&#92;&quot;trees&#92;&quot;:2511,&#92;&quot;healthy&#92;&quot;:2351,&#92;&quot;middle&#92;&quot;:0,&#92;&quot;unhealthy&#92;&quot;:160,&#92;&quot;pos_rate&#92;&quot;:0.0637},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;location&#92;&quot;:&#92;&quot;Serting&#92;&quot;,&#92;&quot;year&#92;&quot;:2022,&#92;&quot;trees&#92;&quot;:2045,&#92;&quot;healthy&#92;&quot;:1513,&#92;&quot;middle&#92;&quot;:378,&#92;&quot;unhealthy&#92;&quot;:154,&#92;&quot;pos_rate&#92;&quot;:0.0753},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;location&#92;&quot;:&#92;&quot;Palong&#92;&quot;,&#92;&quot;year&#92;&quot;:2022,&#92;&quot;trees&#92;&quot;:2664,&#92;&quot;healthy&#92;&quot;:1971,&#92;&quot;middle&#92;&quot;:493,&#92;&quot;unhealthy&#92;&quot;:200,&#92;&quot;pos_rate&#92;&quot;:0.0751}]&quot;' data-total-rows='3' data-total-columns='7' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;location&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;year&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;trees&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;healthy&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;middle&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;unhealthy&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;pos_rate&quot;,[&quot;number&quot;,&quot;float64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "SFPL",
+      "code_hash": "2e5b8bf7b4275d69c9efcc019413dd22",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><marimo-ui-element object-id='SFPL-0' random-id='b4dc1ea8-f7d4-7758-e896-5af982fb6176'><marimo-file data-initial-value='[]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eService-account JSON key (only needed when files are missing locally)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-filetypes='[]' data-multiple='false' data-kind='&quot;button&quot;' data-max_size='100000000'></marimo-file></marimo-ui-element><marimo-ui-element object-id='SFPL-1' random-id='d752f8cb-e325-ef5e-0290-ee20ed55fd2e'><marimo-text data-initial-value='&quot;sar-oilpalm&quot;' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eGCS bucket name&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-placeholder='&quot;&quot;' data-kind='&quot;text&quot;' data-full-width='false' data-disabled='false' data-debounce='true'></marimo-text></marimo-ui-element><marimo-ui-element object-id='SFPL-2' random-id='d5f65752-ee46-08d0-84b9-0eeb6800179e'><marimo-button data-initial-value='0' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eSync missing files from GCS&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-kind='&quot;neutral&quot;' data-disabled='false' data-full-width='false'></marimo-button></marimo-ui-element></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "BYtC",
+      "code_hash": "54e154c260885423842575ba29776c2a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Press <strong>Sync missing files from GCS</strong> to run this cell.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "RGSE",
+      "code_hash": "9d77ce23f871237a53f3c7bbcc108c50",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Kclp",
+      "code_hash": "6cb1ff514084601709e445190460b5ee",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Optional dependencies</strong> (each section guards its own imports)</span></span><marimo-ui-element object-id='Kclp-0' random-id='852791b2-bdf8-f1e9-3e1f-bc7901acb384'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;package&#92;&quot;:&#92;&quot;rasterio&#92;&quot;,&#92;&quot;available&#92;&quot;:true},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;package&#92;&quot;:&#92;&quot;geopandas&#92;&quot;,&#92;&quot;available&#92;&quot;:true},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;package&#92;&quot;:&#92;&quot;sklearn&#92;&quot;,&#92;&quot;available&#92;&quot;:true},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;package&#92;&quot;:&#92;&quot;xgboost&#92;&quot;,&#92;&quot;available&#92;&quot;:true},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;package&#92;&quot;:&#92;&quot;torch&#92;&quot;,&#92;&quot;available&#92;&quot;:false},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;package&#92;&quot;:&#92;&quot;tabfm&#92;&quot;,&#92;&quot;available&#92;&quot;:false},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;package&#92;&quot;:&#92;&quot;google.cloud.storage&#92;&quot;,&#92;&quot;available&#92;&quot;:false},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;package&#92;&quot;:&#92;&quot;imbalanced_learn&#92;&quot;,&#92;&quot;available&#92;&quot;:false}]&quot;' data-total-rows='8' data-total-columns='2' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;package&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;available&quot;,[&quot;boolean&quot;,&quot;bool&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "emfo",
+      "code_hash": "6e72c99ceded6a3129ae9cc52add6387",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Scale, CRS and band-order notes (authoritative for Sections 2 to 4)</strong></span>\n<ul>\n<li>Intensity scenes are <strong>linear power</strong>. Yama decomposition scenes are\n  <strong>dB by SNAP export default</strong> and are kept as is.</li>\n<li>Intensity scenes are <code>EPSG:32648</code> (UTM 48N); decomposition scenes are\n  <code>EPSG:4326</code>. Section 2 reprojects tree coordinates per scene.</li>\n<li>Subset GeoTIFFs carry no band names. Positional order used throughout:\n  intensity <code>[HH, HV, VH, VV]</code>, HAlpha <code>[H, A, alpha]</code>,\n  Yama <code>[Pd, Pv, Ps, Pc]</code>.</li>\n<li>Notebook outputs are kept viewable in the repo: refresh the snapshot\n  with <code>marimo export html main.py -o __marimo__/main.html</code> after a run.</li>\n</ul></span>"
           }
         }
       ],
