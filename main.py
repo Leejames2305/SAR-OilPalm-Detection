@@ -203,6 +203,7 @@ def _(loc_select, seed_number, test_size_slider, window_slider):
         LABEL_DIR,
         LOCATION_META,
         PROCESSED_DIR,
+        PROJECT_ROOT,
         RANDOM_STATE,
         SCENE_DIR,
         SCENE_PRODUCTS,
@@ -1381,6 +1382,20 @@ def _(results_df):
             if len(hl) and met in hl.columns:
                 _b = hl.loc[hl[met].idxmax()]
                 print("  Best holdout " + met + ": " + str(_b["model"]) + " (" + str(_b["config"]) + ") = " + str(round(float(_b[met]), 4)) + " (ceiling reference)")
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    Misc - ZIP the data/Processed folder
+    """)
+    return
+
+
+@app.cell
+def _(PROCESSED_DIR, PROJECT_ROOT):
+    shutil.make_archive(str(PROCESSED_DIR), "zip", root_dir=str(PROJECT_ROOT), base_dir="data/Processed")
     return
 
 
