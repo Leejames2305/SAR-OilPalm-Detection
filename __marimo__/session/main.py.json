@@ -7,7 +7,7 @@
   "cells": [
     {
       "id": "setup",
-      "code_hash": "93eefe3225b1273b010b8a99a245add2",
+      "code_hash": "ad27a55ed49663f24af3b66bb9d759ab",
       "outputs": [
         {
           "type": "data",
@@ -58,7 +58,7 @@
         {
           "type": "data",
           "data": {
-            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><marimo-ui-element object-id='vblA-0' random-id='e235b10f-e10b-4d41-3653-53af0e999675'><marimo-multiselect data-initial-value='[&quot;Census&quot;,&quot;Serting&quot;,&quot;Palong&quot;]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eLocations (each location is modelled independently)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-options='[&quot;Census&quot;,&quot;Serting&quot;,&quot;Palong&quot;]' data-full-width='false' data-disabled='false'></marimo-multiselect></marimo-ui-element><marimo-ui-element object-id='vblA-1' random-id='92d51408-0774-1f4e-336f-17523711e032'><marimo-slider data-initial-value='3' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eSampling window N x N (default 3x3)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='1' data-stop='7' data-step='2' data-steps='[]' data-debounce='false' data-disabled='false' data-orientation='&quot;horizontal&quot;' data-show-value='false' data-include-input='false' data-full-width='false'></marimo-slider></marimo-ui-element><marimo-ui-element object-id='vblA-2' random-id='ac28e5e9-2200-b23c-0a94-790651d0450e'><marimo-multiselect data-initial-value='[&quot;mean&quot;,&quot;std&quot;,&quot;min&quot;,&quot;max&quot;,&quot;p25&quot;,&quot;p50&quot;]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eWindow statistics (POC finding: max, min and percentiles carry the signal)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-options='[&quot;mean&quot;,&quot;std&quot;,&quot;min&quot;,&quot;max&quot;,&quot;p25&quot;,&quot;p50&quot;]' data-full-width='false' data-disabled='false'></marimo-multiselect></marimo-ui-element><marimo-ui-element object-id='vblA-3' random-id='f3f94820-65a1-f461-1319-1b9dd630c739'><marimo-slider data-initial-value='20' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eHoldout test size (percent)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='10' data-stop='40' data-step='5' data-steps='[]' data-debounce='false' data-disabled='false' data-orientation='&quot;horizontal&quot;' data-show-value='false' data-include-input='false' data-full-width='false'></marimo-slider></marimo-ui-element><marimo-ui-element object-id='vblA-4' random-id='7116fab5-e6c9-c1da-5a6f-0e76fe9c6e46'><marimo-number data-initial-value='42' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eRandom seed&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-debounce='false' data-full-width='false' data-disabled='false'></marimo-number></marimo-ui-element><marimo-ui-element object-id='vblA-5' random-id='f1a99ccd-b69e-b68b-3401-2a8b9ef25cb6'><marimo-checkbox data-initial-value='true' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eApply GSMOTE inside training folds (toggle, default on)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-disabled='false'></marimo-checkbox></marimo-ui-element><marimo-ui-element object-id='vblA-6' random-id='46e0d813-f3e6-b387-5dcb-18a969eb3211'><marimo-multiselect data-initial-value='[&quot;RandomForest&quot;,&quot;XGBoost&quot;,&quot;TabFM&quot;]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eClassifiers (registry lives in Section 4: add one entry to plug in a new model)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-options='[&quot;RandomForest&quot;,&quot;XGBoost&quot;,&quot;TabFM&quot;]' data-full-width='false' data-disabled='false'></marimo-multiselect></marimo-ui-element></div>"
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><marimo-ui-element object-id='vblA-0' random-id='d354abb9-0327-c7b5-1223-5d54d2718e00'><marimo-multiselect data-initial-value='[&quot;Census&quot;,&quot;Serting&quot;,&quot;Palong&quot;]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eLocations (each location is modelled independently)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-options='[&quot;Census&quot;,&quot;Serting&quot;,&quot;Palong&quot;]' data-full-width='false' data-disabled='false'></marimo-multiselect></marimo-ui-element><marimo-ui-element object-id='vblA-1' random-id='f08c6990-ddd6-f2de-d1eb-d39256bb5d3a'><marimo-slider data-initial-value='3' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eSampling window N x N (default 3x3)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='1' data-stop='7' data-step='2' data-steps='[]' data-debounce='false' data-disabled='false' data-orientation='&quot;horizontal&quot;' data-show-value='false' data-include-input='false' data-full-width='false'></marimo-slider></marimo-ui-element><marimo-ui-element object-id='vblA-2' random-id='404e006d-62cd-9738-26db-263df03bec58'><marimo-multiselect data-initial-value='[&quot;mean&quot;,&quot;std&quot;,&quot;min&quot;,&quot;max&quot;,&quot;p25&quot;,&quot;p50&quot;]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eWindow statistics (POC finding: max, min and percentiles carry the signal)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-options='[&quot;mean&quot;,&quot;std&quot;,&quot;min&quot;,&quot;max&quot;,&quot;p25&quot;,&quot;p50&quot;]' data-full-width='false' data-disabled='false'></marimo-multiselect></marimo-ui-element><marimo-ui-element object-id='vblA-3' random-id='f953c71c-c23a-5312-7a28-52cc10f3ee1e'><marimo-slider data-initial-value='20' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eHoldout test size (percent)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='10' data-stop='40' data-step='5' data-steps='[]' data-debounce='false' data-disabled='false' data-orientation='&quot;horizontal&quot;' data-show-value='false' data-include-input='false' data-full-width='false'></marimo-slider></marimo-ui-element><marimo-ui-element object-id='vblA-4' random-id='fbc88ab7-1277-671a-1a33-44fc506503a3'><marimo-number data-initial-value='42' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eRandom seed&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-debounce='false' data-full-width='false' data-disabled='false'></marimo-number></marimo-ui-element><marimo-ui-element object-id='vblA-5' random-id='66025fc5-3249-b0cc-62e1-a2e8e0db3179'><marimo-checkbox data-initial-value='true' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eApply GSMOTE inside training folds (toggle, default on)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-disabled='false'></marimo-checkbox></marimo-ui-element><marimo-ui-element object-id='vblA-6' random-id='f7588c1e-6df8-556d-e2d1-e9fcc02a9e6e'><marimo-multiselect data-initial-value='[&quot;RandomForest&quot;,&quot;XGBoost&quot;,&quot;TabFM&quot;]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eClassifiers (registry lives in Section 4: add one entry to plug in a new model)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-options='[&quot;RandomForest&quot;,&quot;XGBoost&quot;,&quot;TabFM&quot;]' data-full-width='false' data-disabled='false'></marimo-multiselect></marimo-ui-element></div>"
           }
         }
       ],
@@ -110,7 +110,7 @@
         {
           "type": "data",
           "data": {
-            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>SAR scenes on disk</strong></span></span><marimo-ui-element object-id='Xref-0' random-id='9c6f93c0-71fe-a16c-d639-5a17f2bd7b7d'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;location&#92;&quot;:&#92;&quot;Census&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;intensity&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Census_260610_Cal_ML_Spk_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:3.02},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;location&#92;&quot;:&#92;&quot;Census&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;halpha&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Census_260610_Cal_ML_Spk_HAlphaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.29},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;location&#92;&quot;:&#92;&quot;Census&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;yama&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Census_260610_Cal_ML_Spk_YamaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.57},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;location&#92;&quot;:&#92;&quot;Serting&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;intensity&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Serting_260610_Cal_ML_Spk_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.76},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;location&#92;&quot;:&#92;&quot;Serting&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;halpha&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Serting_260610_Cal_ML_Spk_HAlphaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.09},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;location&#92;&quot;:&#92;&quot;Serting&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;yama&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Serting_260610_Cal_ML_Spk_YamaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.34},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;location&#92;&quot;:&#92;&quot;Palong&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;intensity&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Palong_260610_Cal_ML_Spk_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.97},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;location&#92;&quot;:&#92;&quot;Palong&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;halpha&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Palong_260610_Cal_ML_Spk_HAlphaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.25},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;location&#92;&quot;:&#92;&quot;Palong&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;yama&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Palong_260610_Cal_ML_Spk_YamaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.49}]&quot;' data-total-rows='9' data-total-columns='5' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;location&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;product&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;file&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;found&quot;,[&quot;boolean&quot;,&quot;bool&quot;]],[&quot;size_mb&quot;,[&quot;number&quot;,&quot;float64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Label balance on disk</strong> (pos_rate is the no-skill PR-AUC baseline)</span></span><marimo-ui-element object-id='Xref-1' random-id='1da29ca1-0002-24c9-db2c-2d73f82b9f25'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;location&#92;&quot;:&#92;&quot;Census&#92;&quot;,&#92;&quot;year&#92;&quot;:2026,&#92;&quot;trees&#92;&quot;:2511,&#92;&quot;healthy&#92;&quot;:2351,&#92;&quot;middle&#92;&quot;:0,&#92;&quot;unhealthy&#92;&quot;:160,&#92;&quot;pos_rate&#92;&quot;:0.0637},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;location&#92;&quot;:&#92;&quot;Serting&#92;&quot;,&#92;&quot;year&#92;&quot;:2022,&#92;&quot;trees&#92;&quot;:2045,&#92;&quot;healthy&#92;&quot;:1513,&#92;&quot;middle&#92;&quot;:378,&#92;&quot;unhealthy&#92;&quot;:154,&#92;&quot;pos_rate&#92;&quot;:0.0753},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;location&#92;&quot;:&#92;&quot;Palong&#92;&quot;,&#92;&quot;year&#92;&quot;:2022,&#92;&quot;trees&#92;&quot;:2664,&#92;&quot;healthy&#92;&quot;:1971,&#92;&quot;middle&#92;&quot;:493,&#92;&quot;unhealthy&#92;&quot;:200,&#92;&quot;pos_rate&#92;&quot;:0.0751}]&quot;' data-total-rows='3' data-total-columns='7' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;location&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;year&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;trees&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;healthy&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;middle&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;unhealthy&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;pos_rate&quot;,[&quot;number&quot;,&quot;float64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element></div>"
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>SAR scenes on disk</strong></span></span><marimo-ui-element object-id='Xref-0' random-id='6a5bf874-fbd7-49d6-5179-05da73da4d84'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;location&#92;&quot;:&#92;&quot;Census&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;intensity&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Census_260610_Cal_ML_Spk_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:3.02},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;location&#92;&quot;:&#92;&quot;Census&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;halpha&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Census_260610_Cal_ML_Spk_HAlphaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.29},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;location&#92;&quot;:&#92;&quot;Census&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;yama&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Census_260610_Cal_ML_Spk_YamaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.57},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;location&#92;&quot;:&#92;&quot;Serting&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;intensity&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Serting_260610_Cal_ML_Spk_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.76},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;location&#92;&quot;:&#92;&quot;Serting&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;halpha&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Serting_260610_Cal_ML_Spk_HAlphaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.09},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;location&#92;&quot;:&#92;&quot;Serting&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;yama&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Serting_260610_Cal_ML_Spk_YamaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.34},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;location&#92;&quot;:&#92;&quot;Palong&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;intensity&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Palong_260610_Cal_ML_Spk_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.97},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;location&#92;&quot;:&#92;&quot;Palong&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;halpha&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Palong_260610_Cal_ML_Spk_HAlphaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.25},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;location&#92;&quot;:&#92;&quot;Palong&#92;&quot;,&#92;&quot;product&#92;&quot;:&#92;&quot;yama&#92;&quot;,&#92;&quot;file&#92;&quot;:&#92;&quot;ALOS2-Subset_Palong_260610_Cal_ML_Spk_YamaDecomp_TC.tif&#92;&quot;,&#92;&quot;found&#92;&quot;:true,&#92;&quot;size_mb&#92;&quot;:2.49}]&quot;' data-total-rows='9' data-total-columns='5' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;location&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;product&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;file&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;found&quot;,[&quot;boolean&quot;,&quot;bool&quot;]],[&quot;size_mb&quot;,[&quot;number&quot;,&quot;float64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Label balance on disk</strong> (pos_rate is the no-skill PR-AUC baseline)</span></span><marimo-ui-element object-id='Xref-1' random-id='343e236e-4ede-e9ab-6640-177c49527cf8'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;location&#92;&quot;:&#92;&quot;Census&#92;&quot;,&#92;&quot;year&#92;&quot;:2026,&#92;&quot;trees&#92;&quot;:2511,&#92;&quot;healthy&#92;&quot;:2351,&#92;&quot;middle&#92;&quot;:0,&#92;&quot;unhealthy&#92;&quot;:160,&#92;&quot;pos_rate&#92;&quot;:0.0637},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;location&#92;&quot;:&#92;&quot;Serting&#92;&quot;,&#92;&quot;year&#92;&quot;:2022,&#92;&quot;trees&#92;&quot;:2045,&#92;&quot;healthy&#92;&quot;:1513,&#92;&quot;middle&#92;&quot;:378,&#92;&quot;unhealthy&#92;&quot;:154,&#92;&quot;pos_rate&#92;&quot;:0.0753},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;location&#92;&quot;:&#92;&quot;Palong&#92;&quot;,&#92;&quot;year&#92;&quot;:2022,&#92;&quot;trees&#92;&quot;:2664,&#92;&quot;healthy&#92;&quot;:1971,&#92;&quot;middle&#92;&quot;:493,&#92;&quot;unhealthy&#92;&quot;:200,&#92;&quot;pos_rate&#92;&quot;:0.0751}]&quot;' data-total-rows='3' data-total-columns='7' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;location&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;year&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;trees&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;healthy&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;middle&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;unhealthy&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;pos_rate&quot;,[&quot;number&quot;,&quot;float64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element></div>"
           }
         }
       ],
@@ -123,7 +123,7 @@
         {
           "type": "data",
           "data": {
-            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><marimo-ui-element object-id='SFPL-0' random-id='e09e0e37-8b4f-32f4-0f56-b21c35066f62'><marimo-file data-initial-value='[]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eService-account JSON key (only needed when files are missing locally)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-filetypes='[]' data-multiple='false' data-kind='&quot;button&quot;' data-max_size='100000000'></marimo-file></marimo-ui-element><marimo-ui-element object-id='SFPL-1' random-id='ec02754d-9b9b-1a5b-4e46-c4c2799a95c3'><marimo-text data-initial-value='&quot;sar-oilpalm&quot;' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eGCS bucket name&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-placeholder='&quot;&quot;' data-kind='&quot;text&quot;' data-full-width='false' data-disabled='false' data-debounce='true'></marimo-text></marimo-ui-element><marimo-ui-element object-id='SFPL-2' random-id='093f6297-d30b-303f-bb5f-e578f5fd1306'><marimo-button data-initial-value='0' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eSync missing files from GCS&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-kind='&quot;neutral&quot;' data-disabled='false' data-full-width='false'></marimo-button></marimo-ui-element></div>"
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><marimo-ui-element object-id='SFPL-0' random-id='39c53874-bc99-bf56-dd5f-e445d73d0fc6'><marimo-file data-initial-value='[]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eService-account JSON key (only needed when files are missing locally)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-filetypes='[]' data-multiple='false' data-kind='&quot;button&quot;' data-max_size='100000000'></marimo-file></marimo-ui-element><marimo-ui-element object-id='SFPL-1' random-id='b135b349-ea2e-eeda-8c66-96ab6b192c23'><marimo-text data-initial-value='&quot;sar-oilpalm&quot;' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eGCS bucket name&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-placeholder='&quot;&quot;' data-kind='&quot;text&quot;' data-full-width='false' data-disabled='false' data-debounce='true'></marimo-text></marimo-ui-element><marimo-ui-element object-id='SFPL-2' random-id='d7b6de31-ccb2-8a9a-677a-d312fec2a795'><marimo-button data-initial-value='0' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eSync missing files from GCS&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-kind='&quot;neutral&quot;' data-disabled='false' data-full-width='false'></marimo-button></marimo-ui-element></div>"
           }
         }
       ],
@@ -162,7 +162,7 @@
         {
           "type": "data",
           "data": {
-            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Optional dependencies</strong> (each section guards its own imports)</span></span><marimo-ui-element object-id='Kclp-0' random-id='f7d03f98-b16d-4a63-12a1-0a7962117c76'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;package&#92;&quot;:&#92;&quot;rasterio&#92;&quot;,&#92;&quot;available&#92;&quot;:true},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;package&#92;&quot;:&#92;&quot;geopandas&#92;&quot;,&#92;&quot;available&#92;&quot;:true},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;package&#92;&quot;:&#92;&quot;sklearn&#92;&quot;,&#92;&quot;available&#92;&quot;:true},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;package&#92;&quot;:&#92;&quot;xgboost&#92;&quot;,&#92;&quot;available&#92;&quot;:true},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;package&#92;&quot;:&#92;&quot;torch&#92;&quot;,&#92;&quot;available&#92;&quot;:false},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;package&#92;&quot;:&#92;&quot;tabfm&#92;&quot;,&#92;&quot;available&#92;&quot;:false},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;package&#92;&quot;:&#92;&quot;google.cloud.storage&#92;&quot;,&#92;&quot;available&#92;&quot;:true},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;package&#92;&quot;:&#92;&quot;imbalanced_learn&#92;&quot;,&#92;&quot;available&#92;&quot;:false}]&quot;' data-total-rows='8' data-total-columns='2' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;package&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;available&quot;,[&quot;boolean&quot;,&quot;bool&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element></div>"
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Optional dependencies</strong> (each section guards its own imports)</span></span><marimo-ui-element object-id='Kclp-0' random-id='645bb16f-0ba7-b985-d6a3-15d7c26978c3'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;package&#92;&quot;:&#92;&quot;rasterio&#92;&quot;,&#92;&quot;available&#92;&quot;:true},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;package&#92;&quot;:&#92;&quot;geopandas&#92;&quot;,&#92;&quot;available&#92;&quot;:true},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;package&#92;&quot;:&#92;&quot;sklearn&#92;&quot;,&#92;&quot;available&#92;&quot;:true},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;package&#92;&quot;:&#92;&quot;xgboost&#92;&quot;,&#92;&quot;available&#92;&quot;:true},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;package&#92;&quot;:&#92;&quot;torch&#92;&quot;,&#92;&quot;available&#92;&quot;:false},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;package&#92;&quot;:&#92;&quot;tabfm&#92;&quot;,&#92;&quot;available&#92;&quot;:false},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;package&#92;&quot;:&#92;&quot;google.cloud.storage&#92;&quot;,&#92;&quot;available&#92;&quot;:true},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;package&#92;&quot;:&#92;&quot;imbalanced_learn&#92;&quot;,&#92;&quot;available&#92;&quot;:false}]&quot;' data-total-rows='8' data-total-columns='2' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;package&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;available&quot;,[&quot;boolean&quot;,&quot;bool&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element></div>"
           }
         }
       ],
@@ -177,6 +177,266 @@
           "data": {
             "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Scale, CRS and band-order notes (authoritative for Sections 2 to 4)</strong></span>\n<ul>\n<li>Intensity scenes are <strong>linear power</strong>. Yama decomposition scenes are\n  <strong>dB by SNAP export default</strong> and are kept as is.</li>\n<li>Intensity scenes are <code>EPSG:32648</code> (UTM 48N); decomposition scenes are\n  <code>EPSG:4326</code>. Section 2 reprojects tree coordinates per scene.</li>\n<li>Subset GeoTIFFs carry no band names. Positional order used throughout:\n  intensity <code>[HH, HV, VH, VV]</code>, HAlpha <code>[H, A, alpha]</code>,\n  Yama <code>[Pd, Pv, Ps, Pc]</code>.</li>\n<li>Notebook outputs are kept viewable in the repo: refresh the snapshot\n  with <code>marimo export html main.py -o __marimo__/main.html</code> after a run.</li>\n</ul></span>"
           }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Hstk",
+      "code_hash": "ced80e0081a8d4ccc2eeca081c9ad1f9",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"section-2-sar-sampling-and-visual-qa\">Section 2 \u2014 SAR sampling and visual QA</h2>\n<span class=\"paragraph\">For every tree in each location label CSV, a window (default 3x3,\nconfigurable in Section 0) is sampled from all three scene products:</span>\n<ul>\n<li><strong>Intensity</strong> (<code>EPSG:32648</code>): tree lon/lat is reprojected per scene, then\n  the selected window statistics are computed over <strong>linear power</strong>.\n  Only positive finite pixels count as valid.</li>\n<li><strong>HAlpha / Yama</strong> (<code>EPSG:4326</code>): sampled in lon/lat directly as\n  window mean and std. Yama scenes are <strong>dB by SNAP export default</strong> and\n  are kept as is, so negative values are valid there.</li>\n<li><code>Middle</code> trees are dropped. Each location is written to its own CSV in\n  <code>data/Processed/</code>, named by window and statistic set. Existing CSVs are\n  reused unless forced.</li>\n</ul></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nWHF",
+      "code_hash": "aec72f47862c905527edffc4ea9fdff1",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "iLit",
+      "code_hash": "93c190068518ae8bc59777556835624b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><marimo-ui-element object-id='iLit-0' random-id='58776100-8467-edcf-041e-2d2a2769adf3'><marimo-button data-initial-value='0' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eRun sampling (per location, cached to CSV)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-kind='&quot;neutral&quot;' data-disabled='false' data-full-width='false'></marimo-button></marimo-ui-element><marimo-ui-element object-id='iLit-1' random-id='6ed2ea98-9bc9-83a2-2e99-8770ef9653fa'><marimo-checkbox data-initial-value='false' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eForce resample even when the CSV already exists&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-disabled='false'></marimo-checkbox></marimo-ui-element></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ZHCJ",
+      "code_hash": "e9d0349735ae313fc0f2cc8d8235d6cc",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Press <strong>Run sampling</strong> to build the per-location datasets.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ROlb",
+      "code_hash": "2eb3b07a2708e4812760219bd2869442",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "ancestor-stopped",
+          "evalue": "This cell wasn't run because an ancestor was stopped with `mo.stop`: ",
+          "traceback": []
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "qnkX",
+      "code_hash": "e870e8a99930c148604039a77a6b7a0e",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "ancestor-stopped",
+          "evalue": "This cell wasn't run because an ancestor was stopped with `mo.stop`: ",
+          "traceback": []
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "TqIu",
+      "code_hash": "e946faa55b8f178d1fc01ea534c3bff0",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"section-3-datasets-gsmote-splits-and-evaluation-harness\">Section 3 \u2014 Datasets, GSMOTE, splits and evaluation harness</h2>\n<ul>\n<li>Each location sampled CSV becomes <code>X</code> (all sampled feature columns)\n  and <code>y</code> (<code>Unhealthy</code> is 1). <code>Middle</code> was already dropped at sampling.</li>\n<li><strong>GSMOTE</strong> (paper defaults: <code>k=5</code>, truncation <code>1.0</code>, deformation <code>0.0</code>,\n  <code>combined</code>) is applied <strong>inside training folds only</strong>, on standardised\n  features. Geometry is verbatim from the POC report. There is no sweep:\n  the POC showed a flat surface.</li>\n<li>Default protocol is the honest one: stratified holdout plus\n  <code>StratifiedGroupKFold</code> over KMeans spatial blocks (low-positive blocks\n  merged into their nearest sufficiently-positive neighbour).</li>\n<li>Median imputation plus standardisation happen inside the harness on\n  train-fit statistics only. The feature set is now compact (38 curated\n  statistics), so the old dedup and MI-select stages were retired: the\n  POC showed selection only ties within noise under honest CV.</li>\n</ul></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Vxnm",
+      "code_hash": "da0f10688cd5fa66221100711b6eb204",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "DnEU",
+      "code_hash": "ba1260f8d7de608d17c0c9216855c4c9",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='DnEU-0' random-id='a40de3b4-4225-ab3d-fa9f-a715b5325f8c'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;location&#92;&quot;:&#92;&quot;Census&#92;&quot;,&#92;&quot;trees&#92;&quot;:2511,&#92;&quot;unhealthy&#92;&quot;:160,&#92;&quot;features&#92;&quot;:38},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;location&#92;&quot;:&#92;&quot;Serting&#92;&quot;,&#92;&quot;trees&#92;&quot;:1667,&#92;&quot;unhealthy&#92;&quot;:154,&#92;&quot;features&#92;&quot;:38},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;location&#92;&quot;:&#92;&quot;Palong&#92;&quot;,&#92;&quot;trees&#92;&quot;:2171,&#92;&quot;unhealthy&#92;&quot;:200,&#92;&quot;features&#92;&quot;:38}]&quot;' data-total-rows='3' data-total-columns='4' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;location&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;trees&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;unhealthy&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;features&quot;,[&quot;integer&quot;,&quot;int64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ulZA",
+      "code_hash": "a239484e910ddc9f400cd196a961ca7e",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='ulZA-0' random-id='f11a61fb-3514-9a85-a4e2-42c77ccc984b'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;location&#92;&quot;:&#92;&quot;Census&#92;&quot;,&#92;&quot;train&#92;&quot;:2008,&#92;&quot;test&#92;&quot;:503,&#92;&quot;spatial_blocks&#92;&quot;:6,&#92;&quot;spatial_folds&#92;&quot;:3},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;location&#92;&quot;:&#92;&quot;Serting&#92;&quot;,&#92;&quot;train&#92;&quot;:1333,&#92;&quot;test&#92;&quot;:334,&#92;&quot;spatial_blocks&#92;&quot;:6,&#92;&quot;spatial_folds&#92;&quot;:3},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;location&#92;&quot;:&#92;&quot;Palong&#92;&quot;,&#92;&quot;train&#92;&quot;:1736,&#92;&quot;test&#92;&quot;:435,&#92;&quot;spatial_blocks&#92;&quot;:5,&#92;&quot;spatial_folds&#92;&quot;:3}]&quot;' data-total-rows='3' data-total-columns='5' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;location&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;train&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;test&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;spatial_blocks&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;spatial_folds&quot;,[&quot;integer&quot;,&quot;int64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ecfG",
+      "code_hash": "067899b3d999e51eec673d4b4a12ef5e",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Pvdt",
+      "code_hash": "2ca5725d2fb0a478155c18fb9e9f6c4d",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"section-4-classifier-registry-and-results\">Section 4 \u2014 Classifier registry and results</h2>\n<span class=\"paragraph\">New classifiers plug in through one dictionary (<code>CLASSIFIERS</code> below):\nadd an entry and it appears in the Section 0 multiselect flow, the ML\nloop, the tables and the plots with no other edits.</span>\n<ul>\n<li><strong>RandomForest</strong>: 500 trees, train-count class weights; <code>tuned</code> config\n  from a small <code>average_precision</code> grid search.</li>\n<li><strong>XGBoost</strong>: <code>hist</code> on CUDA with CPU fallback, <code>scale_pos_weight</code>\n  from train counts; <code>tuned</code> config from a small grid.</li>\n<li><strong>TabFM</strong>: zero-shot foundation model (<code>standard</code> and <code>ensemble</code>).\n  Needs a Hugging Face token (env <code>HF_TOKEN</code>, the input below, or the\n  cached token file) and loads on CUDA when available. <code>torch</code> and\n  <code>tabfm</code> install automatically on first load only.</li>\n<li>The GSMOTE toggle from Section 0 applies inside every training fold.</li>\n</ul>\n<span class=\"paragraph\">Read spatial-block CV first (honest). Holdout rows are shown only as a\nleakage-ceiling reference.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ZBYS",
+      "code_hash": "341e0f07107780aeecc01d379c339fb3",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><marimo-ui-element object-id='ZBYS-0' random-id='17b63f32-bf57-fb75-4df9-4fc63441e4db'><marimo-text data-initial-value='&quot;&quot;' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eHugging Face token (only needed for TabFM)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-placeholder='&quot;&quot;' data-kind='&quot;text&quot;' data-full-width='false' data-disabled='false' data-debounce='true'></marimo-text></marimo-ui-element><marimo-ui-element object-id='ZBYS-1' random-id='6338a028-8c6a-d4dc-4e8d-b35bc8507a09'><marimo-button data-initial-value='0' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eLoad TabFM model&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-kind='&quot;neutral&quot;' data-disabled='false' data-full-width='false'></marimo-button></marimo-ui-element></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "aLJB",
+      "code_hash": "a3f349d306454b60e5db560bb97eebfc",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>TabFM status:</strong> not loaded (press the load button above)</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nHfw",
+      "code_hash": "ec3c09abf2177c07eb382d159521603a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "xXTn",
+      "code_hash": "4f3f5d41f8ae33e81e05f093f909be04",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='xXTn-0' random-id='60aa70b1-c294-2100-830c-dd9522d9e2dc'><marimo-button data-initial-value='0' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eRun ML (selected classifiers, all locations)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-kind='&quot;neutral&quot;' data-disabled='false' data-full-width='false'></marimo-button></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "AjVT",
+      "code_hash": "f950a456608bf91887c2a552a4e34b7e",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Press <strong>Run ML</strong> to train and evaluate.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "pHFh",
+      "code_hash": "98498d9f53807843b4c5121f5a0c3fb5",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "ancestor-stopped",
+          "evalue": "This cell wasn't run because an ancestor was stopped with `mo.stop`: ",
+          "traceback": []
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "NCOB",
+      "code_hash": "2407773719ff10e86edb40d4df7fc128",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "ancestor-stopped",
+          "evalue": "This cell wasn't run because an ancestor was stopped with `mo.stop`: ",
+          "traceback": []
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "aqbW",
+      "code_hash": "5dcc99adf06955e42d78c378a51c9c65",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "ancestor-stopped",
+          "evalue": "This cell wasn't run because an ancestor was stopped with `mo.stop`: ",
+          "traceback": []
         }
       ],
       "console": []

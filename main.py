@@ -55,6 +55,8 @@ with app.setup:
 
     import numpy as np
     import pandas as pd
+    import matplotlib.pyplot as plt
+    from sklearn.preprocessing import StandardScaler
 
 
 @app.cell(hide_code=True)
@@ -584,31 +586,31 @@ def _(
 ):
     mo.stop(not sample_button.value, mo.md("Press **Run sampling** to build the per-location datasets."))
     mo.stop(len(ACTIVE_LOCATIONS) == 0, mo.md("Select at least one location in Section 0."))
-    stats = [s for s in ["mean", "std", "min", "max", "p25", "p50"] if s in list(stats_select.value)]
-    mo.stop(len(stats) == 0, mo.md("Select at least one window statistic in Section 0."))
+    _stats = [s for s in ["mean", "std", "min", "max", "p25", "p50"] if s in list(stats_select.value)]
+    mo.stop(len(_stats) == 0, mo.md("Select at least one window statistic in Section 0."))
     sampled_paths = {}
-    rows = []
-    for loc in ACTIVE_LOCATIONS:
-        path = dataset_path_for(loc, WINDOW, stats)
-        if path.exists() and not force_checkbox.value:
-            df = pd.read_csv(path)
+    _rows = []
+    for _loc in ACTIVE_LOCATIONS:
+        _path = dataset_path_for(_loc, WINDOW, _stats)
+        if _path.exists() and not force_checkbox.value:
+            _df = pd.read_csv(_path)
             action = "loaded from CSV"
         else:
-            df = sample_location(loc, WINDOW, stats)
-            df.to_csv(path, index=False)
+            _df = sample_location(_loc, WINDOW, _stats)
+            _df.to_csv(_path, index=False)
             action = "sampled and saved"
-        sampled_paths[loc] = str(path)
-        rows.append(
+        sampled_paths[_loc] = str(_path)
+        _rows.append(
             {
-                "location": loc,
-                "trees": len(df),
-                "unhealthy": int((df["y"] == 1).sum()),
-                "features": len(df.columns) - 5,
+                "location": _loc,
+                "trees": len(_df),
+                "unhealthy": int((_df["y"] == 1).sum()),
+                "features": len(_df.columns) - 5,
                 "action": action,
-                "file": path.name,
+                "file": _path.name,
             }
         )
-    sampling_summary = pd.DataFrame(rows)
+    sampling_summary = pd.DataFrame(_rows)
     mo.ui.table(sampling_summary)
     return (sampled_paths,)
 
@@ -616,57 +618,55 @@ def _(
 @app.cell(hide_code=True)
 def _(ACTIVE_LOCATIONS, sampled_paths):
     mo.stop(len(ACTIVE_LOCATIONS) == 0, mo.md("Select at least one location in Section 0."))
-    tabs = {}
-    for loc in ACTIVE_LOCATIONS:
-        if loc not in sampled_paths:
+    _tabs = {}
+    for _loc in ACTIVE_LOCATIONS:
+        if _loc not in sampled_paths:
             continue
-        df = pd.read_csv(sampled_paths[loc])
-        feat_cols = [c for c in df.columns if c not in ("id", "Long", "Lat", "Class", "y")]
-        h = df[df["y"] == 0]
-        u = df[df["y"] == 1]
+        _df = pd.read_csv(sampled_paths[_loc])
+        feat_cols = [c for c in _df.columns if c not in ("id", "Long", "Lat", "Class", "y")]
+        h = _df[_df["y"] == 0]
+        u = _df[_df["y"] == 1]
         miss = pd.DataFrame(
             {
                 "feature": feat_cols,
-                "missing_rate": [round(float(df[c].isna().mean()), 4) for c in feat_cols],
+                "missing_rate": [round(float(_df[c].isna().mean()), 4) for c in feat_cols],
                 "mean_healthy": [round(float(h[c].mean()), 5) for c in feat_cols],
                 "mean_unhealthy": [round(float(u[c].mean()), 5) for c in feat_cols],
             }
         )
-        tabs[loc] = mo.ui.table(miss)
-    mo.stop(len(tabs) == 0, mo.md("Run the sampling step above first."))
-    mo.ui.tabs(tabs)
+        _tabs[_loc] = mo.ui.table(miss)
+    mo.stop(len(_tabs) == 0, mo.md("Run the sampling step above first."))
+    mo.ui.tabs(_tabs)
     return
 
 
 @app.cell(hide_code=True)
 def _(ACTIVE_LOCATIONS, sampled_paths):
     mo.stop(len(ACTIVE_LOCATIONS) == 0, mo.md("Select at least one location in Section 0."))
-    import matplotlib.pyplot as plt
-
-    locs = [loc for loc in ACTIVE_LOCATIONS if loc in sampled_paths]
-    mo.stop(len(locs) == 0, mo.md("Run the sampling step above first."))
-    fig, axes = plt.subplots(len(locs), 2, figsize=(12, 4 * len(locs)), squeeze=False)
-    for r in range(len(locs)):
-        loc = locs[r]
-        df = pd.read_csv(sampled_paths[loc])
-        core = [c for c in ["HH_mean", "HV_mean", "VH_mean", "VV_mean"] if c in df.columns]
-        ax = axes[r][0]
+    _locs = [_loc for _loc in ACTIVE_LOCATIONS if _loc in sampled_paths]
+    mo.stop(len(_locs) == 0, mo.md("Run the sampling step above first."))
+    _fig, _axes = plt.subplots(len(_locs), 2, figsize=(12, 4 * len(_locs)), squeeze=False)
+    for _r in range(len(_locs)):
+        _loc = _locs[_r]
+        _df = pd.read_csv(sampled_paths[_loc])
+        core = [c for c in ["HH_mean", "HV_mean", "VH_mean", "VV_mean"] if c in _df.columns]
+        _ax = _axes[_r][0]
         if core:
-            h_vals = df[df["y"] == 0][core].to_numpy(dtype=float).ravel()
-            u_vals = df[df["y"] == 1][core].to_numpy(dtype=float).ravel()
+            h_vals = _df[_df["y"] == 0][core].to_numpy(dtype=float).ravel()
+            u_vals = _df[_df["y"] == 1][core].to_numpy(dtype=float).ravel()
             h_vals = h_vals[np.isfinite(h_vals)]
             u_vals = u_vals[np.isfinite(u_vals)]
-            ax.boxplot([h_vals, u_vals], labels=["Healthy", "Unhealthy"])
-            ax.set_yscale("log")
-        ax.set_title(loc + " core backscatter means (log scale)")
-        ax2 = axes[r][1]
-        sc = ax2.scatter(df["Long"], df["Lat"], c=df["y"], cmap="RdYlGn_r", s=8)
-        fig.colorbar(sc, ax=ax2)
-        ax2.set_title(loc + " tree map (1 is Unhealthy)")
-        ax2.set_xlabel("Long")
-        ax2.set_ylabel("Lat")
-    fig.tight_layout()
-    fig
+            _ax.boxplot([h_vals, u_vals], tick_labels=["Healthy", "Unhealthy"])
+            _ax.set_yscale("log")
+        _ax.set_title(_loc + " core backscatter means (log scale)")
+        _ax2 = _axes[_r][1]
+        sc = _ax2.scatter(_df["Long"], _df["Lat"], c=_df["y"], cmap="RdYlGn_r", s=8)
+        _fig.colorbar(sc, ax=_ax2)
+        _ax2.set_title(_loc + " tree map (1 is Unhealthy)")
+        _ax2.set_xlabel("Long")
+        _ax2.set_ylabel("Lat")
+    _fig.tight_layout()
+    _fig
     return
 
 
@@ -816,26 +816,26 @@ def _():
 @app.cell(hide_code=True)
 def _(ACTIVE_LOCATIONS, WINDOW, dataset_path_for, stats_select):
     mo.stop(len(ACTIVE_LOCATIONS) == 0, mo.md("Select at least one location in Section 0."))
-    stats = [s for s in ["mean", "std", "min", "max", "p25", "p50"] if s in list(stats_select.value)]
-    mo.stop(len(stats) == 0, mo.md("Select at least one window statistic in Section 0."))
+    _stats = [s for s in ["mean", "std", "min", "max", "p25", "p50"] if s in list(stats_select.value)]
+    mo.stop(len(_stats) == 0, mo.md("Select at least one window statistic in Section 0."))
     X_LOC = {}
     y_LOC = {}
     coords_LOC = {}
     FEATURE_COLS = None
-    rows = []
-    for loc in ACTIVE_LOCATIONS:
-        path = dataset_path_for(loc, WINDOW, stats)
-        mo.stop(not path.exists(), mo.md("Dataset missing for **" + loc + "**: run the Section 2 sampling step first."))
-        df = pd.read_csv(path)
-        feats = [c for c in df.columns if c not in ("id", "Long", "Lat", "Class", "y")]
+    _rows = []
+    for _loc in ACTIVE_LOCATIONS:
+        _path = dataset_path_for(_loc, WINDOW, _stats)
+        mo.stop(not _path.exists(), mo.md("Dataset missing for **" + _loc + "**: run the Section 2 sampling step first."))
+        _df = pd.read_csv(_path)
+        feats = [c for c in _df.columns if c not in ("id", "Long", "Lat", "Class", "y")]
         if FEATURE_COLS is None:
             FEATURE_COLS = feats
-        X_LOC[loc] = df[feats].copy()
-        y_LOC[loc] = df["y"].astype(int).copy()
-        coords_LOC[loc] = df[["Long", "Lat"]].copy()
-        rows.append({"location": loc, "trees": len(df), "unhealthy": int((df["y"] == 1).sum()), "features": len(feats)})
-    mo.ui.table(pd.DataFrame(rows))
-    return X_LOC, coords_LOC, y_LOC
+        X_LOC[_loc] = _df[feats].copy()
+        y_LOC[_loc] = _df["y"].astype(int).copy()
+        coords_LOC[_loc] = _df[["Long", "Lat"]].copy()
+        _rows.append({"location": _loc, "trees": len(_df), "unhealthy": int((_df["y"] == 1).sum()), "features": len(feats)})
+    mo.ui.table(pd.DataFrame(_rows))
+    return FEATURE_COLS, X_LOC, coords_LOC, y_LOC
 
 
 @app.cell(hide_code=True)
@@ -849,39 +849,39 @@ def _(ACTIVE_LOCATIONS, RANDOM_STATE, TEST_SIZE, X_LOC, coords_LOC, y_LOC):
 
     SPLITS = {}
     SPATIAL_FOLDS = {}
-    rows = []
-    for loc in ACTIVE_LOCATIONS:
-        X = X_LOC[loc]
-        y = y_LOC[loc]
-        Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y)
-        SPLITS[loc] = {"X_train": Xtr, "X_test": Xte, "y_train": ytr, "y_test": yte}
-        coords = coords_LOC[loc].to_numpy(dtype=float)
-        yv = y.to_numpy()
+    _rows = []
+    for _loc in ACTIVE_LOCATIONS:
+        X = X_LOC[_loc]
+        y = y_LOC[_loc]
+        _Xtr, _Xte, _ytr, _yte = train_test_split(X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y)
+        SPLITS[_loc] = {"X_train": _Xtr, "X_test": _Xte, "y_train": _ytr, "y_test": _yte}
+        coords = coords_LOC[_loc].to_numpy(dtype=float)
+        _yv = y.to_numpy()
         km = KMeans(n_clusters=N_SPATIAL_BLOCKS, random_state=RANDOM_STATE, n_init=10)
         raw = km.fit_predict(coords)
         n_blk = int(raw.max()) + 1
-        pos = {b: int((yv[raw == b] == 1).sum()) for b in range(n_blk)}
-        cents = {b: coords[raw == b].mean(axis=0) for b in range(n_blk)}
-        parent = {b: b for b in range(n_blk)}
-        for b in range(n_blk):
-            if pos[b] >= SPATIAL_MIN_POS:
+        pos = {_b: int((_yv[raw == _b] == 1).sum()) for _b in range(n_blk)}
+        cents = {_b: coords[raw == _b].mean(axis=0) for _b in range(n_blk)}
+        parent = {_b: _b for _b in range(n_blk)}
+        for _b in range(n_blk):
+            if pos[_b] >= SPATIAL_MIN_POS:
                 continue
-            best = None
+            _best = None
             bd = float("inf")
             for b2 in range(n_blk):
-                if b2 == b or pos[b2] < SPATIAL_MIN_POS:
+                if b2 == _b or pos[b2] < SPATIAL_MIN_POS:
                     continue
-                d = float(np.linalg.norm(cents[b] - cents[b2]))
-                if d < bd:
-                    best, bd = b2, d
-            if best is not None:
-                parent[b] = best
+                _d = float(np.linalg.norm(cents[_b] - cents[b2]))
+                if _d < bd:
+                    _best, bd = b2, _d
+            if _best is not None:
+                parent[_b] = _best
         merged = np.array([parent[r] for r in raw])
         n_unique = len(np.unique(merged))
         sgkf = StratifiedGroupKFold(n_splits=max(2, min(N_SPATIAL_FOLDS, n_unique)), shuffle=True, random_state=RANDOM_STATE)
-        SPATIAL_FOLDS[loc] = (sgkf, merged)
-        rows.append({"location": loc, "train": len(Xtr), "test": len(Xte), "spatial_blocks": n_unique, "spatial_folds": sgkf.n_splits})
-    mo.ui.table(pd.DataFrame(rows))
+        SPATIAL_FOLDS[_loc] = (sgkf, merged)
+        _rows.append({"location": _loc, "train": len(_Xtr), "test": len(_Xte), "spatial_blocks": n_unique, "spatial_folds": sgkf.n_splits})
+    mo.ui.table(pd.DataFrame(_rows))
     return SPATIAL_FOLDS, SPLITS
 
 
@@ -900,7 +900,6 @@ def _(GSMOTE_DEFAULTS, GeometricSMOTE):
         recall_score,
         roc_auc_score,
     )
-    from sklearn.preprocessing import StandardScaler
 
     def compute_metrics(y_true, y_pred, y_proba, train_time=0.0, pred_time=0.0, threshold=0.5):
         cm = confusion_matrix(y_true, y_pred)
@@ -951,17 +950,17 @@ def _(GSMOTE_DEFAULTS, GeometricSMOTE):
         scaler = StandardScaler()
         Xtr_s = scaler.fit_transform(Xtr)
         Xte_s = scaler.transform(Xte)
-        ytr = np.asarray(y_tr)
+        _ytr = np.asarray(y_tr)
         if use_gsmote:
-            Xtr_s, ytr = GeometricSMOTE(random_state=seed, **GSMOTE_DEFAULTS).fit_resample(Xtr_s, ytr)
-        return Xtr_s, ytr, Xte_s
+            Xtr_s, _ytr = GeometricSMOTE(random_state=seed, **GSMOTE_DEFAULTS).fit_resample(Xtr_s, _ytr)
+        return Xtr_s, _ytr, Xte_s
 
     def _proba_of(model, X):
-        p = model.predict_proba(X)
-        p = np.asarray(p, dtype=float)
-        if p.ndim == 1:
-            return p
-        return p[:, 1]
+        _p = model.predict_proba(X)
+        _p = np.asarray(_p, dtype=float)
+        if _p.ndim == 1:
+            return _p
+        return _p[:, 1]
 
     def run_holdout(model_factory, X_tr, y_tr, X_te, y_te, use_gsmote, seed):
         Xtr_s, ytr_s, Xte_s = _prepare_fold(X_tr, y_tr, X_te, use_gsmote, seed)
@@ -988,7 +987,7 @@ def _(GSMOTE_DEFAULTS, GeometricSMOTE):
             out.append(m)
         return pd.DataFrame(out)
 
-    return run_holdout, run_spatial_cv
+    return compute_metrics, find_best_threshold, run_holdout, run_spatial_cv
 
 
 @app.cell(hide_code=True)
@@ -1034,12 +1033,12 @@ def _(clf_select, hf_token_text, tabfm_button):
     if want_tabfm and tabfm_button.value:
         tabfm_status = "loading"
         try:
-            for pkg, spec in (("torch", "torch"), ("tabfm", "tabfm[pytorch] @ git+https://github.com/google-research/tabfm.git")):
+            for pkg, _spec in (("torch", "torch"), ("tabfm", "tabfm[pytorch] @ git+https://github.com/google-research/tabfm.git")):
                 if importlib.util.find_spec(pkg) is None:
                     if shutil.which("uv") is not None:
-                        subprocess.check_call(["uv", "pip", "install", "--system", spec])
+                        subprocess.check_call(["uv", "pip", "install", "--system", _spec])
                     else:
-                        subprocess.check_call([sys.executable, "-m", "pip", "install", spec])
+                        subprocess.check_call([sys.executable, "-m", "pip", "install", _spec])
             import torch
 
             token = os.environ.get("HF_TOKEN", "")
@@ -1187,58 +1186,57 @@ def _(
     y_LOC,
 ):
     from sklearn.model_selection import GridSearchCV
-    from sklearn.preprocessing import StandardScaler
 
     mo.stop(not ml_button.value, mo.md("Press **Run ML** to train and evaluate."))
     mo.stop(len(ACTIVE_LOCATIONS) == 0, mo.md("Select at least one location in Section 0."))
     RESULTS_DIR = PROCESSED_DIR / "results"
     PLOTS_DIR = PROCESSED_DIR / "plots"
-    for d in (RESULTS_DIR, PLOTS_DIR):
-        d.mkdir(parents=True, exist_ok=True)
+    for _d in (RESULTS_DIR, PLOTS_DIR):
+        _d.mkdir(parents=True, exist_ok=True)
     use_gsmote = bool(gsmote_toggle.value)
     selected = [c for c in ("RandomForest", "XGBoost", "TabFM") if c in list(clf_select.value) and c in CLASSIFIERS]
     mo.stop(len(selected) == 0, mo.md("No runnable classifier selected. Enable one in Section 0 (XGBoost needs the package, TabFM needs its model loaded)."))
     holdout_rows = []
     cv_rows = []
-    for loc in ACTIVE_LOCATIONS:
-        split = SPLITS[loc]
-        Xtr, Xte = split["X_train"], split["X_test"]
-        ytr, yte = split["y_train"], split["y_test"]
-        med = np.nanmedian(np.asarray(Xtr, dtype=float), axis=0)
+    for _loc in ACTIVE_LOCATIONS:
+        split = SPLITS[_loc]
+        _Xtr, _Xte = split["X_train"], split["X_test"]
+        _ytr, _yte = split["y_train"], split["y_test"]
+        med = np.nanmedian(np.asarray(_Xtr, dtype=float), axis=0)
 
         def _fill(A):
             Aa = np.asarray(A, dtype=float)
             return np.where(np.isnan(Aa), med, Aa)
 
-        tune_scaler = StandardScaler().fit(_fill(Xtr))
-        Xtr_p = tune_scaler.transform(_fill(Xtr))
-        ytr_a = np.asarray(ytr)
-        for model_name in selected:
-            if model_name == "TabFM" and tabfm_model is None:
-                print("[" + loc + " / TabFM] skipped: model not loaded.")
+        tune_scaler = StandardScaler().fit(_fill(_Xtr))
+        Xtr_p = tune_scaler.transform(_fill(_Xtr))
+        ytr_a = np.asarray(_ytr)
+        for _model_name in selected:
+            if _model_name == "TabFM" and tabfm_model is None:
+                print("[" + _loc + " / TabFM] skipped: model not loaded.")
                 continue
-            spec = CLASSIFIERS[model_name]
-            if model_name == "TabFM":
-                jobs = [(cfg, spec["builders"][cfg]) for cfg in spec["configs"]]
+            _spec = CLASSIFIERS[_model_name]
+            if _model_name == "TabFM":
+                jobs = [(cfg, _spec["builders"][cfg]) for cfg in _spec["configs"]]
             else:
-                jobs = [("default", lambda spec=spec, loc=loc: spec["build"](loc, None))]
-                if spec.get("grid"):
-                    gs = GridSearchCV(spec["build"](loc, None), spec["grid"], cv=3, scoring="average_precision", n_jobs=spec["gs_n_jobs"])
+                jobs = [("default", lambda _spec=_spec, _loc=_loc: _spec["build"](_loc, None))]
+                if _spec.get("grid"):
+                    gs = GridSearchCV(_spec["build"](_loc, None), _spec["grid"], cv=3, scoring="average_precision", n_jobs=_spec["gs_n_jobs"])
                     gs.fit(Xtr_p, ytr_a)
-                    print("[" + loc + " / " + model_name + "] tuned params: " + str(gs.best_params_) + " (CV avg_precision " + str(round(float(gs.best_score_), 4)) + ")")
-                    best = dict(gs.best_params_)
-                    jobs.append(("tuned", lambda spec=spec, loc=loc, best=best: spec["build"](loc, best)))
+                    print("[" + _loc + " / " + _model_name + "] tuned params: " + str(gs.best_params_) + " (CV avg_precision " + str(round(float(gs.best_score_), 4)) + ")")
+                    _best = dict(gs.best_params_)
+                    jobs.append(("tuned", lambda _spec=_spec, _loc=_loc, _best=_best: _spec["build"](_loc, _best)))
             for cfg_name, factory in jobs:
-                print("[" + loc + " / " + model_name + " / " + cfg_name + "] holdout and spatial CV, GSMOTE=" + str(use_gsmote))
-                m = run_holdout(factory, Xtr, ytr, Xte, yte, use_gsmote, RANDOM_STATE)
-                m.update({"location": loc, "model": model_name, "config": cfg_name, "eval_type": "holdout", "fold": -1, "gsmote": use_gsmote})
+                print("[" + _loc + " / " + _model_name + " / " + cfg_name + "] holdout and spatial CV, GSMOTE=" + str(use_gsmote))
+                m = run_holdout(factory, _Xtr, _ytr, _Xte, _yte, use_gsmote, RANDOM_STATE)
+                m.update({"location": _loc, "model": _model_name, "config": cfg_name, "eval_type": "holdout", "fold": -1, "gsmote": use_gsmote})
                 holdout_rows.append(m)
-                splitter, groups = SPATIAL_FOLDS[loc]
-                cv_df = run_spatial_cv(factory, X_LOC[loc], y_LOC[loc], splitter, groups, use_gsmote, RANDOM_STATE)
-                for _, r in cv_df.iterrows():
-                    d = dict(r)
-                    d.update({"location": loc, "model": model_name, "config": cfg_name, "eval_type": "spatial_cv", "gsmote": use_gsmote})
-                    cv_rows.append(d)
+                splitter, groups = SPATIAL_FOLDS[_loc]
+                cv_df = run_spatial_cv(factory, X_LOC[_loc], y_LOC[_loc], splitter, groups, use_gsmote, RANDOM_STATE)
+                for _, _r in cv_df.iterrows():
+                    _d = dict(_r)
+                    _d.update({"location": _loc, "model": _model_name, "config": cfg_name, "eval_type": "spatial_cv", "gsmote": use_gsmote})
+                    cv_rows.append(_d)
                 try:
                     import gc as _gc
 
@@ -1253,10 +1251,10 @@ def _(
                 except Exception:
                     pass
     results_df = pd.DataFrame(holdout_rows + cv_rows)
-    for loc in ACTIVE_LOCATIONS:
-        sub = results_df[results_df["location"] == loc]
+    for _loc in ACTIVE_LOCATIONS:
+        sub = results_df[results_df["location"] == _loc]
         if len(sub):
-            sub.to_csv(RESULTS_DIR / ("results_" + loc + ".csv"), index=False)
+            sub.to_csv(RESULTS_DIR / ("results_" + _loc + ".csv"), index=False)
     print("Saved per-location results to " + str(RESULTS_DIR) + ", GSMOTE=" + str(use_gsmote))
     mo.ui.table(results_df[["location", "model", "config", "eval_type", "pr_auc", "f1_unhealthy", "recall_unhealthy", "roc_auc"]])
     return PLOTS_DIR, results_df
@@ -1265,77 +1263,75 @@ def _(
 @app.cell(hide_code=True)
 def _(results_df, y_LOC):
     DISPLAY_COLS = ["pr_auc", "f1_unhealthy", "recall_unhealthy", "precision_unhealthy", "roc_auc", "f1_macro", "balanced_accuracy"]
-    tabs = {}
-    for loc in sorted(results_df["location"].unique()):
-        yv = np.asarray(y_LOC[loc])
-        pos_rate = float((yv == 1).mean())
-        sp = results_df[(results_df["location"] == loc) & (results_df["eval_type"] == "spatial_cv")]
-        ho = results_df[(results_df["location"] == loc) & (results_df["eval_type"] == "holdout")]
-        parts = [mo.md("**" + loc + "** (no-skill PR-AUC " + str(round(pos_rate, 4)) + ")")]
-        if len(sp):
-            cols = [c for c in DISPLAY_COLS if c in sp.columns]
-            summ = sp.groupby(["model", "config"])[cols].mean().round(4).reset_index()
-            summ["pr_auc_std"] = sp.groupby(["model", "config"])["pr_auc"].std().round(4).to_numpy()
+    _tabs = {}
+    for _loc in sorted(results_df["location"].unique()):
+        _yv = np.asarray(y_LOC[_loc])
+        pos_rate = float((_yv == 1).mean())
+        _sp = results_df[(results_df["location"] == _loc) & (results_df["eval_type"] == "spatial_cv")]
+        _ho = results_df[(results_df["location"] == _loc) & (results_df["eval_type"] == "holdout")]
+        parts = [mo.md("**" + _loc + "** (no-skill PR-AUC " + str(round(pos_rate, 4)) + ")")]
+        if len(_sp):
+            cols = [c for c in DISPLAY_COLS if c in _sp.columns]
+            summ = _sp.groupby(["model", "config"])[cols].mean().round(4).reset_index()
+            summ["pr_auc_std"] = _sp.groupby(["model", "config"])["pr_auc"].std().round(4).to_numpy()
             summ["pr_auc_lift"] = (summ["pr_auc"] - pos_rate).round(4)
             parts.append(mo.md("Honest spatial-block CV (mean over folds)"))
             parts.append(mo.ui.table(summ))
-        if len(ho):
-            show = ["model", "config"] + [c for c in DISPLAY_COLS if c in ho.columns]
+        if len(_ho):
+            show = ["model", "config"] + [c for c in DISPLAY_COLS if c in _ho.columns]
             parts.append(mo.md("Random holdout (leakage ceiling, reference only)"))
-            parts.append(mo.ui.table(ho[show].round(4)))
-        tabs[loc] = mo.vstack(parts)
-    mo.stop(len(tabs) == 0, mo.md("No results yet. Press **Run ML**."))
-    mo.ui.tabs(tabs)
+            parts.append(mo.ui.table(_ho[show].round(4)))
+        _tabs[_loc] = mo.vstack(parts)
+    mo.stop(len(_tabs) == 0, mo.md("No results yet. Press **Run ML**."))
+    mo.ui.tabs(_tabs)
     return
 
 
 @app.cell(hide_code=True)
 def _(PLOTS_DIR, results_df):
-    import matplotlib.pyplot as plt
-
     mo.stop(len(results_df) == 0, mo.md("No results yet. Press **Run ML**."))
-    sp = results_df[results_df["eval_type"] == "spatial_cv"].copy()
-    ho = results_df[results_df["eval_type"] == "holdout"].copy()
-    locs = sorted(sp["location"].unique())
-    mo.stop(len(locs) == 0, mo.md("No spatial CV rows to plot."))
-    sp["label"] = sp["model"] + " / " + sp["config"]
-    means = sp.groupby(["location", "label"])["pr_auc"].mean().unstack("label")
-    stds = sp.groupby(["location", "label"])["pr_auc"].std().unstack("label")
-    fig, ax = plt.subplots(figsize=(max(8, 2 * len(means.columns)), 5))
-    means.plot(kind="bar", yerr=stds, ax=ax, capsize=3, colormap="Set2")
-    ax.set_title("Spatial-block CV PR-AUC by location (honest)")
-    ax.set_ylabel("PR-AUC")
-    ax.grid(axis="y", alpha=0.3)
-    fig.tight_layout()
-    fig.savefig(PLOTS_DIR / "comparison_spatial_pr_auc.png", dpi=150)
-    for loc in sorted(ho["location"].unique()):
-        rows = ho[ho["location"] == loc]
-        best = rows.sort_values("pr_auc", ascending=False).groupby("model").head(1)
-        n = len(best)
+    _sp = results_df[results_df["eval_type"] == "spatial_cv"].copy()
+    _ho = results_df[results_df["eval_type"] == "holdout"].copy()
+    _locs = sorted(_sp["location"].unique())
+    mo.stop(len(_locs) == 0, mo.md("No spatial CV rows to plot."))
+    _sp["label"] = _sp["model"] + " / " + _sp["config"]
+    means = _sp.groupby(["location", "label"])["pr_auc"].mean().unstack("label")
+    stds = _sp.groupby(["location", "label"])["pr_auc"].std().unstack("label")
+    _fig, _ax = plt.subplots(figsize=(max(8, 2 * len(means.columns)), 5))
+    means.plot(kind="bar", yerr=stds, ax=_ax, capsize=3, colormap="Set2")
+    _ax.set_title("Spatial-block CV PR-AUC by location (honest)")
+    _ax.set_ylabel("PR-AUC")
+    _ax.grid(axis="y", alpha=0.3)
+    _fig.tight_layout()
+    _fig.savefig(PLOTS_DIR / "comparison_spatial_pr_auc.png", dpi=150)
+    for _loc in sorted(_ho["location"].unique()):
+        _rows = _ho[_ho["location"] == _loc]
+        _best = _rows.sort_values("pr_auc", ascending=False).groupby("model").head(1)
+        n = len(_best)
         if n == 0:
             continue
-        fig2, axes = plt.subplots(1, n, figsize=(4 * n, 4), squeeze=False)
+        fig2, _axes = plt.subplots(1, n, figsize=(4 * n, 4), squeeze=False)
         for a in range(n):
-            r = best.iloc[a]
-            ax2 = axes[0][a]
-            cm = [[int(r["tn"]), int(r["fp"])], [int(r["fn"]), int(r["tp"])]]
-            ax2.imshow(cm, cmap="Blues")
-            ax2.set_xticks([0, 1])
-            ax2.set_yticks([0, 1])
-            ax2.set_xticklabels(["Healthy", "Unhealthy"])
-            ax2.set_yticklabels(["Healthy", "Unhealthy"])
-            ax2.set_xlabel("Predicted")
-            ax2.set_ylabel("True")
-            ax2.set_title(str(r["model"]) + " / " + str(r["config"]))
+            _r = _best.iloc[a]
+            _ax2 = _axes[0][a]
+            cm = [[int(_r["tn"]), int(_r["fp"])], [int(_r["fn"]), int(_r["tp"])]]
+            _ax2.imshow(cm, cmap="Blues")
+            _ax2.set_xticks([0, 1])
+            _ax2.set_yticks([0, 1])
+            _ax2.set_xticklabels(["Healthy", "Unhealthy"])
+            _ax2.set_yticklabels(["Healthy", "Unhealthy"])
+            _ax2.set_xlabel("Predicted")
+            _ax2.set_ylabel("True")
+            _ax2.set_title(str(_r["model"]) + " / " + str(_r["config"]))
             for ii in range(2):
                 for jj in range(2):
-                    ax2.text(jj, ii, str(cm[ii][jj]), ha="center", va="center")
-        fig2.suptitle(loc + " holdout confusion (reference)")
+                    _ax2.text(jj, ii, str(cm[ii][jj]), ha="center", va="center")
+        fig2.suptitle(_loc + " holdout confusion (reference)")
         fig2.tight_layout()
-        fig2.savefig(PLOTS_DIR / ("confusion_" + loc + ".png"), dpi=150)
+        fig2.savefig(PLOTS_DIR / ("confusion_" + _loc + ".png"), dpi=150)
         plt.close(fig2)
     print("Plots saved to " + str(PLOTS_DIR))
-    fig
+    _fig
     return
 
 
@@ -1346,42 +1342,42 @@ def _(results_df):
         HAVE_W = True
     except ImportError:
         HAVE_W = False
-    sp = results_df[results_df["eval_type"] == "spatial_cv"].copy()
-    ho = results_df[results_df["eval_type"] == "holdout"].copy()
-    for loc in sorted(results_df["location"].unique()):
+    _sp = results_df[results_df["eval_type"] == "spatial_cv"].copy()
+    _ho = results_df[results_df["eval_type"] == "holdout"].copy()
+    for _loc in sorted(results_df["location"].unique()):
         print("=" * 80)
-        print("  " + loc)
+        print("  " + _loc)
         print("=" * 80)
-        sl = sp[sp["location"] == loc]
+        sl = _sp[_sp["location"] == _loc]
         if HAVE_W and sl["model"].nunique() > 1:
-            best = {}
-            for model_name in sorted(sl["model"].unique()):
-                mc = sl[sl["model"] == model_name]
+            _best = {}
+            for _model_name in sorted(sl["model"].unique()):
+                mc = sl[sl["model"] == _model_name]
                 cfg = mc.groupby("config")["pr_auc"].mean().idxmax()
-                best[model_name] = (cfg, mc[mc["config"] == cfg]["pr_auc"].to_numpy())
-            models = sorted(best)
+                _best[_model_name] = (cfg, mc[mc["config"] == cfg]["pr_auc"].to_numpy())
+            models = sorted(_best)
             for i in range(len(models)):
                 for j in range(i + 1, len(models)):
                     m1 = models[i]
                     m2 = models[j]
-                    cfg1, s1 = best[m1]
-                    cfg2, s2 = best[m2]
+                    cfg1, s1 = _best[m1]
+                    cfg2, s2 = _best[m2]
                     if len(s1) == len(s2) and len(s1) > 1:
-                        stat, p = wilcoxon(s1, s2)
-                        if p < 0.001:
+                        stat, _p = wilcoxon(s1, s2)
+                        if _p < 0.001:
                             sig = "***"
-                        elif p < 0.01:
+                        elif _p < 0.01:
                             sig = "**"
-                        elif p < 0.05:
+                        elif _p < 0.05:
                             sig = "*"
                         else:
                             sig = "ns"
-                        print("  " + m1 + " (" + cfg1 + ") vs " + m2 + " (" + cfg2 + "): p=" + str(round(float(p), 4)) + " (" + sig + ")")
+                        print("  " + m1 + " (" + cfg1 + ") vs " + m2 + " (" + cfg2 + "): p=" + str(round(float(_p), 4)) + " (" + sig + ")")
         for met in ["pr_auc", "f1_unhealthy", "recall_unhealthy", "roc_auc"]:
-            hl = ho[ho["location"] == loc]
+            hl = _ho[_ho["location"] == _loc]
             if len(hl) and met in hl.columns:
-                b = hl.loc[hl[met].idxmax()]
-                print("  Best holdout " + met + ": " + str(b["model"]) + " (" + str(b["config"]) + ") = " + str(round(float(b[met]), 4)) + " (ceiling reference)")
+                _b = hl.loc[hl[met].idxmax()]
+                print("  Best holdout " + met + ": " + str(_b["model"]) + " (" + str(_b["config"]) + ") = " + str(round(float(_b[met]), 4)) + " (ceiling reference)")
     return
 
 
