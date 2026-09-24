@@ -4,9 +4,8 @@ __generated_with = "0.24.2"
 app = marimo.App()
 
 with app.setup:
-    # Global imports available to every cell. A bootstrap step installs any
-    # missing core package with uv (pip fallback) before the imports below
-    # run, so fresh runtimes such as a Molab server work out of the box.
+    # Global imports available to every cell. 
+    # Bootstrap step that installs any missing core package with uv
     # Heavy ML packages (torch, tabfm) install lazily in Section 4 instead.
     import marimo as mo
     import glob
@@ -31,6 +30,7 @@ with app.setup:
         "google.cloud.storage": "google-cloud-storage",
     }
 
+    # Checks and Install any missing packages
     def _ensure_packages(packages):
         missing = [k for k in packages if importlib.util.find_spec(k.split(".")[0]) is None]
         if not missing:
@@ -50,6 +50,10 @@ with app.setup:
         else:
             print("[bootstrap] install complete.")
         return still
+
+    # Install google-cloud-storage seperately cause it doesn't work in _ensure_packages for some reason
+    cmdGoogle = ["uv", "pip", "install", "--system", "google-cloud-storage"]
+    subprocess.check_call(cmdGoogle)
 
     BOOTSTRAP_MISSING = _ensure_packages(BOOTSTRAP_PACKAGES)
 
