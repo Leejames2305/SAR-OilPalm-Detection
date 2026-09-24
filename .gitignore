@@ -1,3 +1,9 @@
-data/
+data/Labels
+data/SAR-scenes
+data/SHPs
+data/ZIPs
 
 .env
+
+__pycache__/
+*.py[cod]
