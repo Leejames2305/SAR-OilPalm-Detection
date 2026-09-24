@@ -68,18 +68,14 @@ def _():
     mo.md(r"""
     # Oil Palm Disease Classification using ALOS-2 SAR
 
-    Reactive Marimo port of the original `main.ipynb`. Runs on **Molab**
-    and locally via the VSCode Marimo extension.
+    Runs on **Molab** and locally via the VSCode Marimo extension.
 
-    **Pipeline map**
+    Data hosted at Google Cloud Storage - GCS:
+    > **SAR Scenes:** \
+    `gs://$GCS_BUCKET/data/SAR-scenes/ALOS2-Subset_{location}_{details}.tif`
 
-    - **Section 0** (below): global configuration. Every control is reactive:
-      change a value and all dependent cells update.
-    - **Section 1**: environment, data inventory, GCS sync via SA-key upload.
-    - **Section 2**: CRS-aware SAR sampling per location, with visual QA.
-    - **Section 3**: per-location datasets, GSMOTE toggle, spatial-block CV.
-    - **Section 4**: classifier registry (RF, XGBoost, TabFM) and shared
-      evaluation harness.
+    > **Labels:** \
+    `gs://$GCS_BUCKET/data/Labels/{Location}-Classification_{year}.csv`
     """)
     return
 
@@ -89,10 +85,9 @@ def _():
     mo.md(r"""
     ## Section 0 — Global configuration
 
-    Single source of truth for the whole notebook. Downstream cells read these
-    controls, so dragging a slider re-runs sampling, QA, splits and results.
-    Expensive steps additionally sit behind run buttons so nothing heavy fires
-    on an accidental drag.
+    Single source of truth for the whole notebook, downstream cells read these controls, so dragging a slider re-runs sampling, QA, splits and results.
+
+    Expensive steps additionally sit behind run buttons so nothing heavy fires on an accidental drag.
     """)
     return
 
@@ -222,10 +217,7 @@ def _():
     mo.md(r"""
     ## Section 1 — Environment, data inventory, GCS sync
 
-    Local-first: if `data/SAR-scenes/` and `data/Labels/` are present (the
-    normal case for a repo checkout), nothing needs downloading and the sync
-    cells below stay idle. On a fresh runtime such as Molab, upload the
-    service-account key and press sync to pull the missing files from GCS.
+    Local-first, requires service-account key (upload by user) to sync/pull the missing files from GCS.
     """)
     return
 
@@ -424,15 +416,10 @@ def _():
     mo.md(r"""
     **Scale, CRS and band-order notes (authoritative for Sections 2 to 4)**
 
-    - Intensity scenes are **linear power**. Yama decomposition scenes are
-      **dB by SNAP export default** and are kept as is.
-    - Intensity scenes are `EPSG:32648` (UTM 48N); decomposition scenes are
-      `EPSG:4326`. Section 2 reprojects tree coordinates per scene.
+    - Intensity scenes are **linear power**, except Yama decomposition **(dB by SNAP export default, kept as is)**
+    - Intensity scenes are **EPSG:32648 (UTM 48N)**; decomposition scenes are **EPSG:4326**. Section 2 reprojects tree coordinates per scene.
     - Subset GeoTIFFs carry no band names. Positional order used throughout:
-      intensity `[HH, HV, VH, VV]`, HAlpha `[H, A, alpha]`,
-      Yama `[Pd, Pv, Ps, Pc]`.
-    - Notebook outputs are kept viewable in the repo: refresh the snapshot
-      with `marimo export html main.py -o __marimo__/main.html` after a run.
+      **Intensity** `[HH, HV, VH, VV]`, **HAlpha** `[H, A, alpha]`, **Yama** `[Pd, Pv, Ps, Pc]`.
     """)
     return
 
@@ -442,17 +429,12 @@ def _():
     mo.md(r"""
     ## Section 2 — SAR sampling and visual QA
 
-    For every tree in each location label CSV, a window (default 3x3,
-    configurable in Section 0) is sampled from all three scene products:
+    For every tree in the label CSVs, a window (default 3x3 - configurable above) sampling is done from all three scene products:
 
-    - **Intensity** (`EPSG:32648`): tree lon/lat is reprojected per scene, then
-      the selected window statistics are computed over **linear power**.
-      Only positive finite pixels count as valid.
-    - **HAlpha / Yama** (`EPSG:4326`): sampled in lon/lat directly as
-      window mean and std. Yama scenes are **dB by SNAP export default** and
-      are kept as is, so negative values are valid there.
-    - `Middle` trees are dropped. Each location is written to its own CSV in
-      `data/Processed/`, named by window and statistic set. Existing CSVs are
+    - **Intensity** (`EPSG:32648`): Statistics are computed over **linear power**. Only positive finite pixels count as valid.
+    - **HAlpha / Yama** (`EPSG:4326`): Sampled directly except Yama scenes that are **dB default**. HAlpha stays **linear.**
+
+    `Middle` trees are dropped. Processed datasets are written in`data/Processed/`. Existing CSVs are
       reused unless forced.
     """)
     return
@@ -680,19 +662,9 @@ def _():
     mo.md(r"""
     ## Section 3 — Datasets, GSMOTE, splits and evaluation harness
 
-    - Each location sampled CSV becomes `X` (all sampled feature columns)
-      and `y` (`Unhealthy` is 1). `Middle` was already dropped at sampling.
-    - **GSMOTE** (paper defaults: `k=5`, truncation `1.0`, deformation `0.0`,
-      `combined`) is applied **inside training folds only**, on standardised
-      features. Geometry is verbatim from the POC report. There is no sweep:
-      the POC showed a flat surface.
-    - Default protocol is the honest one: stratified holdout plus
-      `StratifiedGroupKFold` over KMeans spatial blocks (low-positive blocks
-      merged into their nearest sufficiently-positive neighbour).
-    - Median imputation plus standardisation happen inside the harness on
-      train-fit statistics only. The feature set is now compact (38 curated
-      statistics), so the old dedup and MI-select stages were retired: the
-      POC showed selection only ties within noise under honest CV.
+    - `X` : all sampled feature columns | `Y` : Unhealthy is 1.
+    - GSMOTE is applied inside training folds only, on standardised features.
+    - Default protocol is the honest stratified holdout + StratifiedGroupKFold over KMeans spatial blocks (low-positive blocks merged into their nearest sufficiently-positive neighbour).
     """)
     return
 
@@ -1001,21 +973,15 @@ def _():
     ## Section 4 — Classifier registry and results
 
     New classifiers plug in through one dictionary (`CLASSIFIERS` below):
-    add an entry and it appears in the Section 0 multiselect flow, the ML
-    loop, the tables and the plots with no other edits.
+    Add an entry and it appears in the Section 0 selections, ML loop, tables and plots.
 
-    - **RandomForest**: 500 trees, train-count class weights; `tuned` config
-      from a small `average_precision` grid search.
-    - **XGBoost**: `hist` on CUDA with CPU fallback, `scale_pos_weight`
-      from train counts; `tuned` config from a small grid.
-    - **TabFM**: zero-shot foundation model (`standard` and `ensemble`).
-      Needs a Hugging Face token (env `HF_TOKEN`, the input below, or the
-      cached token file) and loads on CUDA when available. `torch` and
-      `tabfm` install automatically on first load only.
-    - The GSMOTE toggle from Section 0 applies inside every training fold.
+    - **RandomForest**: 500 trees, train-count class weights; `tuned` config from a small `average_precision` grid search.
+    - **XGBoost**: `hist` on CUDA, `scale_pos_weight` from train counts; `tuned` config from a small grid.
+    - **TabFM**: zero-shot foundation model (`standard` and `ensemble`). Needs a Hugging Face token (input below) and loads on CUDA when available. `torch` and `tabfm` install automatically on first load only.
 
-    Read spatial-block CV first (honest). Holdout rows are shown only as a
-    leakage-ceiling reference.
+    The GSMOTE toggle from Section 0 applies inside every training fold.
+
+    Trust spatial-block CV first (honest). Holdout rows are shown only as a leakage-ceiling reference.
     """)
     return
 
