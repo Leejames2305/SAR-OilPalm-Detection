@@ -3,7 +3,7 @@
 
 Read the POC reports @ `docs/POCReport/...` first, before planning anything:
 1. PathForwardTrials.md - latest cross-path trial + verdict (start here)
-2. AHCensusRF.md - RF / G-SMOTE baseline and single-date data ceiling
+2. AirHitamRF.md - RF / G-SMOTE baseline and single-date data ceiling
 3. PipelineAudit.md - root-cause analysis (spatial leakage, transfer)
 4. MeanSampling.md - univariate / window-size / Middle-class findings
 5. FeatureTests.md - feature-family + feature-selection evidence
@@ -26,7 +26,7 @@ This file is a **terse index only**. It shows what is already settled, what must
 
 - **Task:** per-tree binary `Unhealthy` (positive) vs `Healthy`.
   - `Middle` / `Vacant` currently dropped.
-- **Locations:** `AHCensus_Basemap` 2511 trees @ 6.37% positive (real field ground truth);
+- **Locations:** `AirHitam_Basemap` 2511 trees @ 6.37% positive (real field ground truth);
   `Palong_Basemap` 2171 @ 9.21%; `Serting_Basemap` 1667 @ 9.24%.
 - **Honest CV:** primary = `StratifiedGroupKFold` on ~220 m spatial blocks, 3 repeated seeds.
   Broader = four adjacent-block regions, leave-one-region-out. Transfer = leave-one-estate-out.
@@ -46,11 +46,11 @@ This file is a **terse index only**. It shows what is already settled, what must
   0.121 / 0.239 / 0.179, with top-10% enrichment 2.18x / 2.39x / 2.46x. Four-region holdout gave
   0.125 / 0.242 / 0.164. This is an in-estate triage signal, not a transferable disease signature.
 - **Spatial fusion is not yet deployable:** to reach roughly 50% recall, Palong required the top
-  25% reviewed at 2.28x enrichment; AHCensus and Serting required the top 40% at 1.47x / 1.38x.
+  25% reviewed at 2.28x enrichment; AirHitam and Serting required the top 40% at 1.47x / 1.38x.
 - **Coordinates carry most of the spatial gain.** Adding SAR to coordinates raised PR-AUC by about
   0.016-0.053; bootstrap intervals crossed zero in several estate/protocol combinations.
 - **New-estate transfer is still weak:** best leave-one-estate-out PR-AUC was 0.084 / 0.124 / 0.104
-  for AHCensus / Palong / Serting. `estate_z` normalisation did not create a robust signature.
+  for AirHitam / Palong / Serting. `estate_z` normalisation did not create a robust signature.
 - **Labels are strongly spatially clustered:** the probability that a Unhealthy tree's 10 nearest
   neighbours are Unhealthy was 0.119 / 0.336 / 0.255, versus 0.060 / 0.060 / 0.070 for Healthy trees.
 - **Location independent:** each location is currently modelled fully independently.
@@ -145,7 +145,7 @@ This file is a **terse index only**. It shows what is already settled, what must
 
 ## E. Known gotchas
 
-- **Cohen's d sign flips across locations** (AHCensus/Palong negative, Serting positive). A sign
+- **Cohen's d sign flips across locations** (AirHitam/Palong negative, Serting positive). A sign
   flip is not explicable by label noise - check this on any new feature before trusting it.
 - **Spatial coordinates can look like model skill.** Report coordinate-only and coordinate+SAR
   results side by side; do not describe a spatial-prior gain as a SAR classification result.

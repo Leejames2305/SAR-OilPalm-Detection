@@ -1,6 +1,6 @@
-# RF + G-SMOTE POC (AHCensus / Palong / Serting) - Findings and Verdict
+# RF + G-SMOTE POC (AirHitam / Palong / Serting) - Findings and Verdict
 
-**Run:** Colab notebook `misc/notebook/POC_AHCensus_RF_GSMOTE.ipynb`
+**Run:** Colab notebook `misc/notebook/POC_AirHitam_RF_GSMOTE.ipynb`
 
 **Target class:** `Unhealthy` (positive). `Healthy` = negative. `Middle` / `Vacant` dropped.
 
@@ -25,10 +25,10 @@ files
    sits at **0.87x - 1.25x**. The best single cell flags 79% of the
    estate to net **+7 **trees over random guessing.
 4. **The G-SMOTE sweep is flat.** 
-   - 60 distinct configurations per estate; the whole surface spans only **0.058-0.071** (AHCensus), **0.079-0.093** (Palong), **0.087-0.110** (Serting). Hyperparameters cannot be tuned out of a null result.
+   - 60 distinct configurations per estate; the whole surface spans only **0.058-0.071** (AirHitam), **0.079-0.093** (Palong), **0.087-0.110** (Serting). Hyperparameters cannot be tuned out of a null result.
 5. **Random CV (leakage celling) inflates PR-AUC by +0.021 ~ +0.047 and ROC-AUC to ~0.57**.
 6. **The raw univariate signal is weak and direction-inconsistent.** 
-   - Strongest |Cohen's d| is **0.35**; the sign of the effect **flips** between AHCensus/Palong (Unhealthy darker) and
+   - Strongest |Cohen's d| is **0.35**; the sign of the effect **flips** between AirHitam/Palong (Unhealthy darker) and
    Serting (Unhealthy brighter). A sign flip cannot be explained by label noise or small
    samples.
 7. **`oof_predictions.csv` missing** so the metric for a triage use-case (precision@k / enrichment@budget) could not be computed from
@@ -43,7 +43,7 @@ does **not** vary features. It holds the feature set fixed at the four raw backs
 > *Is the failure to detect Unhealthy trees caused by class imbalance, or by the absence of a
 > usable signal?*
 
-It is also the first POC to include **AHCensus**, whose labels are **real on-field ground truth**, unlike Palong/Serting which are derived/estimated. That matters: the negative result cannot be blamed on the labels being synthetic for at least one of the three estates.
+It is also the first POC to include **AirHitam**, whose labels are **real on-field ground truth**, unlike Palong/Serting which are derived/estimated. That matters: the negative result cannot be blamed on the labels being synthetic for at least one of the three estates.
 
 ### Configuration
 
@@ -62,7 +62,7 @@ It is also the first POC to include **AHCensus**, whose labels are **real on-fie
 
 | Estate | Trees | Unhealthy | Healthy | Pos. rate | Blocks |
 |---|---:|---:|---:|---:|---:|
-| `AHCensus_Basemap` | 2511 | 160 | 2351 | **6.37%** | 16 |
+| `AirHitam_Basemap` | 2511 | 160 | 2351 | **6.37%** | 16 |
 | `Palong_Basemap` | 2171 | 200 | 1971 | **9.21%** | 11 |
 | `Serting_Basemap` | 1667 | 154 | 1513 | **9.24%** | 8 |
 
@@ -73,11 +73,11 @@ It is also the first POC to include **AHCensus**, whose labels are **real on-fie
 
 | Estate | Arm | PR-AUC | baseline | lift | ROC-AUC | recall_U | TP | FP |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| AHCensus | none | 0.0618 | 0.0637 | **-0.0019** | 0.504 | 0.000 | 0 | 14 |
-| AHCensus | class_weighted_rf | 0.0627 | 0.0637 | -0.0010 | 0.497 | 0.000 | 0 | 1 |
-| AHCensus | random_oversample | 0.0607 | 0.0637 | -0.0030 | 0.491 | 0.000 | 0 | 26 |
-| AHCensus | smote | 0.0631 | 0.0637 | -0.0007 | 0.494 | 0.125 | 20 | 326 |
-| AHCensus | **gsmote** | 0.0635 | 0.0637 | **-0.0002** | 0.498 | 0.156 | 25 | 428 |
+| AirHitam | none | 0.0618 | 0.0637 | **-0.0019** | 0.504 | 0.000 | 0 | 14 |
+| AirHitam | class_weighted_rf | 0.0627 | 0.0637 | -0.0010 | 0.497 | 0.000 | 0 | 1 |
+| AirHitam | random_oversample | 0.0607 | 0.0637 | -0.0030 | 0.491 | 0.000 | 0 | 26 |
+| AirHitam | smote | 0.0631 | 0.0637 | -0.0007 | 0.494 | 0.125 | 20 | 326 |
+| AirHitam | **gsmote** | 0.0635 | 0.0637 | **-0.0002** | 0.498 | 0.156 | 25 | 428 |
 | Palong | none | 0.0807 | 0.0921 | -0.0114 | **0.458** | 0.000 | 0 | 26 |
 | Palong | class_weighted_rf | 0.0793 | 0.0921 | -0.0128 | **0.448** | 0.000 | 0 | 7 |
 | Palong | random_oversample | 0.0821 | 0.0921 | -0.0101 | 0.462 | 0.020 | 4 | 72 |
@@ -98,8 +98,8 @@ Hanley-McNeil 95% CI on ROC-AUC (tested the "the sample is too small to tell" ob
 
 | Estate | Arm | ROC-AUC | 95% CI | Verdict |
 |---|---|---:|---|---|
-| AHCensus | none | 0.504 | 0.458 - 0.550 | 0.5 inside |
-| AHCensus | gsmote | 0.498 | 0.452 - 0.544 | 0.5 inside |
+| AirHitam | none | 0.504 | 0.458 - 0.550 | 0.5 inside |
+| AirHitam | gsmote | 0.498 | 0.452 - 0.544 | 0.5 inside |
 | Palong | class_weighted_rf | 0.448 | **0.408 - 0.489** | **entirely below 0.5** |
 | Palong | gsmote | 0.467 | 0.426 - 0.509 | 0.5 inside |
 | Serting | class_weighted_rf | 0.513 | 0.465 - 0.561 | 0.5 inside |
@@ -122,11 +122,11 @@ Scored the way a triage tool must be scored - **enrichment** ; `precision / pos_
 
 | Estate | Arm | Threshold | Recall | Precision | Flagged | **Enrichment** |
 |---|---|---:|---:|---:|---:|---:|
-| AHCensus | gsmote | 0.09 | 83.1% | 6.7% | ~1985 / 2511 (79%) | **1.05x** |
-| AHCensus | smote | 0.06 | 83.1% | 6.5% | ~2046 / 2511 | **1.02x** |
-| AHCensus | none | 0.05 | 50.6% | 6.4% | ~1265 / 2511 | **1.00x** |
-| AHCensus | class_weighted_rf | 0.05 | 43.1% | 5.9% | ~1169 / 2511 | **0.93x** |
-| AHCensus | random_oversample | 0.10 | 33.8% | 6.2% | ~872 / 2511 | **0.97x** |
+| AirHitam | gsmote | 0.09 | 83.1% | 6.7% | ~1985 / 2511 (79%) | **1.05x** |
+| AirHitam | smote | 0.06 | 83.1% | 6.5% | ~2046 / 2511 | **1.02x** |
+| AirHitam | none | 0.05 | 50.6% | 6.4% | ~1265 / 2511 | **1.00x** |
+| AirHitam | class_weighted_rf | 0.05 | 43.1% | 5.9% | ~1169 / 2511 | **0.93x** |
+| AirHitam | random_oversample | 0.10 | 33.8% | 6.2% | ~872 / 2511 | **0.97x** |
 | Palong | gsmote | 0.05 | 90.0% | 9.0% | ~2000 / 2171 | **0.98x** |
 | Palong | smote | 0.07 | 81.0% | 9.1% | ~1780 / 2171 | **0.99x** |
 | Palong | class_weighted_rf | 0.05 | 54.5% | 8.2% | ~1329 / 2171 | **0.89x** |
@@ -145,12 +145,12 @@ Grid: `k in {3,4}` x `tau in {-1, 0, 0.5, 1}` x `delta in {0, 0.5, 1}` x
 
 | Estate | min | mean | max | std | Best config | Sweep max |
 |---|---:|---:|---:|---:|---|---:|
-| AHCensus | 0.0579 | 0.0626 | 0.0707 | 0.0031 | `tau=1, delta=0, k=4, minority` | 0.0707 |
+| AirHitam | 0.0579 | 0.0626 | 0.0707 | 0.0031 | `tau=1, delta=0, k=4, minority` | 0.0707 |
 | Palong | 0.0786 | 0.0833 | 0.0932 | 0.0036 | `tau=1, delta=0, k=4, minority` | 0.0932 |
 | Serting | 0.0869 | 0.0976 | 0.1103 | 0.0048 | `tau=1, delta=1, k=4, combined` | 0.1103 |
 
 - The full swept range is **0.013 / 0.015 / 0.023 PR-AUC wide** - flat paint, not a landscape.
-- Best-by-selection-strategy collapses the same way (AHCensus: combined 0.0636, majority
+- Best-by-selection-strategy collapses the same way (AirHitam: combined 0.0636, majority
   0.0653, minority 0.0707 - a 0.007 spread).
 - **Verdict on tuning:** closed. `tau`, `delta`, `k` and `selection_strategy` cannot produce signal that is not in the features.
 
@@ -159,7 +159,7 @@ Grid: `k in {3,4}` x `tau in {-1, 0, 0.5, 1}` x `delta in {0, 0.5, 1}` x
 
 | Estate | PR-AUC (spatial) | PR-AUC (random) | baseline | lift (random) | ROC (spatial) | ROC (random) |
 |---|---:|---:|---:|---:|---:|---:|
-| AHCensus | 0.0635 | 0.0847 | 0.0637 | +0.0210 | 0.498 | **0.568** |
+| AirHitam | 0.0635 | 0.0847 | 0.0637 | +0.0210 | 0.498 | **0.568** |
 | Palong | 0.0846 | 0.1186 | 0.0921 | +0.0265 | 0.467 | **0.572** |
 | Serting | 0.0972 | 0.1395 | 0.0924 | +0.0471 | 0.503 | **0.573** |
 
@@ -177,12 +177,12 @@ infected tree"* rather than learning anything transferable.
 
 | Estate | Feature | Cohen's d | MWU p | frac | Used as feature |
 |---|---|---:|---:|---:|---|
-| AHCensus | `HV_meanW3` | **-0.338** | 1.4e-05 | 0.637 | yes |
-| AHCensus | `VV_meanW3` | -0.285 | 1.4e-03 | 0.594 | yes |
-| AHCensus | `VH_meanW3` | -0.245 | 3.0e-03 | 0.606 | yes |
-| AHCensus | `HH_meanW3` | -0.224 | 1.7e-04 | 0.613 | yes |
-| AHCensus | `RFDI_VH_meanW3` | -0.036 | 7.6e-01 | 0.463 | no |
-| AHCensus | `RVI_meanW3` | -0.025 | 8.7e-01 | 0.475 | no |
+| AirHitam | `HV_meanW3` | **-0.338** | 1.4e-05 | 0.637 | yes |
+| AirHitam | `VV_meanW3` | -0.285 | 1.4e-03 | 0.594 | yes |
+| AirHitam | `VH_meanW3` | -0.245 | 3.0e-03 | 0.606 | yes |
+| AirHitam | `HH_meanW3` | -0.224 | 1.7e-04 | 0.613 | yes |
+| AirHitam | `RFDI_VH_meanW3` | -0.036 | 7.6e-01 | 0.463 | no |
+| AirHitam | `RVI_meanW3` | -0.025 | 8.7e-01 | 0.475 | no |
 | Palong | `VH_meanW3` | **-0.353** | 5.2e-04 | 0.545 | yes |
 | Palong | `HH_meanW3` | -0.256 | 1.5e-02 | 0.545 | yes |
 | Palong | `VV_meanW3` | -0.255 | 3.5e-02 | 0.575 | yes |
@@ -197,7 +197,7 @@ Three conclusions:
 
 1. **Every effect is small.** Max |d| = 0.35, most in 0.05-0.29. The distributions overlap heavily; `frac` hovers near 0.5-0.64 where 0.5 is no separation.
 2. **Significance != separability.** With 2351 vs 160, p-values reach 1e-5 at |d| = 0.34. The p-value is answering "is there *any* difference", not "can I classify with it".
-3. **The effect direction flips across estates.** AHCensus and Palong: Unhealthy trees are *darker* (all `d < 0`). Serting: Unhealthy are *brighter* (`VV d = +0.267`). This independently corroborates [`PipelineAudit.md` Sec 2C].
+3. **The effect direction flips across estates.** AirHitam and Palong: Unhealthy trees are *darker* (all `d < 0`). Serting: Unhealthy are *brighter* (`VV d = +0.267`). This independently corroborates [`PipelineAudit.md` Sec 2C].
 
 
 ## 7. Figures - how to read them

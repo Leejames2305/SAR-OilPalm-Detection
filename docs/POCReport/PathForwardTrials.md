@@ -5,7 +5,7 @@
 
 ## Verdict
 
-The disappointing POC_AHCensus result is **not primarily an algorithm-selection failure**. Under spatial holdout, changing the learner, adding RVI-adjacent indices, or fitting only Healthy trees all leave performance close to chance. Unsupervised clustering also does not align with the health labels.
+The disappointing POC_AirHitam result is **not primarily an algorithm-selection failure**. Under spatial holdout, changing the learner, adding RVI-adjacent indices, or fitting only Healthy trees all leave performance close to chance. Unsupervised clustering also does not align with the health labels.
 
 The only repeatable lever found was **spatial context**. Models using coordinates plus SAR features were substantially better than SAR-only models, both under 220 m block holdout and under a broader four-region holdout. This is a promising route only for **in-estate triage** with confirmed labels or coordinates. It is not evidence of a transferable new-estate disease classifier.
 
@@ -13,8 +13,8 @@ The only repeatable lever found was **spatial context**. Models using coordinate
 
 | Path | Examples | Main result |
 |---|---|---|
-| Supervised alternatives | Logistic L1/L2, SVM-RBF, kNN, LDA, Gaussian NB, ExtraTrees, HistGradientBoosting, XGBoost, MLP | Several models beat RF by a small amount, but the winner changed by estate: kNN on AHCensus, logistic regression on Palong, SVM-RBF on Serting. No alternative reached a useful SAR-only operating point. |
-| Healthy-first anomaly detection | OCSVM, Isolation Forest, LOF, GMM, PCA reconstruction, kNN distance, Mahalanobis distance, KMeans distance, autoencoder | No robust improvement. Best PR-AUC lifts were only about +0.008 AHCensus, +0.019 Palong, +0.024 Serting; the best method changed per estate and ROC-AUC stayed near or below 0.5 in several cases. |
+| Supervised alternatives | Logistic L1/L2, SVM-RBF, kNN, LDA, Gaussian NB, ExtraTrees, HistGradientBoosting, XGBoost, MLP | Several models beat RF by a small amount, but the winner changed by estate: kNN on AirHitam, logistic regression on Palong, SVM-RBF on Serting. No alternative reached a useful SAR-only operating point. |
+| Healthy-first anomaly detection | OCSVM, Isolation Forest, LOF, GMM, PCA reconstruction, kNN distance, Mahalanobis distance, KMeans distance, autoencoder | No robust improvement. Best PR-AUC lifts were only about +0.008 AirHitam, +0.019 Palong, +0.024 Serting; the best method changed per estate and ROC-AUC stayed near or below 0.5 in several cases. |
 | Unsupervised clustering | KMeans and diagonal GMM, 2-12 clusters, with and without local residual features | Median ARI was -0.001 to +0.000. Clusters did not represent health status. |
 | RVI-family additions | VSI, CSI, Rc, Rp, total power, RVIHH, RVIVV, RNDVI, plus existing RVI/RFDI | Redundant with the supplied SAR channels; no consistent lift. |
 | Local residuals | Tree value minus median of its 10 nearest neighbours | Small and inconsistent effect when used alone or with raw SAR features. |
@@ -27,7 +27,7 @@ Prevalence is the no-skill PR-AUC. Enrichment is precision in the top 10% divide
 
 | Estate | Prevalence | RF baseline | Best SAR-only | Best Healthy-only | Best SAR + spatial | Top-10% enrichment of best fusion |
 |---|---:|---:|---:|---:|---:|---:|
-| AHCensus | 0.064 | 0.072 | 0.092 (logistic, log raw4) | 0.072 (PCA reconstruction) | 0.121 (logistic, raw4 + local + coords) | 2.18x |
+| AirHitam | 0.064 | 0.072 | 0.092 (logistic, log raw4) | 0.072 (PCA reconstruction) | 0.121 (logistic, raw4 + local + coords) | 2.18x |
 | Palong | 0.092 | 0.087 | 0.114 (logistic, log raw4) | 0.111 (PCA reconstruction, local14) | 0.239 (logistic, all14 + coords) | 2.39x |
 | Serting | 0.092 | 0.083 | 0.098 (SVM-RBF, all14) | 0.116 (Isolation Forest, raw4 + local) | 0.179 (XGBoost, log raw4 + coords) | 2.46x |
 
@@ -35,11 +35,11 @@ The best SAR+spatial configurations also held up under the broader four-region h
 
 | Estate | Broad-holdout fusion PR-AUC | Lift over prevalence | Top-10% enrichment |
 |---|---:|---:|---:|
-| AHCensus | 0.125 | +0.062 | 2.49x |
+| AirHitam | 0.125 | +0.062 | 2.49x |
 | Palong | 0.242 | +0.150 | 2.44x |
 | Serting | 0.164 | +0.071 | 2.46x |
 
-The practical review-budget picture is less encouraging than PR-AUC alone. To capture at least half of the Unhealthy trees under the broad holdout, Palong required reviewing the top 25% of trees with 2.28x enrichment, while AHCensus and Serting required the top 40% at only 1.47x and 1.38x enrichment respectively. Only Palong approaches the stated "majority recall with reasonable false positives" objective. This is another reason to treat spatial fusion as a promising triage prototype, not yet as a deployable estate-wide classifier.
+The practical review-budget picture is less encouraging than PR-AUC alone. To capture at least half of the Unhealthy trees under the broad holdout, Palong required reviewing the top 25% of trees with 2.28x enrichment, while AirHitam and Serting required the top 40% at only 1.47x and 1.38x enrichment respectively. Only Palong approaches the stated "majority recall with reasonable false positives" objective. This is another reason to treat spatial fusion as a promising triage prototype, not yet as a deployable estate-wide classifier.
 
 Coordinates alone were already strong on Palong and Serting. In paired block-bootstrap comparisons, adding SAR to coordinates increased PR-AUC by about 0.016-0.053, with 85-99% of bootstrap replicates positive but confidence intervals crossing zero in several estate/protocol combinations. The correct conclusion is therefore that SAR adds a modest, not yet definitive, increment to a spatial model.
 
@@ -49,7 +49,7 @@ The labels themselves are spatially clustered at all three estates. For example,
 
 Leave-one-estate-out accuracy remained weak. The best PR-AUC per held-out estate was:
 
-- AHCensus: 0.084 with Random Forest on all14 (prevalence 0.064).
+- AirHitam: 0.084 with Random Forest on all14 (prevalence 0.064).
 - Palong: 0.124 with estate-z-scored logistic regression (prevalence 0.092).
 - Serting: 0.104 with Random Forest on local14 (prevalence 0.092).
 

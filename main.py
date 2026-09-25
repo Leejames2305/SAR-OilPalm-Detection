@@ -51,9 +51,6 @@ with app.setup:
             print("[bootstrap] install complete.")
         return still
 
-    # Install google-cloud-storage seperately cause it doesn't work in _ensure_packages for some reason
-    cmdGoogle = ["uv", "pip", "install", "--system", "google-cloud-storage"]
-    subprocess.check_call(cmdGoogle)
 
     BOOTSTRAP_MISSING = _ensure_packages(BOOTSTRAP_PACKAGES)
 
@@ -95,8 +92,8 @@ def _():
 @app.cell(hide_code=True)
 def _():
     loc_select = mo.ui.multiselect(
-        options=["Census", "Serting", "Palong"],
-        value=["Census", "Serting", "Palong"],
+        options=["AirHitam", "Serting", "Palong"],
+        value=["AirHitam", "Serting", "Palong"],
         label="Locations (each location is modelled independently)",
     )
     window_slider = mo.ui.slider(
@@ -157,10 +154,10 @@ def _(loc_select, seed_number, test_size_slider, window_slider):
 
     # Per-location file mapping. The scene prefix is shared by all products.
     LOCATION_META = {
-        "Census": {
+        "AirHitam": {
             "year": 2026,
-            "label": "Census-Classification_2026.csv",
-            "prefix": "ALOS2-Subset_Census_260610_Cal_ML_Spk",
+            "label": "AirHitam-Classification_2026.csv",
+            "prefix": "ALOS2-Subset_AirHitam_260610_Cal_ML_Spk",
         },
         "Serting": {
             "year": 2022,
