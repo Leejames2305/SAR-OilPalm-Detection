@@ -227,6 +227,9 @@ def _():
 
 @app.cell(hide_code=True)
 def _(LABEL_DIR, LOCATION_META, SCENE_DIR, SCENE_PRODUCTS, sync_report):
+    # Called sync_report to trigger cell updates
+    _ = sync_report
+
     _scene_rows = []
     for _loc, _meta in LOCATION_META.items():
         for _product, _suffix in SCENE_PRODUCTS.items():
@@ -306,7 +309,6 @@ def _():
     return bucket_text, sa_key_file, sync_button
 
 
-@app.cell(hide_code=True)
 @app.cell(hide_code=True)
 def _(
     LABEL_DIR,
