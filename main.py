@@ -810,7 +810,7 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(ACTIVE_LOCATIONS, WINDOW, dataset_path_for, stats_select, sampled_paths):
+def _(ACTIVE_LOCATIONS, WINDOW, dataset_path_for, sampled_paths, stats_select):
     mo.stop(len(ACTIVE_LOCATIONS) == 0, mo.md("Select at least one location in Section 0."))
     _stats = [s for s in ["mean", "std", "min", "max", "p25", "p50"] if s in list(stats_select.value)]
     mo.stop(len(_stats) == 0, mo.md("Select at least one window statistic in Section 0."))
@@ -1097,7 +1097,7 @@ def _(RANDOM_STATE, tabfm_model, y_LOC):
 
     def _rf_build(loc, params=None):
         kw = {
-            "n_estimators": 2000,
+            "n_estimators": 500,
             "class_weight": {0: 1.0, 1: _pos_weight(loc)},
             "random_state": RANDOM_STATE,
             "n_jobs": -1,
@@ -1107,7 +1107,7 @@ def _(RANDOM_STATE, tabfm_model, y_LOC):
         return RandomForestClassifier(**kw)
 
     RF_GRID = {
-        "n_estimators": [2000],
+        "n_estimators": [500],
         "max_depth": [None, 10, 20, 30],
         "min_samples_split": [2, 5, 10],
         "min_samples_leaf": [1, 2],
@@ -1116,7 +1116,7 @@ def _(RANDOM_STATE, tabfm_model, y_LOC):
 
     def _xgb_build(loc, params=None):
         kw = {
-            "n_estimators": 2000,
+            "n_estimators": 500,
             "max_depth": 6,
             "learning_rate": 0.05,
             "tree_method": "hist",
@@ -1133,7 +1133,7 @@ def _(RANDOM_STATE, tabfm_model, y_LOC):
             return XGBClassifier(device="cpu", **kw)
 
     XGB_GRID = {
-        "n_estimators": [2000],
+        "n_estimators": [500],
         "max_depth": [3, 6, 9, 12],
         "min_child_weight": [1, 5],
         "subsample": [0.6, 0.8, 1.0],
@@ -1291,7 +1291,6 @@ def _(results_df, y_LOC):
 
 
 @app.cell(hide_code=True)
-@app.cell(hide_code=True)
 def _(PLOTS_DIR, results_df):
     mo.stop(len(results_df) == 0, mo.md("No results yet. Press **Run ML**."))
     _sp = results_df[results_df["eval_type"] == "spatial_cv"].copy()
@@ -1365,6 +1364,7 @@ def _(PLOTS_DIR, results_df):
     _dash.savefig(PLOTS_DIR / "results_dashboard.png", dpi=150)
     print("Plots saved to " + str(PLOTS_DIR))
     _dash
+    return
 
 
 @app.cell(hide_code=True)
@@ -1434,6 +1434,7 @@ def _(PROCESSED_DIR, PROJECT_ROOT, zip_button):
     _zip_out_1 = shutil.make_archive(str(PROCESSED_DIR), "zip", root_dir=str(PROJECT_ROOT), base_dir="data/Processed")
     _zip_out_2 = shutil.make_archive(str(PROJECT_ROOT / "__marimo__"), "zip", root_dir=str(PROJECT_ROOT), base_dir="__marimo__")
     mo.md("Wrote " + _zip_out_1 + " and " + _zip_out_2)
+    return
 
 
 if __name__ == "__main__":
