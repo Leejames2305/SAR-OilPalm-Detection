@@ -1353,7 +1353,7 @@ def _(PLOTS_DIR, results_df):
                     _axc.set_yticks([0, 1])
                     _axc.set_xticklabels(["H", "U"])
                     _axc.set_yticklabels(["H", "U"])
-                    _axc.set_title(_loc + " " + str(_rr["config"]))
+                    _axc.set_title(_loc + " - " + _model + " (" + str(_rr["config"]) + ")")
                     for _ii in range(2):
                         for _jj in range(2):
                             _axc.text(_jj, _ii, str(_cm[_ii][_jj]), ha="center", va="center")
