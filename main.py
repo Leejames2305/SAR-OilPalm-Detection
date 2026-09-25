@@ -31,8 +31,14 @@ with app.setup:
     }
 
     # Checks and Install any missing packages
+    def _is_available(dotted):
+        try:
+            return importlib.util.find_spec(dotted) is not None
+        except (ImportError, ValueError):
+            return False
+
     def _ensure_packages(packages):
-        missing = [k for k in packages if importlib.util.find_spec(k.split(".")[0]) is None]
+        missing = [k for k in packages if not _is_available(k)]
         if not missing:
             print("[bootstrap] all required packages present.")
             return []
@@ -44,7 +50,7 @@ with app.setup:
             print("[bootstrap] uv not found, falling back to pip.")
             cmd = [sys.executable, "-m", "pip", "install"] + specs
         subprocess.check_call(cmd)
-        still = [k for k in missing if importlib.util.find_spec(k.split(".")[0]) is None]
+        still = [k for k in missing if not _is_available(k)]
         if still:
             print("[bootstrap] WARNING, still missing after install: " + ", ".join(still))
         else:
@@ -385,11 +391,17 @@ def _():
         "google.cloud.storage",
         "imbalanced_learn",
     ]
+    def _dep_available(_dotted):
+        try:
+            return importlib.util.find_spec(_dotted) is not None
+        except (ImportError, ValueError):
+            return False
+
     deps_status = pd.DataFrame(
         [
             {
                 "package": _name,
-                "available": importlib.util.find_spec(_name.split(chr(46))[0]) is not None,
+                "available": _dep_available(_name),
             }
             for _name in _candidates
         ]
