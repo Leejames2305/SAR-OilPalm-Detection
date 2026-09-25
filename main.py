@@ -226,7 +226,7 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(LABEL_DIR, LOCATION_META, SCENE_DIR, SCENE_PRODUCTS):
+def _(LABEL_DIR, LOCATION_META, SCENE_DIR, SCENE_PRODUCTS, sync_report):
     _scene_rows = []
     for _loc, _meta in LOCATION_META.items():
         for _product, _suffix in SCENE_PRODUCTS.items():
@@ -307,6 +307,7 @@ def _():
 
 
 @app.cell(hide_code=True)
+@app.cell(hide_code=True)
 def _(
     LABEL_DIR,
     LOCATION_META,
@@ -316,27 +317,15 @@ def _(
     sa_key_file,
     sync_button,
 ):
-    mo.stop(
-        not sync_button.value,
-        mo.md("Press **Sync missing files from GCS** to run this cell."),
-    )
     _uploads = sa_key_file.value or []
-    mo.stop(
-        len(_uploads) == 0,
-        mo.md("Upload the service-account JSON key above, then press sync again."),
-    )
-
-    try:
-        from google.cloud import storage
-        from google.oauth2 import service_account
-    except ImportError:
-        mo.stop(
-            True,
-            mo.md(
-                "The `google-cloud-storage` package is not installed. "
-                "Install it with `uv pip install google-cloud-storage` and re-run."
-            ),
-        )
+    _do_sync = bool(sync_button.value) and len(_uploads) > 0
+    _have_gcs = True
+    if _do_sync:
+        try:
+            from google.cloud import storage
+            from google.oauth2 import service_account
+        except ImportError:
+            _have_gcs = False
 
     def _upload_bytes(_item):
         if isinstance(_item, (list, tuple)) and len(_item) == 2:
@@ -349,34 +338,44 @@ def _(
             _contents = _contents.encode("utf-8")
         return str(_name), bytes(_contents)
 
-    _key_name, _key_bytes = _upload_bytes(_uploads[0])
-    _info = json.loads(_key_bytes.decode("utf-8"))
-    _creds = service_account.Credentials.from_service_account_info(_info)
-    _client = storage.Client(credentials=_creds, project=_info.get("project_id"))
-    _bucket = _client.bucket(bucket_text.value.strip())
-
     _wanted = []
     for _loc, _meta in LOCATION_META.items():
         for _product, _suffix in SCENE_PRODUCTS.items():
             _name = _meta["prefix"] + _suffix
-            _wanted.append(
-                ("data/SAR-scenes/" + _name, SCENE_DIR / _name)
-            )
-        _wanted.append(
-            ("data/Labels/" + _meta["label"], LABEL_DIR / _meta["label"])
-        )
+            _wanted.append((
+                "data/SAR-scenes/" + _name, SCENE_DIR / _name
+            ))
+        _wanted.append((
+            "data/Labels/" + _meta["label"], LABEL_DIR / _meta["label"]
+        ))
 
     _report = []
-    for _blob_name, _local in _wanted:
-        if _local.exists():
-            _report.append({"file": _local.name, "action": "already on disk"})
-            continue
-        _local.parent.mkdir(parents=True, exist_ok=True)
-        _bucket.blob(_blob_name).download_to_filename(str(_local))
-        _report.append({"file": _local.name, "action": "downloaded from GCS"})
+    if _do_sync and _have_gcs:
+        _key_name, _key_bytes = _upload_bytes(_uploads[0])
+        _info = json.loads(_key_bytes.decode("utf-8"))
+        _creds = service_account.Credentials.from_service_account_info(_info)
+        _client = storage.Client(credentials=_creds, project=_info.get("project_id"))
+        _bucket = _client.bucket(bucket_text.value.strip())
+        for _blob_name, _local in _wanted:
+            if _local.exists():
+                _report.append({"file": _local.name, "action": "already on disk"})
+                continue
+            _local.parent.mkdir(parents=True, exist_ok=True)
+            _bucket.blob(_blob_name).download_to_filename(str(_local))
+            _report.append({"file": _local.name, "action": "downloaded from GCS"})
+    elif not sync_button.value:
+        for _blob_name, _local in _wanted:
+            if _local.exists():
+                _report.append({"file": _local.name, "action": "on disk"})
+            else:
+                _report.append({"file": _local.name, "action": "missing (press Sync to download)"})
+    elif len(_uploads) == 0:
+        _report.append({"file": "(service-account key)", "action": "upload the key above, then press Sync again"})
+    else:
+        _report.append({"file": "(google-cloud-storage)", "action": "package unavailable (re-run the notebook setup)"})
     sync_report = pd.DataFrame(_report)
     mo.ui.table(sync_report)
-    return
+    return (sync_report,)
 
 
 @app.cell(hide_code=True)
@@ -580,7 +579,6 @@ def _(
     sample_location,
     stats_select,
 ):
-    mo.stop(not sample_button.value, mo.md("Press **Run sampling** to build the per-location datasets."))
     mo.stop(len(ACTIVE_LOCATIONS) == 0, mo.md("Select at least one location in Section 0."))
     _stats = [s for s in ["mean", "std", "min", "max", "p25", "p50"] if s in list(stats_select.value)]
     mo.stop(len(_stats) == 0, mo.md("Select at least one window statistic in Section 0."))
@@ -590,18 +588,28 @@ def _(
         _path = dataset_path_for(_loc, WINDOW, _stats)
         if _path.exists() and not force_checkbox.value:
             _df = pd.read_csv(_path)
+            sampled_paths[_loc] = str(_path)
             action = "loaded from CSV"
-        else:
+        elif sample_button.value:
             _df = sample_location(_loc, WINDOW, _stats)
             _df.to_csv(_path, index=False)
+            sampled_paths[_loc] = str(_path)
             action = "sampled and saved"
-        sampled_paths[_loc] = str(_path)
+        else:
+            _df = None
+            action = "not sampled yet (press Run sampling)"
+        if _df is None:
+            _trees, _unhealthy, _nfeat = 0, 0, 0
+        else:
+            _trees = len(_df)
+            _unhealthy = int((_df["y"] == 1).sum())
+            _nfeat = len(_df.columns) - 5
         _rows.append(
             {
                 "location": _loc,
-                "trees": len(_df),
-                "unhealthy": int((_df["y"] == 1).sum()),
-                "features": len(_df.columns) - 5,
+                "trees": _trees,
+                "unhealthy": _unhealthy,
+                "features": _nfeat,
                 "action": action,
                 "file": _path.name,
             }
@@ -800,7 +808,7 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(ACTIVE_LOCATIONS, WINDOW, dataset_path_for, stats_select):
+def _(ACTIVE_LOCATIONS, WINDOW, dataset_path_for, stats_select, sampled_paths):
     mo.stop(len(ACTIVE_LOCATIONS) == 0, mo.md("Select at least one location in Section 0."))
     _stats = [s for s in ["mean", "std", "min", "max", "p25", "p50"] if s in list(stats_select.value)]
     mo.stop(len(_stats) == 0, mo.md("Select at least one window statistic in Section 0."))
@@ -810,7 +818,10 @@ def _(ACTIVE_LOCATIONS, WINDOW, dataset_path_for, stats_select):
     FEATURE_COLS = None
     _rows = []
     for _loc in ACTIVE_LOCATIONS:
-        _path = dataset_path_for(_loc, WINDOW, _stats)
+        if _loc in sampled_paths and Path(sampled_paths[_loc]).exists():
+            _path = Path(sampled_paths[_loc])
+        else:
+            _path = dataset_path_for(_loc, WINDOW, _stats)
         mo.stop(not _path.exists(), mo.md("Dataset missing for **" + _loc + "**: run the Section 2 sampling step first."))
         _df = pd.read_csv(_path)
         feats = [c for c in _df.columns if c not in ("id", "Long", "Lat", "Class", "y")]
@@ -1062,6 +1073,13 @@ def _(clf_select, hf_token_text, tabfm_button):
 def _(RANDOM_STATE, tabfm_model, y_LOC):
     from sklearn.ensemble import RandomForestClassifier
 
+    import warnings
+
+    # XGBoost trains on cuda but predicts from CPU numpy arrays, so it always
+    # falls back to DMatrix prediction with this one-shot warning. The fallback
+    # is automatic and harmless at this data scale, so silence only that warning.
+    warnings.filterwarnings("ignore", message=".*mismatched devices.*", category=UserWarning)
+
     try:
         from xgboost import XGBClassifier
         HAVE_XGB = True
@@ -1271,6 +1289,7 @@ def _(results_df, y_LOC):
 
 
 @app.cell(hide_code=True)
+@app.cell(hide_code=True)
 def _(PLOTS_DIR, results_df):
     mo.stop(len(results_df) == 0, mo.md("No results yet. Press **Run ML**."))
     _sp = results_df[results_df["eval_type"] == "spatial_cv"].copy()
@@ -1280,6 +1299,8 @@ def _(PLOTS_DIR, results_df):
     _sp["label"] = _sp["model"] + " / " + _sp["config"]
     means = _sp.groupby(["location", "label"])["pr_auc"].mean().unstack("label")
     stds = _sp.groupby(["location", "label"])["pr_auc"].std().unstack("label")
+    _models = sorted(_ho["model"].unique())
+    _ncol = max(1, len(_models))
     _fig, _ax = plt.subplots(figsize=(max(8, 2 * len(means.columns)), 5))
     means.plot(kind="bar", yerr=stds, ax=_ax, capsize=3, colormap="Set2")
     _ax.set_title("Spatial-block CV PR-AUC by location (honest)")
@@ -1287,35 +1308,61 @@ def _(PLOTS_DIR, results_df):
     _ax.grid(axis="y", alpha=0.3)
     _fig.tight_layout()
     _fig.savefig(PLOTS_DIR / "comparison_spatial_pr_auc.png", dpi=150)
-    for _loc in sorted(_ho["location"].unique()):
+    plt.close(_fig)
+    _dash = plt.figure(figsize=(max(10, 4 * _ncol), 4 + 3 * len(_locs)))
+    _gs = _dash.add_gridspec(1 + len(_locs), _ncol)
+    _ax0 = _dash.add_subplot(_gs[0, :])
+    means.plot(kind="bar", yerr=stds, ax=_ax0, capsize=3, colormap="Set2")
+    _ax0.set_title("Spatial-block CV PR-AUC by location (honest)")
+    _ax0.set_ylabel("PR-AUC")
+    _ax0.grid(axis="y", alpha=0.3)
+    for _ri, _loc in enumerate(_locs):
         _rows = _ho[_ho["location"] == _loc]
         _best = _rows.sort_values("pr_auc", ascending=False).groupby("model").head(1)
         n = len(_best)
-        if n == 0:
-            continue
-        fig2, _axes = plt.subplots(1, n, figsize=(4 * n, 4), squeeze=False)
-        for a in range(n):
-            _r = _best.iloc[a]
-            _ax2 = _axes[0][a]
-            cm = [[int(_r["tn"]), int(_r["fp"])], [int(_r["fn"]), int(_r["tp"])]]
-            _ax2.imshow(cm, cmap="Blues")
-            _ax2.set_xticks([0, 1])
-            _ax2.set_yticks([0, 1])
-            _ax2.set_xticklabels(["Healthy", "Unhealthy"])
-            _ax2.set_yticklabels(["Healthy", "Unhealthy"])
-            _ax2.set_xlabel("Predicted")
-            _ax2.set_ylabel("True")
-            _ax2.set_title(str(_r["model"]) + " / " + str(_r["config"]))
-            for ii in range(2):
-                for jj in range(2):
-                    _ax2.text(jj, ii, str(cm[ii][jj]), ha="center", va="center")
-        fig2.suptitle(_loc + " holdout confusion (reference)")
-        fig2.tight_layout()
-        fig2.savefig(PLOTS_DIR / ("confusion_" + _loc + ".png"), dpi=150)
-        plt.close(fig2)
+        if n > 0:
+            fig2, _axes = plt.subplots(1, n, figsize=(4 * n, 4), squeeze=False)
+            for a in range(n):
+                _r = _best.iloc[a]
+                _ax2 = _axes[0][a]
+                cm = [[int(_r["tn"]), int(_r["fp"])], [int(_r["fn"]), int(_r["tp"])]]
+                _ax2.imshow(cm, cmap="Blues")
+                _ax2.set_xticks([0, 1])
+                _ax2.set_yticks([0, 1])
+                _ax2.set_xticklabels(["Healthy", "Unhealthy"])
+                _ax2.set_yticklabels(["Healthy", "Unhealthy"])
+                _ax2.set_xlabel("Predicted")
+                _ax2.set_ylabel("True")
+                _ax2.set_title(str(_r["model"]) + " / " + str(_r["config"]))
+                for ii in range(2):
+                    for jj in range(2):
+                        _ax2.text(jj, ii, str(cm[ii][jj]), ha="center", va="center")
+            fig2.suptitle(_loc + " holdout confusion (reference)")
+            fig2.tight_layout()
+            fig2.savefig(PLOTS_DIR / ("confusion_" + _loc + ".png"), dpi=150)
+            plt.close(fig2)
+            _best = _best.set_index("model")
+            for _ci, _model in enumerate(_models):
+                _axc = _dash.add_subplot(_gs[1 + _ri, _ci])
+                if _model in _best.index:
+                    _rr = _best.loc[_model]
+                    _cm = [[int(_rr["tn"]), int(_rr["fp"])], [int(_rr["fn"]), int(_rr["tp"])]]
+                    _axc.imshow(_cm, cmap="Blues")
+                    _axc.set_xticks([0, 1])
+                    _axc.set_yticks([0, 1])
+                    _axc.set_xticklabels(["H", "U"])
+                    _axc.set_yticklabels(["H", "U"])
+                    _axc.set_title(_loc + " " + str(_rr["config"]))
+                    for _ii in range(2):
+                        for _jj in range(2):
+                            _axc.text(_jj, _ii, str(_cm[_ii][_jj]), ha="center", va="center")
+                else:
+                    _axc.axis("off")
+    _dash.suptitle("Results dashboard (holdout confusion is reference only)")
+    _dash.tight_layout()
+    _dash.savefig(PLOTS_DIR / "results_dashboard.png", dpi=150)
     print("Plots saved to " + str(PLOTS_DIR))
-    _fig
-    return
+    _dash
 
 
 @app.cell(hide_code=True)
@@ -1372,12 +1419,19 @@ def _():
     return
 
 
-@app.cell
-def _(PROCESSED_DIR, PROJECT_ROOT):
-    shutil.make_archive(str(PROCESSED_DIR), "zip", root_dir=str(PROJECT_ROOT), base_dir="data/Processed")
+@app.cell(hide_code=True)
+def _():
+    zip_button = mo.ui.run_button(label="ZIP data/Processed and __marimo__ for download")
+    zip_button
+    return (zip_button,)
 
-    shutil.make_archive(str(PROJECT_ROOT / "__marimo__"), "zip", root_dir=str(PROJECT_ROOT), base_dir="__marimo__")
-    return
+
+@app.cell(hide_code=True)
+def _(PROCESSED_DIR, PROJECT_ROOT, zip_button):
+    mo.stop(not zip_button.value, mo.md("Press **ZIP data/Processed and __marimo__ for download** to package the outputs."))
+    _zip_out_1 = shutil.make_archive(str(PROCESSED_DIR), "zip", root_dir=str(PROJECT_ROOT), base_dir="data/Processed")
+    _zip_out_2 = shutil.make_archive(str(PROJECT_ROOT / "__marimo__"), "zip", root_dir=str(PROJECT_ROOT), base_dir="__marimo__")
+    mo.md("Wrote " + _zip_out_1 + " and " + _zip_out_2)
 
 
 if __name__ == "__main__":
