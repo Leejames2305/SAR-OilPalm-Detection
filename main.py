@@ -118,8 +118,10 @@ def _():
     seed_number = mo.ui.number(
         value=42, label="Random seed"
     )
-    gsmote_toggle = mo.ui.checkbox(
-        value=True, label="Apply GSMOTE inside training folds (toggle, default on)"
+    sampler_select = mo.ui.dropdown(
+        options=["gsmote", "class_weighted", "none"],
+        value="gsmote",
+        label="Imbalance arm, POC-style and mutually exclusive (gsmote uses plain estimators)"
     )
     clf_select = mo.ui.multiselect(
         options=["RandomForest", "XGBoost", "TabFM"],
@@ -133,13 +135,13 @@ def _():
             stats_select,
             test_size_slider,
             seed_number,
-            gsmote_toggle,
+            sampler_select,
             clf_select,
         ]
     )
     return (
         clf_select,
-        gsmote_toggle,
+        sampler_select,
         loc_select,
         seed_number,
         stats_select,
@@ -682,7 +684,8 @@ def _():
     ## Section 3 — Datasets, GSMOTE, splits and evaluation harness
 
     - `X` : all sampled feature columns | `Y` : Unhealthy is 1.
-    - GSMOTE is applied inside training folds only, on standardised features.
+    - One imbalance arm per run (Section 0 selector, POC-style): gsmote resamples inside training folds on standardised features with plain estimators; class_weighted uses train-count weights with no resampling; none uses plain estimators.
+    - Headline count metrics use a fixed 0.5 threshold. thr_best_f1, f1_U_best and recall_U_best scan a fixed grid on the test probabilities as analysis only: train-tuned F1 thresholds do not transfer because train F1 saturates at 1.0.
     - Default protocol is the honest stratified holdout + StratifiedGroupKFold over KMeans spatial blocks (low-positive blocks merged into their nearest sufficiently-positive neighbour).
     """)
     return
@@ -900,6 +903,8 @@ def _(GSMOTE_DEFAULTS, GeometricSMOTE):
         roc_auc_score,
     )
 
+    THRESHOLDS = np.round(np.arange(0.05, 0.96, 0.01), 2)
+
     def compute_metrics(y_true, y_pred, y_proba, train_time=0.0, pred_time=0.0, threshold=0.5):
         cm = confusion_matrix(y_true, y_pred)
         if cm.shape == (2, 2):
@@ -911,6 +916,11 @@ def _(GSMOTE_DEFAULTS, GeometricSMOTE):
         else:
             pos_proba = np.asarray(y_proba, dtype=float)[:, 1]
         yt = np.asarray(y_true)
+        _f1s = [f1_score(yt, (pos_proba >= t).astype(int), zero_division=0) for t in THRESHOLDS]
+        _j = int(np.nanargmax(_f1s))
+        _thr_best = float(THRESHOLDS[_j])
+        _f1_best = float(_f1s[_j])
+        _rec_best = float(recall_score(yt, (pos_proba >= _thr_best).astype(int), zero_division=0))
         return {
             "accuracy": float(accuracy_score(yt, y_pred)),
             "balanced_accuracy": float(balanced_accuracy_score(yt, y_pred)),
@@ -926,23 +936,12 @@ def _(GSMOTE_DEFAULTS, GeometricSMOTE):
             "runtime_pred_s": float(pred_time),
             "tn": tn, "fp": fp, "fn": fn, "tp": tp,
             "threshold_used": float(threshold),
+            "thr_best_f1": _thr_best,
+            "f1_U_best": _f1_best,
+            "recall_U_best": _rec_best,
         }
 
-    def find_best_threshold(y_true, y_proba):
-        if np.ndim(y_proba) == 1:
-            pos_proba = np.asarray(y_proba, dtype=float)
-        else:
-            pos_proba = np.asarray(y_proba, dtype=float)[:, 1]
-        prec_list, rec_list, thresholds = precision_recall_curve(y_true, pos_proba)
-        n = len(thresholds)
-        prec = np.asarray(prec_list[:n])
-        rec = np.asarray(rec_list[:n])
-        with np.errstate(divide="ignore", invalid="ignore"):
-            f1s = 2 * (prec * rec) / (prec + rec + 1e-12)
-        best_idx = int(np.nanargmax(f1s))
-        return float(thresholds[best_idx]), float(f1s[best_idx])
-
-    def _prepare_fold(X_tr, y_tr, X_te, use_gsmote, seed):
+    def _prepare_fold(X_tr, y_tr, X_te, sampler, seed):
         med = np.nanmedian(np.asarray(X_tr, dtype=float), axis=0)
         Xtr = np.where(np.isnan(np.asarray(X_tr, dtype=float)), med, np.asarray(X_tr, dtype=float))
         Xte = np.where(np.isnan(np.asarray(X_te, dtype=float)), med, np.asarray(X_te, dtype=float))
@@ -950,7 +949,7 @@ def _(GSMOTE_DEFAULTS, GeometricSMOTE):
         Xtr_s = scaler.fit_transform(Xtr)
         Xte_s = scaler.transform(Xte)
         _ytr = np.asarray(y_tr)
-        if use_gsmote:
+        if sampler == "gsmote":
             Xtr_s, _ytr = GeometricSMOTE(random_state=seed, **GSMOTE_DEFAULTS).fit_resample(Xtr_s, _ytr)
         return Xtr_s, _ytr, Xte_s
 
@@ -961,27 +960,26 @@ def _(GSMOTE_DEFAULTS, GeometricSMOTE):
             return _p
         return _p[:, 1]
 
-    def run_holdout(model_factory, X_tr, y_tr, X_te, y_te, use_gsmote, seed):
-        Xtr_s, ytr_s, Xte_s = _prepare_fold(X_tr, y_tr, X_te, use_gsmote, seed)
+    def run_holdout(model_factory, X_tr, y_tr, X_te, y_te, sampler, seed):
+        Xtr_s, ytr_s, Xte_s = _prepare_fold(X_tr, y_tr, X_te, sampler, seed)
         model = model_factory()
         t0 = time.time()
         model.fit(Xtr_s, ytr_s)
         train_time = time.time() - t0
-        train_proba = _proba_of(model, Xtr_s)
-        threshold, _ = find_best_threshold(ytr_s, train_proba)
+        threshold = 0.5
         t0 = time.time()
         test_proba = _proba_of(model, Xte_s)
         pred_time = time.time() - t0
         y_pred = (test_proba >= threshold).astype(int)
         return compute_metrics(np.asarray(y_te), y_pred, test_proba, train_time, pred_time, threshold)
 
-    def run_spatial_cv(model_factory, X, y, splitter, groups, use_gsmote, seed):
+    def run_spatial_cv(model_factory, X, y, splitter, groups, sampler, seed):
         Xa = np.asarray(X, dtype=float)
         ya = np.asarray(y)
         ga = np.asarray(groups)
         out = []
         for fold_idx, (tr_idx, te_idx) in enumerate(splitter.split(Xa, ya, groups=ga)):
-            m = run_holdout(model_factory, Xa[tr_idx], ya[tr_idx], Xa[te_idx], ya[te_idx], use_gsmote, seed + fold_idx)
+            m = run_holdout(model_factory, Xa[tr_idx], ya[tr_idx], Xa[te_idx], ya[te_idx], sampler, seed + fold_idx)
             m["fold"] = fold_idx
             out.append(m)
         return pd.DataFrame(out)
@@ -997,11 +995,11 @@ def _():
     New classifiers plug in through one dictionary (`CLASSIFIERS` below):
     Add an entry and it appears in the Section 0 selections, ML loop, tables and plots.
 
-    - **RandomForest**: 500 trees, train-count class weights; `tuned` config from a small `average_precision` grid search.
-    - **XGBoost**: `hist` on CUDA, `scale_pos_weight` from train counts; `tuned` config from a small grid.
+    - **RandomForest**: 500 trees, train-count class weights in the class_weighted arm only; `tuned` config from a small `average_precision` grid search.
+    - **XGBoost**: `hist` on CUDA, `scale_pos_weight` from train counts in the class_weighted arm only; `tuned` config from a small grid.
     - **TabFM**: zero-shot foundation model (`standard` and `ensemble`). Needs a Hugging Face token (input below) and loads on CUDA when available. `torch` and `tabfm` install automatically on first load only.
 
-    The GSMOTE toggle from Section 0 applies inside every training fold.
+    The Section 0 imbalance arm applies inside every training fold.
 
     Trust spatial-block CV first (honest). Holdout rows are shown only as a leakage-ceiling reference.
     """)
@@ -1095,10 +1093,10 @@ def _(RANDOM_STATE, tabfm_model, y_LOC):
         pos = int((yv == 1).sum())
         return neg / max(pos, 1)
 
-    def _rf_build(loc, params=None):
+    def _rf_build(loc, params=None, sampler="class_weighted"):
         kw = {
             "n_estimators": 500,
-            "class_weight": {0: 1.0, 1: _pos_weight(loc)},
+            "class_weight": ({0: 1.0, 1: _pos_weight(loc)} if sampler == "class_weighted" else None),
             "random_state": RANDOM_STATE,
             "n_jobs": -1,
         }
@@ -1114,13 +1112,13 @@ def _(RANDOM_STATE, tabfm_model, y_LOC):
         "max_features": ["sqrt", 0.5, 1.0],
     }
 
-    def _xgb_build(loc, params=None):
+    def _xgb_build(loc, params=None, sampler="class_weighted"):
         kw = {
             "n_estimators": 500,
             "max_depth": 6,
             "learning_rate": 0.05,
             "tree_method": "hist",
-            "scale_pos_weight": _pos_weight(loc),
+            "scale_pos_weight": (_pos_weight(loc) if sampler == "class_weighted" else 1.0),
             "eval_metric": "aucpr",
             "random_state": RANDOM_STATE,
             "n_jobs": 1,
@@ -1181,7 +1179,7 @@ def _(
     SPLITS,
     X_LOC,
     clf_select,
-    gsmote_toggle,
+    sampler_select,
     ml_button,
     run_holdout,
     run_spatial_cv,
@@ -1196,7 +1194,7 @@ def _(
     PLOTS_DIR = PROCESSED_DIR / "plots"
     for _d in (RESULTS_DIR, PLOTS_DIR):
         _d.mkdir(parents=True, exist_ok=True)
-    use_gsmote = bool(gsmote_toggle.value)
+    sampler = str(sampler_select.value)
     selected = [c for c in ("RandomForest", "XGBoost", "TabFM") if c in list(clf_select.value) and c in CLASSIFIERS]
     mo.stop(len(selected) == 0, mo.md("No runnable classifier selected. Enable one in Section 0 (XGBoost needs the package, TabFM needs its model loaded)."))
     holdout_rows = []
@@ -1222,23 +1220,23 @@ def _(
             if _model_name == "TabFM":
                 jobs = [(cfg, _spec["builders"][cfg]) for cfg in _spec["configs"]]
             else:
-                jobs = [("default", lambda _spec=_spec, _loc=_loc: _spec["build"](_loc, None))]
+                jobs = [("default", lambda _spec=_spec, _loc=_loc: _spec["build"](_loc, None, sampler))]
                 if _spec.get("grid"):
-                    gs = GridSearchCV(_spec["build"](_loc, None), _spec["grid"], cv=3, scoring="average_precision", n_jobs=_spec["gs_n_jobs"])
+                    gs = GridSearchCV(_spec["build"](_loc, None, sampler), _spec["grid"], cv=3, scoring="average_precision", n_jobs=_spec["gs_n_jobs"])
                     gs.fit(Xtr_p, ytr_a)
                     print("[" + _loc + " / " + _model_name + "] tuned params: " + str(gs.best_params_) + " (CV avg_precision " + str(round(float(gs.best_score_), 4)) + ")")
                     _best = dict(gs.best_params_)
-                    jobs.append(("tuned", lambda _spec=_spec, _loc=_loc, _best=_best: _spec["build"](_loc, _best)))
+                    jobs.append(("tuned", lambda _spec=_spec, _loc=_loc, _best=_best: _spec["build"](_loc, _best, sampler)))
             for cfg_name, factory in jobs:
-                print("[" + _loc + " / " + _model_name + " / " + cfg_name + "] holdout and spatial CV, GSMOTE=" + str(use_gsmote))
-                m = run_holdout(factory, _Xtr, _ytr, _Xte, _yte, use_gsmote, RANDOM_STATE)
-                m.update({"location": _loc, "model": _model_name, "config": cfg_name, "eval_type": "holdout", "fold": -1, "gsmote": use_gsmote})
+                print("[" + _loc + " / " + _model_name + " / " + cfg_name + "] holdout and spatial CV, sampler=" + str(sampler))
+                m = run_holdout(factory, _Xtr, _ytr, _Xte, _yte, sampler, RANDOM_STATE)
+                m.update({"location": _loc, "model": _model_name, "config": cfg_name, "eval_type": "holdout", "fold": -1, "sampler": sampler})
                 holdout_rows.append(m)
                 splitter, groups = SPATIAL_FOLDS[_loc]
-                cv_df = run_spatial_cv(factory, X_LOC[_loc], y_LOC[_loc], splitter, groups, use_gsmote, RANDOM_STATE)
+                cv_df = run_spatial_cv(factory, X_LOC[_loc], y_LOC[_loc], splitter, groups, sampler, RANDOM_STATE)
                 for _, _r in cv_df.iterrows():
                     _d = dict(_r)
-                    _d.update({"location": _loc, "model": _model_name, "config": cfg_name, "eval_type": "spatial_cv", "gsmote": use_gsmote})
+                    _d.update({"location": _loc, "model": _model_name, "config": cfg_name, "eval_type": "spatial_cv", "sampler": sampler})
                     cv_rows.append(_d)
                 try:
                     import gc as _gc
@@ -1258,14 +1256,14 @@ def _(
         sub = results_df[results_df["location"] == _loc]
         if len(sub):
             sub.to_csv(RESULTS_DIR / ("results_" + _loc + ".csv"), index=False)
-    print("Saved per-location results to " + str(RESULTS_DIR) + ", GSMOTE=" + str(use_gsmote))
+    print("Saved per-location results to " + str(RESULTS_DIR) + ", sampler=" + str(sampler))
     mo.ui.table(results_df[["location", "model", "config", "eval_type", "pr_auc", "f1_unhealthy", "recall_unhealthy", "roc_auc"]])
     return PLOTS_DIR, results_df
 
 
 @app.cell(hide_code=True)
 def _(results_df, y_LOC):
-    DISPLAY_COLS = ["pr_auc", "f1_unhealthy", "recall_unhealthy", "precision_unhealthy", "roc_auc", "f1_macro", "balanced_accuracy"]
+    DISPLAY_COLS = ["pr_auc", "f1_unhealthy", "recall_unhealthy", "precision_unhealthy", "roc_auc", "f1_macro", "balanced_accuracy", "thr_best_f1", "f1_U_best", "recall_U_best"]
     _tabs = {}
     for _loc in sorted(results_df["location"].unique()):
         _yv = np.asarray(y_LOC[_loc])
