@@ -3,6 +3,8 @@ data/SAR-scenes
 data/SHPs
 data/ZIPs
 
+.claude
+
 .env
 
 __pycache__/

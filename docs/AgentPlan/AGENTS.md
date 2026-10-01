@@ -1,8 +1,8 @@
 ## Project Introduction
 This postgraduate project is **Oil Palm Disease Classification project using SAR (Synthetic Aperture Radar) imagery.**
 
-The goal is to classify disease status in oil palm trees - distinguishing `Healthy` from `Unhealthy` - using values derived ALOS PALSAR-2 L-band data. This includes (not limited to) 4-Bands Backscatter intensity (VV, VH, HH, HV), Yamaguchi | H-Alpha decomposition, Vegetation Index, and much more. 
-
+The goal is to classify disease status in oil palm trees - distinguishing `Healthy` from `Unhealthy` - using values derived from commercial ALOS PALSAR-2 L-band data, up to 6m in pixel resolution. Derived values include (but not limited to) 4-Bands Backscatter intensity (VV, VH, HH, HV), Yamaguchi | H-Alpha decomposition, Vegetation Index, and much more. Additional public/private datasets from different sources (Optical, SAR, Indexies) are welcomed 
+ 
 Key challenges include small-to-medium dataset size (samples in the thousands) and expected severe class imbalance between infected and non-infected trees.
 
 The target is not to get perfect accuracy (or positive rate) in detecting Unhealthy oil palm tree, instead it is to detect majority of the Unhealthy tree/area, while keeping false positive rate (Healthy  being labeled as Unhealthy) reasonable. The results from this project serves as a guide for the downstream (An Polarized Imagery-based, on-site automated detection system ; Out of current scope) that does the final classification.
