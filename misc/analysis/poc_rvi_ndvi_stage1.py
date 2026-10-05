@@ -35,7 +35,7 @@ sns.set_style("whitegrid")
 HERE = Path(__file__).resolve().parent
 OUT = HERE.parents[1] / 'misc' / 'POC_Results' / 'RVI_NDVI'
 OUT.mkdir(parents=True, exist_ok=True)
-SRC = Path("data/Processed/sampled_AirHitam_w3_mean_std_min_max_p25_p50.csv")
+SRC = HERE.parents[1] / "misc" / "POC_Results" / "RVI_NDVI" / "airhitam_intensity_new.csv"  # re-exported scene (no aggressive ML), via stage0
 assert SRC.exists(), f"missing sampled dataset: {SRC}"
 
 HEALTHY, UNHEALTHY = "Healthy", "Unhealthy"
@@ -152,5 +152,6 @@ fig.savefig(OUT / "fig_rvi_roc.png", dpi=150, bbox_inches="tight")
 plt.close(fig)
 
 print("artifacts written to", OUT)
+
 
 

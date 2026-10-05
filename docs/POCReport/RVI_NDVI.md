@@ -29,7 +29,8 @@ This is the first positive evidence for backlog item 4 (optical complement)
 in `docs/AgentPlan/MainChecklist.md`, and it closes the "RVI rescue" branch:
 no further RVI variants are warranted.
 
-## Data & method
+
+## Data & Method
 
 - **SAR:** 
   - `ALOS2-Subset_AirHitam_260610_Cal_ML_Spk_TC.tif` ([HH, HV, VH, VV], EPSG:32648, 6.43 m; Scene date 2026-06-10)
@@ -38,12 +39,10 @@ no further RVI variants are warranted.
 ( T11, T12re/im, T13re/im, T22, T23re/im, T33, EPSG:4326)
   - Per-tree 3x3 means
   - RVI variants:
-
     - RVI_classic: `8HV/(HH+VV+2HV)`
     - RVI_xavg: Cross-pol averaged)
-
     - RVI_hh: `4HV/(HH+HV)`, RVI_vv: `4VH/(VV+VH)`
-    - `RFDI`
+    - RFDI
     - Eigenvalue quad-pol RVI, RVI_qp: `4lam3/span` ; from per-tree mean-T3
 (eigen-decomposition | 2511/2511 windows sampled)
     
@@ -77,6 +76,25 @@ no further RVI variants are warranted.
 | **NDVI only** | **0.144 / 0.66** | **0.133 / 0.65** |
 | RVI+NDVI | 0.142 / 0.65 | 0.132 / 0.65 |
 | RVI+NDVI+HV | 0.146 / 0.65 | 0.135 / 0.65 |
+  
+  
+### Rerun on non-multilook scenes \The intensity scene was re-exported without aggressive multilooking
+
+
+(`ALOS2-Subset_AirHitam_260610_Cal_Spk_TC.tif`: 4 bands [HH, HV, VH, VV],
+EPSG:4326, ~5.1 m grid, 444x578, coregistered with the T3 subset; 3x3 ~ 15 m
+vs ~19 m before
+| Feature | old d | new d | new p | new PR lift | changed? |
+|---|---:|---:|---:|---:|---|
+| RVI_classic | -0.04 | -0.09 | 0.56 | +0.018 | no (still null) |
+| RVI_xavg | -0.01 | -0.04 | 0.91 | +0.013 | no |
+| RVI_qp | -0.01 | -0.01 | 0.89 | +0.000 | no (identical) |
+| HV | -0.34 | -0.32 | 2.9e-6 | +0.044 | no |
+| NDVI | -0.51 | -0.51 | 3.6e-11 | +0.066 | no (same GEE pull) |
+| RVI+NDVI spatial PR | 0.132 | 0.132 | - | - | no |
+
+Unsmoothed backscatter does not rescue RVI - the ratio-cancellation mechanism
+is independent of speckle filtering/multilooking. All verdicts stand.
 
 ### Results (`misc/POC_Results/RVI_NDVI/`)
 
@@ -99,6 +117,7 @@ no further RVI variants are warranted.
 
 ## Artifacts
 
+- `misc/analysis/poc_rvi_ndvi_stage0_resample.py` - 3x3 resampling from (re-exported) scene
 - `misc/analysis/poc_rvi_ndvi_stage1.py` - intensity RVI stats
 - `misc/analysis/poc_rvi_ndvi_stage1b_quadpol.py` - T3 sampling + eigenvalue RVI
 - `misc/analysis/poc_rvi_ndvi_stage2_gee.py` - GEE pull (needs SA + role above)
