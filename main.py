@@ -141,8 +141,8 @@ def _():
     )
     return (
         clf_select,
-        sampler_select,
         loc_select,
+        sampler_select,
         seed_number,
         stats_select,
         test_size_slider,
@@ -165,23 +165,23 @@ def _(loc_select, seed_number, test_size_slider, window_slider):
         "AirHitam": {
             "year": 2026,
             "label": "AirHitam-Classification_2026.csv",
-            "prefix": "ALOS2-Subset_AirHitam_260610_Cal_ML_Spk",
+            "prefix": "ALOS2-Subset_AirHitam_260610_Cal",
         },
         "Serting": {
             "year": 2022,
             "label": "Serting-Classification_2022.csv",
-            "prefix": "ALOS2-Subset_Serting_260610_Cal_ML_Spk",
+            "prefix": "ALOS2-Subset_Serting_260610_Cal",
         },
         "Palong": {
             "year": 2022,
             "label": "Palong-Classification_2022.csv",
-            "prefix": "ALOS2-Subset_Palong_260610_Cal_ML_Spk",
+            "prefix": "ALOS2-Subset_Palong_260610_Cal",
         },
     }
     SCENE_PRODUCTS = {
-        "intensity": "_TC.tif",
-        "halpha": "_HAlphaDecomp_TC.tif",
-        "yama": "_YamaDecomp_TC.tif",
+        "intensity": "_Spk_TC.tif",
+        "halpha": "_mat_HAlpha_Spk_TC.tif",
+        "yama": "_mat_Yamaguchi_Spk_TC.tif",
     }
 
     # Positional band order: subset GeoTIFFs carry no band names, so the order
@@ -1179,10 +1179,10 @@ def _(
     SPLITS,
     X_LOC,
     clf_select,
-    sampler_select,
     ml_button,
     run_holdout,
     run_spatial_cv,
+    sampler_select,
     tabfm_model,
     y_LOC,
 ):
