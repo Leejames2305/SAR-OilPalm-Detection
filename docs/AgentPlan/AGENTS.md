@@ -1,21 +1,21 @@
 ## Project Introduction
 This postgraduate project is **Oil Palm Disease Classification project using SAR (Synthetic Aperture Radar) imagery.**
 
-The goal is to classify disease status in oil palm trees - distinguishing `Healthy` from `Unhealthy` - using values derived from commercial ALOS PALSAR-2 L-band data, up to 6m in pixel resolution. Derived values include (but not limited to) 4-Bands Backscatter intensity (VV, VH, HH, HV), Yamaguchi | H-Alpha decomposition, Vegetation Index, and much more. Additional public/private datasets from different sources (Optical, SAR, Indexies) are welcomed 
+The goal is to classify disease status in oil palm trees - distinguishing `Healthy` from `Unhealthy` - using values derived from commercial ALOS PALSAR-2 L-band data, up to 6m in pixel resolution. Derived values include (but not limited to) 4-Bands Backscatter intensity (VV, VH, HH, HV), Yamaguchi | H-Alpha decomposition, Vegetation Index, and much more. Additional public/private datasets from different sources (Optical, SAR, Indexies) are welcomed. 
  
-Key challenges include small-to-medium dataset size (samples in the thousands) and expected severe class imbalance between infected and non-infected trees.
+Key challenges include small-to-medium dataset size (samples in the thousands) and expected severe class imbalance between infected and non-infected trees. On top of that, it should be noted that the labels from both Palong and Serting are prediction derived, only AirHitam is fully one-to-one ground truth.
 
 The target is not to get perfect accuracy (or positive rate) in detecting Unhealthy oil palm tree, instead it is to detect majority of the Unhealthy tree/area, while keeping false positive rate (Healthy  being labeled as Unhealthy) reasonable. The results from this project serves as a guide for the downstream (An Polarized Imagery-based, on-site automated detection system ; Out of current scope) that does the final classification.
 
 
 ## Project Structure
-Due to limitation in local compute power, compute-intensive notebooks (Extracting SAR data, ML modeling, ...) are all designed to run on Google Colab.  
+Due to limitation in local compute power, compute-intensive notebooks (Extracting SAR data, ML modeling, ...) are all designed to run on remote instances such as Molab (Marimo).  
 
 Key things about current project structure:
 - `./data`: Contains clean datasets that is either freshly extracted, or filtered
 - `./docs`: Contains status logs, POC findings, and planned actions
 - `./misc/notebook`: Contains drafts' notebook, mostly for POC purpose
-- `./misc/POC_Results`: Contains results/artifacts collected from POC runs (local & Colab)
+- `./misc/POC_Results`: Contains results/artifacts collected from POC runs
 - `./misc/scripts`: Useful tools/scripts that helps process datasets
 - `*.ipynb`: Main notebook that will only be updated when POC shows promising direction
 
