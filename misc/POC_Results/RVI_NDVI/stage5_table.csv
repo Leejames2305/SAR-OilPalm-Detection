@@ -1,0 +1,26 @@
+protocol,info,set,pr,roc
+random,leakage ceiling (no spatial constraint),NDVI_only,0.142,0.6572
+random,leakage ceiling (no spatial constraint),+rededge_SWIR,0.1517,0.6702
+random,leakage ceiling (no spatial constraint),+SARlvl,0.1568,0.662
+random,leakage ceiling (no spatial constraint),+RVI,0.1642,0.6652
+random,leakage ceiling (no spatial constraint),ALL_SAR,0.1213,0.5952
+K100,"25 trees/block, ~38 m diameter, pos/block median 1",NDVI_only,0.144,0.662
+K100,"25 trees/block, ~38 m diameter, pos/block median 1",+rededge_SWIR,0.157,0.6761
+K100,"25 trees/block, ~38 m diameter, pos/block median 1",+SARlvl,0.1591,0.6733
+K100,"25 trees/block, ~38 m diameter, pos/block median 1",+RVI,0.1648,0.6797
+K100,"25 trees/block, ~38 m diameter, pos/block median 1",ALL_SAR,0.1312,0.5957
+K50,"50 trees/block, ~59 m diameter, pos/block median 3",NDVI_only,0.142,0.6577
+K50,"50 trees/block, ~59 m diameter, pos/block median 3",+rededge_SWIR,0.1567,0.6789
+K50,"50 trees/block, ~59 m diameter, pos/block median 3",+SARlvl,0.1591,0.6622
+K50,"50 trees/block, ~59 m diameter, pos/block median 3",+RVI,0.1749,0.6688
+K50,"50 trees/block, ~59 m diameter, pos/block median 3",ALL_SAR,0.1153,0.5903
+K15,"167 trees/block, ~110 m diameter, pos/block median 8",NDVI_only,0.133,0.6531
+K15,"167 trees/block, ~110 m diameter, pos/block median 8",+rededge_SWIR,0.1451,0.6804
+K15,"167 trees/block, ~110 m diameter, pos/block median 8",+SARlvl,0.1449,0.6676
+K15,"167 trees/block, ~110 m diameter, pos/block median 8",+RVI,0.145,0.6658
+K15,"167 trees/block, ~110 m diameter, pos/block median 8",ALL_SAR,0.1251,0.5813
+K5,"502 trees/block, ~212 m diameter, pos/block median 25",NDVI_only,0.1294,0.6314
+K5,"502 trees/block, ~212 m diameter, pos/block median 25",+rededge_SWIR,0.1231,0.6433
+K5,"502 trees/block, ~212 m diameter, pos/block median 25",+SARlvl,0.1203,0.6225
+K5,"502 trees/block, ~212 m diameter, pos/block median 25",+RVI,0.1247,0.6324
+K5,"502 trees/block, ~212 m diameter, pos/block median 25",ALL_SAR,0.1207,0.5969

@@ -1,0 +1,205 @@
+{
+  "pos_rate": 0.0637,
+  "rows": [
+    {
+      "set": "NDVI_only",
+      "model": "logreg",
+      "rand_pr": 0.142,
+      "rand_roc": 0.6572,
+      "spat_pr": 0.133,
+      "spat_roc": 0.6531,
+      "spat_r10": 0.241,
+      "spat_r25": 0.454
+    },
+    {
+      "set": "NDVI_only",
+      "model": "rf",
+      "rand_pr": 0.0941,
+      "rand_roc": 0.5405,
+      "spat_pr": 0.0797,
+      "spat_roc": 0.5178,
+      "spat_r10": 0.134,
+      "spat_r25": 0.274
+    },
+    {
+      "set": "NDVI_only",
+      "model": "xgb",
+      "rand_pr": 0.114,
+      "rand_roc": 0.5797,
+      "spat_pr": 0.0938,
+      "spat_roc": 0.5521,
+      "spat_r10": 0.197,
+      "spat_r25": 0.319
+    },
+    {
+      "set": "NDVI_only",
+      "model": "mlp",
+      "rand_pr": 0.0493,
+      "rand_roc": 0.3427,
+      "spat_pr": 0.0479,
+      "spat_roc": 0.3469,
+      "spat_r10": 0.048,
+      "spat_r25": 0.12
+    },
+    {
+      "set": "NDVI+B",
+      "model": "logreg",
+      "rand_pr": 0.1411,
+      "rand_roc": 0.6508,
+      "spat_pr": 0.1319,
+      "spat_roc": 0.6476,
+      "spat_r10": 0.235,
+      "spat_r25": 0.436
+    },
+    {
+      "set": "NDVI+B",
+      "model": "rf",
+      "rand_pr": 0.1348,
+      "rand_roc": 0.5754,
+      "spat_pr": 0.1223,
+      "spat_roc": 0.5619,
+      "spat_r10": 0.185,
+      "spat_r25": 0.351
+    },
+    {
+      "set": "NDVI+B",
+      "model": "xgb",
+      "rand_pr": 0.1387,
+      "rand_roc": 0.6013,
+      "spat_pr": 0.1081,
+      "spat_roc": 0.5834,
+      "spat_r10": 0.144,
+      "spat_r25": 0.334
+    },
+    {
+      "set": "NDVI+B",
+      "model": "mlp",
+      "rand_pr": 0.0909,
+      "rand_roc": 0.5151,
+      "spat_pr": 0.085,
+      "spat_roc": 0.4922,
+      "spat_r10": 0.146,
+      "spat_r25": 0.286
+    },
+    {
+      "set": "+SARlvl",
+      "model": "logreg",
+      "rand_pr": 0.144,
+      "rand_roc": 0.6315,
+      "spat_pr": 0.1329,
+      "spat_roc": 0.6328,
+      "spat_r10": 0.235,
+      "spat_r25": 0.407
+    },
+    {
+      "set": "+SARlvl",
+      "model": "rf",
+      "rand_pr": 0.1475,
+      "rand_roc": 0.6352,
+      "spat_pr": 0.124,
+      "spat_roc": 0.6062,
+      "spat_r10": 0.21,
+      "spat_r25": 0.402
+    },
+    {
+      "set": "+SARlvl",
+      "model": "xgb",
+      "rand_pr": 0.1411,
+      "rand_roc": 0.6084,
+      "spat_pr": 0.1091,
+      "spat_roc": 0.5845,
+      "spat_r10": 0.217,
+      "spat_r25": 0.38
+    },
+    {
+      "set": "+SARlvl",
+      "model": "mlp",
+      "rand_pr": 0.0789,
+      "rand_roc": 0.4843,
+      "spat_pr": 0.0792,
+      "spat_roc": 0.4638,
+      "spat_r10": 0.107,
+      "spat_r25": 0.23
+    },
+    {
+      "set": "+RVI",
+      "model": "logreg",
+      "rand_pr": 0.1506,
+      "rand_roc": 0.6328,
+      "spat_pr": 0.1396,
+      "spat_roc": 0.638,
+      "spat_r10": 0.237,
+      "spat_r25": 0.408
+    },
+    {
+      "set": "+RVI",
+      "model": "rf",
+      "rand_pr": 0.1494,
+      "rand_roc": 0.6378,
+      "spat_pr": 0.122,
+      "spat_roc": 0.6107,
+      "spat_r10": 0.206,
+      "spat_r25": 0.39
+    },
+    {
+      "set": "+RVI",
+      "model": "xgb",
+      "rand_pr": 0.1277,
+      "rand_roc": 0.5945,
+      "spat_pr": 0.0964,
+      "spat_roc": 0.5819,
+      "spat_r10": 0.185,
+      "spat_r25": 0.378
+    },
+    {
+      "set": "+RVI",
+      "model": "mlp",
+      "rand_pr": 0.0616,
+      "rand_roc": 0.4308,
+      "spat_pr": 0.0644,
+      "spat_roc": 0.426,
+      "spat_r10": 0.091,
+      "spat_r25": 0.191
+    },
+    {
+      "set": "ALL_SAR",
+      "model": "logreg",
+      "rand_pr": 0.1251,
+      "rand_roc": 0.5908,
+      "spat_pr": 0.1404,
+      "spat_roc": 0.5882,
+      "spat_r10": 0.14,
+      "spat_r25": 0.366
+    },
+    {
+      "set": "ALL_SAR",
+      "model": "rf",
+      "rand_pr": 0.11,
+      "rand_roc": 0.5692,
+      "spat_pr": 0.0951,
+      "spat_roc": 0.5432,
+      "spat_r10": 0.167,
+      "spat_r25": 0.347
+    },
+    {
+      "set": "ALL_SAR",
+      "model": "xgb",
+      "rand_pr": 0.0848,
+      "rand_roc": 0.5249,
+      "spat_pr": 0.0719,
+      "spat_roc": 0.5148,
+      "spat_r10": 0.077,
+      "spat_r25": 0.275
+    },
+    {
+      "set": "ALL_SAR",
+      "model": "mlp",
+      "rand_pr": 0.0663,
+      "rand_roc": 0.4656,
+      "spat_pr": 0.0677,
+      "spat_roc": 0.4607,
+      "spat_r10": 0.073,
+      "spat_r25": 0.233
+    }
+  ]
+}

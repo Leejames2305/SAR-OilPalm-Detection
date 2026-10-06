@@ -1,0 +1,180 @@
+{
+  "pos_rate": 0.0637,
+  "rows": [
+    {
+      "protocol": "random",
+      "info": "leakage ceiling (no spatial constraint)",
+      "set": "NDVI_only",
+      "pr": 0.142,
+      "roc": 0.6572
+    },
+    {
+      "protocol": "random",
+      "info": "leakage ceiling (no spatial constraint)",
+      "set": "+rededge_SWIR",
+      "pr": 0.1517,
+      "roc": 0.6702
+    },
+    {
+      "protocol": "random",
+      "info": "leakage ceiling (no spatial constraint)",
+      "set": "+SARlvl",
+      "pr": 0.1568,
+      "roc": 0.662
+    },
+    {
+      "protocol": "random",
+      "info": "leakage ceiling (no spatial constraint)",
+      "set": "+RVI",
+      "pr": 0.1642,
+      "roc": 0.6652
+    },
+    {
+      "protocol": "random",
+      "info": "leakage ceiling (no spatial constraint)",
+      "set": "ALL_SAR",
+      "pr": 0.1213,
+      "roc": 0.5952
+    },
+    {
+      "protocol": "K100",
+      "info": "25 trees/block, ~38 m diameter, pos/block median 1",
+      "set": "NDVI_only",
+      "pr": 0.144,
+      "roc": 0.662
+    },
+    {
+      "protocol": "K100",
+      "info": "25 trees/block, ~38 m diameter, pos/block median 1",
+      "set": "+rededge_SWIR",
+      "pr": 0.157,
+      "roc": 0.6761
+    },
+    {
+      "protocol": "K100",
+      "info": "25 trees/block, ~38 m diameter, pos/block median 1",
+      "set": "+SARlvl",
+      "pr": 0.1591,
+      "roc": 0.6733
+    },
+    {
+      "protocol": "K100",
+      "info": "25 trees/block, ~38 m diameter, pos/block median 1",
+      "set": "+RVI",
+      "pr": 0.1648,
+      "roc": 0.6797
+    },
+    {
+      "protocol": "K100",
+      "info": "25 trees/block, ~38 m diameter, pos/block median 1",
+      "set": "ALL_SAR",
+      "pr": 0.1312,
+      "roc": 0.5957
+    },
+    {
+      "protocol": "K50",
+      "info": "50 trees/block, ~59 m diameter, pos/block median 3",
+      "set": "NDVI_only",
+      "pr": 0.142,
+      "roc": 0.6577
+    },
+    {
+      "protocol": "K50",
+      "info": "50 trees/block, ~59 m diameter, pos/block median 3",
+      "set": "+rededge_SWIR",
+      "pr": 0.1567,
+      "roc": 0.6789
+    },
+    {
+      "protocol": "K50",
+      "info": "50 trees/block, ~59 m diameter, pos/block median 3",
+      "set": "+SARlvl",
+      "pr": 0.1591,
+      "roc": 0.6622
+    },
+    {
+      "protocol": "K50",
+      "info": "50 trees/block, ~59 m diameter, pos/block median 3",
+      "set": "+RVI",
+      "pr": 0.1749,
+      "roc": 0.6688
+    },
+    {
+      "protocol": "K50",
+      "info": "50 trees/block, ~59 m diameter, pos/block median 3",
+      "set": "ALL_SAR",
+      "pr": 0.1153,
+      "roc": 0.5903
+    },
+    {
+      "protocol": "K15",
+      "info": "167 trees/block, ~110 m diameter, pos/block median 8",
+      "set": "NDVI_only",
+      "pr": 0.133,
+      "roc": 0.6531
+    },
+    {
+      "protocol": "K15",
+      "info": "167 trees/block, ~110 m diameter, pos/block median 8",
+      "set": "+rededge_SWIR",
+      "pr": 0.1451,
+      "roc": 0.6804
+    },
+    {
+      "protocol": "K15",
+      "info": "167 trees/block, ~110 m diameter, pos/block median 8",
+      "set": "+SARlvl",
+      "pr": 0.1449,
+      "roc": 0.6676
+    },
+    {
+      "protocol": "K15",
+      "info": "167 trees/block, ~110 m diameter, pos/block median 8",
+      "set": "+RVI",
+      "pr": 0.145,
+      "roc": 0.6658
+    },
+    {
+      "protocol": "K15",
+      "info": "167 trees/block, ~110 m diameter, pos/block median 8",
+      "set": "ALL_SAR",
+      "pr": 0.1251,
+      "roc": 0.5813
+    },
+    {
+      "protocol": "K5",
+      "info": "502 trees/block, ~212 m diameter, pos/block median 25",
+      "set": "NDVI_only",
+      "pr": 0.1294,
+      "roc": 0.6314
+    },
+    {
+      "protocol": "K5",
+      "info": "502 trees/block, ~212 m diameter, pos/block median 25",
+      "set": "+rededge_SWIR",
+      "pr": 0.1231,
+      "roc": 0.6433
+    },
+    {
+      "protocol": "K5",
+      "info": "502 trees/block, ~212 m diameter, pos/block median 25",
+      "set": "+SARlvl",
+      "pr": 0.1203,
+      "roc": 0.6225
+    },
+    {
+      "protocol": "K5",
+      "info": "502 trees/block, ~212 m diameter, pos/block median 25",
+      "set": "+RVI",
+      "pr": 0.1247,
+      "roc": 0.6324
+    },
+    {
+      "protocol": "K5",
+      "info": "502 trees/block, ~212 m diameter, pos/block median 25",
+      "set": "ALL_SAR",
+      "pr": 0.1207,
+      "roc": 0.5969
+    }
+  ]
+}

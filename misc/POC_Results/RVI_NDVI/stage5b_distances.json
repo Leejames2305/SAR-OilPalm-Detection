@@ -1,0 +1,32 @@
+{
+  "random": {
+    "median_m": 8.5,
+    "mean_m": 8.5,
+    "pct_within_20m": 1.0,
+    "pct_within_50m": 1.0
+  },
+  "K100": {
+    "median_m": 22.9,
+    "mean_m": 23.8,
+    "pct_within_20m": 0.409,
+    "pct_within_50m": 0.961
+  },
+  "K50": {
+    "median_m": 23.9,
+    "mean_m": 28.3,
+    "pct_within_20m": 0.36,
+    "pct_within_50m": 0.91
+  },
+  "K15": {
+    "median_m": 51.8,
+    "mean_m": 57.3,
+    "pct_within_20m": 0.166,
+    "pct_within_50m": 0.495
+  },
+  "K5": {
+    "median_m": 113.1,
+    "mean_m": 118.9,
+    "pct_within_20m": 0.051,
+    "pct_within_50m": 0.176
+  }
+}
