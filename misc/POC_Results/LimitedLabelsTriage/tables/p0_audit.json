@@ -1,0 +1,61 @@
+{
+  "n_labels": 2511,
+  "n_joined_raw": 2511,
+  "n_final": 2511,
+  "n_healthy": 2351,
+  "n_unhealthy": 160,
+  "pos_rate": 0.06372,
+  "extent_m": {
+    "lon_min": 102.431326,
+    "lon_max": 102.440552,
+    "lat_min": 2.944913,
+    "lat_max": 2.949334,
+    "span_x_m": 1025.679906712845,
+    "span_y_m": 492.14571999997133
+  },
+  "median_split": {
+    "lon": 102.436489,
+    "lat": 2.947234
+  },
+  "quadrants": {
+    "SW": {
+      "n": 586,
+      "pos": 63
+    },
+    "NW": {
+      "n": 671,
+      "pos": 33
+    },
+    "SE": {
+      "n": 670,
+      "pos": 40
+    },
+    "NE": {
+      "n": 584,
+      "pos": 24
+    }
+  },
+  "ndvi_missing": 0,
+  "ndvi_range": [
+    0.6430260047281324,
+    0.8858916209119122
+  ],
+  "clear_count_range": [
+    20.0,
+    29.0
+  ],
+  "spec_missing": {
+    "NDVI": 0,
+    "NDRE5": 0,
+    "NDRE6": 0,
+    "NDRE7": 0,
+    "EVI": 0,
+    "NDMI": 0
+  },
+  "frozen_sources": [
+    "airhitam_rvi_features.csv",
+    "airhitam_ndvi.csv",
+    "airhitam_rvi_quadpol.csv",
+    "airhitam_spectral.csv"
+  ]
+}
