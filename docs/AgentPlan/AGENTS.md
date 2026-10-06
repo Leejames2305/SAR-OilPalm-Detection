@@ -7,7 +7,7 @@ Key challenges include small-to-medium dataset size (samples in the thousands) a
 
 The target is not to get perfect accuracy (or positive rate) in detecting Unhealthy oil palm tree, instead it is to detect majority of the Unhealthy tree/area, while keeping false positive rate (Healthy  being labeled as Unhealthy) reasonable. The results from this project serves as a guide for the downstream (An Polarized Imagery-based, on-site automated detection system ; Out of current scope) that does the final classification. 
 
-Decided product shape so-far being corner-trained in-estate triage, which the owner labels corner(s) of their estate and the model screens the rest.
+Decided product shape so-far being modelling in a small portion of the entire field (~1000s of Ground Truth), and then the trained model predicts the rest (>90% area left) of the unlabeled field. 
 
 ## Project Structure
 Due to limitation in local compute power, compute-intensive notebooks (Extracting SAR data, ML modeling, ...) are all designed to run on remote instances such as Molab (Marimo).  

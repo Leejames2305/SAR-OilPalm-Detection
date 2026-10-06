@@ -62,8 +62,8 @@ This file is a **terse index only**. It shows what is already settled, what must
   ratios and eigenvalue quad-pol RVI are coin flips (|d|<=0.09, ROC~0.50);
   ratio normalisation cancels the proportional brightness shift.
   Temporal NDVI (+/-90 d slope/delta) is also null.
-- **Corner deployment works in principle (AirHitam):** train-one-quadrant /the spatial gap costs ~nothing. Corner lottery is real (0.083-0.148 by
-  corner); at corner sizes NDVI-only beats +rededge (overfit).
+- **Corner training:**
+  Train-one-quadrant /the spatial gap costs ~nothing. Corner lottery is real (0.083-0.148 by  corner); at corner sizes NDVI-only beats +rededge (overfit).
 
 
 ## B. Dead ends so far
@@ -140,7 +140,7 @@ This file is a **terse index only**. It shows what is already settled, what must
 
 ## D. Open decisions (block planning until resolved)
 
-- [x] **What is the intended use?** Corner-trained, the model predict on rest of the field. Spectral-only features (no coordinates)
+- [x] **What is the intended use?** Decided product shape so-far being modelling in a small portion of the entire field (~1000s of Ground Truth), and then the trained model predicts the rest (>90% area left) of the unlabeled field. 
 - [ ] **What is the target unit?** per-tree binary vs severity regression vs hotspot / plot map.
 - [ ] **Is a precision floor or a recall floor acceptable?** Needed to define the acceptance bar
   for a triage tool. Express it as top-k / top-x% review budget, not only as a probability threshold.
