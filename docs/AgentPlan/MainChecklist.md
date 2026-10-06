@@ -1,5 +1,5 @@
 # Agent Plan - Main Checklist
-**Last updated: 14th September 2026 - After PathForwardTrials POC**
+**Last updated: 6th October 2026 - After RVI_NDVI POC (Stages 0-7)**
 
 Read the POC reports @ `docs/POCReport/...` first, before planning anything:
 1. PathForwardTrials.md - latest cross-path trial + verdict (start here)
@@ -54,6 +54,16 @@ This file is a **terse index only**. It shows what is already settled, what must
 - **Labels are strongly spatially clustered:** the probability that a Unhealthy tree's 10 nearest
   neighbours are Unhealthy was 0.119 / 0.336 / 0.255, versus 0.060 / 0.060 / 0.070 for Healthy trees.
 - **Location independent:** each location is currently modelled fully independently.
+- **Optical NDVI is the first robust non-spatial signal (AirHitam):** d=-0.51,
+  p=3.6e-11, PR-AUC 0.130 vs 0.064 prevalence, ROC 0.65; survives spatial-block
+  CV (0.133/0.653) and the full random->K5 leakage gradient (0.142->0.129).
+  +rededge/SWIR (NDRE5/6, NDMI) gives a small agreed lift (spatial PR 0.145).
+- **RVI is closed (both families, smoothed and unsmoothed scenes):** dual-pol
+  ratios and eigenvalue quad-pol RVI are coin flips (|d|<=0.09, ROC~0.50);
+  ratio normalisation cancels the proportional brightness shift.
+  Temporal NDVI (+/-90 d slope/delta) is also null.
+- **Corner deployment works in principle (AirHitam):** train-one-quadrant /the spatial gap costs ~nothing. Corner lottery is real (0.083-0.148 by
+  corner); at corner sizes NDVI-only beats +rededge (overfit).
 
 
 ## B. Dead ends so far
@@ -90,52 +100,47 @@ This file is a **terse index only**. It shows what is already settled, what must
 - [!] **Threshold tuning to rescue recall.** Enrichment over random is **0.87x-1.25x** at every
   F1-optimal point. Lowering the threshold is not a model improvement.
 - [!] **Reporting `accuracy`.** 0.93 is achievable by predicting "Healthy" for every tree.
-
+- [!] **RVI family incl. eigenvalue quad-pol, smoothed or unsmoothed scenes.**
+  Null in every formulation; unsmoothed re-export changes nothing.
+- [!] **Temporal NDVI (+/-90 d slope/delta) as the change signal.** All null;
+  oil palm is stable over this window.
 
 ## C. Open backlog - ranked by expected value
 
-- [ ] **1. In-estate spatial decision-support prototype (only if triage is the product).**
-  Use confirmed labels + tree geometry + SAR features; evaluate with broad leave-region-out and
-  report recall / enrichment at fixed review budgets. Test explicitly whether SAR adds value over
-  coordinates and label context, and define the maximum acceptable review budget first.
 
-- [ ] **2. Multi-temporal / change SAR (2+ dates per estate).**
+- [ ] **1. Multi-temporal / change SAR (2+ dates per estate).**
   Plant-stress signature is a *change* response, not an absolute level. This is the highest-value
   data change if a transferable or new-estate classifier is still required.
 
-- [ ] **3. Window statistics (`winstats`) on the multi-estate dataset.**
+- [ ] **2. Window statistics (`winstats`) on the multi-estate dataset.**
   The older 78-feature Palong run found `_max` / `_min` / percentile window statistics were the
   dominant SAR family, but the current `dataset_all_estates.csv` is mean-only. Re-run them under
   the same repeated block and broad-region protocols. Do not confuse them with the local residual
   features already tested in `PathForwardTrials.md`.
 
-- [ ] **4. Optical complement (Sentinel-2 NDVI / NDWI), per tree or per block.**
-  SAR alone is a weak disease proxy; SAR + optical fusion is a standard fix. Use only if suitable
-  dates and spatially aligned canopies are available.
 
-- [ ] **5. Aggregate the target to plot / row / cell level or severity.**
+- [x] **3. Optical complement (Sentinel-2 NDVI / NDWI), per tree or per block.**
+  First evidence in: AirHitam NDVI d=-0.51, rededge/SWIR lift to 0.145. 
+
+
+- [ ] **4. Aggregate the target to plot / row / cell level or severity.**
   Cell-level hotspot aggregation reached ROC 0.62-0.80 within-estate where per-tree spatial CV
   fails [`PipelineAudit.md` Sec 2E, n=15 cells] - treat as headroom. The spatial-fusion result
   points in the same broad direction.
 
-- [ ] **6. More estates as LOCO validation folds** (target >= 4-5, varied age / soil).
+- [ ] **5. More estates as LOCO validation folds** (target >= 4-5, varied age / soil).
   More *validation*, not more features.
 
-- [ ] **7. Resolution / geometry.** Finer SAR (~1-3 m) and snap samples to canopy centroid rather
+- [ ] **6. Resolution / geometry.** Finer SAR (~1-3 m) and snap samples to canopy centroid rather
   than trunk coordinate so the window sits on the crown.
 
-- [ ] **8. Re-examine `Middle` as a severity / transition class for a regression or ordinal target**
+- [ ] **7. Re-examine `Middle` as a severity / transition class for a regression or ordinal target**
   (not as a classifier class - see Section B).
 
 
 ## D. Open decisions (block planning until resolved)
 
-- [ ] **What is the intended use?** This determines the CV protocol and the metric.
-  - *Cross-estate transfer* -> current data is not sufficient; prioritise multi-temporal, optical,
-    more estates, and canopy-centred sampling rather than another classifier.
-  - *In-estate triage aid* -> spatial context is legitimate and currently the only promising route,
-    but it is not yet deployable: review budgets for 50% recall are high, and SAR's increment over
-    coordinates is modest.
+- [x] **What is the intended use?** Corner-trained, the model predict on rest of the field. Spectral-only features (no coordinates)
 - [ ] **What is the target unit?** per-tree binary vs severity regression vs hotspot / plot map.
 - [ ] **Is a precision floor or a recall floor acceptable?** Needed to define the acceptance bar
   for a triage tool. Express it as top-k / top-x% review budget, not only as a probability threshold.
@@ -166,3 +171,7 @@ This file is a **terse index only**. It shows what is already settled, what must
 | `misc/POC_Results` | Artifacts from POCs |
 | `main.ipynb` | Original pipeline (outdated - random CV) |
 | `docs/POCReport/` | All findings so far |
+
+
+
+

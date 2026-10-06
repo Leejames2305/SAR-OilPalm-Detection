@@ -5,8 +5,9 @@ The goal is to classify disease status in oil palm trees - distinguishing `Healt
  
 Key challenges include small-to-medium dataset size (samples in the thousands) and expected severe class imbalance between infected and non-infected trees. On top of that, it should be noted that the labels from both Palong and Serting are prediction derived, only AirHitam is fully one-to-one ground truth.
 
-The target is not to get perfect accuracy (or positive rate) in detecting Unhealthy oil palm tree, instead it is to detect majority of the Unhealthy tree/area, while keeping false positive rate (Healthy  being labeled as Unhealthy) reasonable. The results from this project serves as a guide for the downstream (An Polarized Imagery-based, on-site automated detection system ; Out of current scope) that does the final classification.
+The target is not to get perfect accuracy (or positive rate) in detecting Unhealthy oil palm tree, instead it is to detect majority of the Unhealthy tree/area, while keeping false positive rate (Healthy  being labeled as Unhealthy) reasonable. The results from this project serves as a guide for the downstream (An Polarized Imagery-based, on-site automated detection system ; Out of current scope) that does the final classification. 
 
+Decided product shape so-far being corner-trained in-estate triage, which the owner labels corner(s) of their estate and the model screens the rest.
 
 ## Project Structure
 Due to limitation in local compute power, compute-intensive notebooks (Extracting SAR data, ML modeling, ...) are all designed to run on remote instances such as Molab (Marimo).  
@@ -22,3 +23,4 @@ Key things about current project structure:
 You are highly encouraged to read the `./docs/AgentPlan & POCReport` to understand what has been tried and findings from it. 
 
 For any quick, local Python analysis, use `.venv` (uv managed) setup in this project. Update/Modify it if missing any essential packages needed. 
+

@@ -13,21 +13,17 @@
 ## Verdict
 
 1. **RVI barely separate Healthy from Unhealthy.**
-   Four dual-pol-style ratios and the true eigenvalue quad-pol RVI are all
-   coin flips (|d| <= 0.04, MWU p 0.61-0.99, ROC-AUC ~0.50, PR lift ~0).
-2. **NDVI can - modestly but robustly.** d = -0.51 (medium), p = 3.6e-11,
-   PR-AUC 0.130 vs 0.064 no-skill (~2x enrichment), ROC-AUC 0.65, and the
-   signal survives honest spatial-block CV (0.133 / 0.653).
-3. **Fusion adds nothing over NDVI alone.** RVI+NDVI == NDVI (spatial PR 0.132
-   vs 0.133); +HV is within noise (0.135). RVI contributes zero ranking power.
-4. **Mechanism:** Unhealthy trees are dimmer in all SAR channels
-   proportionally (HV d=-0.34, span d=-0.27), so every ratio normalisation
-   erases the level shift. Optical NDVI measures a different physical quantity
-   (chlorophyll/red-edge absorption) that ratios do not cancel.
-
-This is the first positive evidence for backlog item 4 (optical complement)
-in `docs/AgentPlan/MainChecklist.md`, and it closes the "RVI rescue" branch:
-no further RVI variants are warranted.
+   Four dual-pol-style ratios and the true eigenvalue quad-pol RVI are all coin flips (|d| <= 0.04, MWU p 0.61-0.99, ROC-AUC ~0.50, PR lift ~0).
+2. **NDVI can - modestly but robustly.**
+   d = -0.51 (medium), p = 3.6e-11, PR-AUC 0.130 vs 0.064 no-skill (~2x enrichment), ROC-AUC 0.65, and the signal survives honest spatial-block CV (0.133 / 0.653).
+3. **Fusion adds nothing over NDVI alone.** 
+   RVI+NDVI == NDVI (spatial PR 0.132 vs 0.133); +HV is within noise (0.135). RVI contributes zero ranking power.
+4. **Mechanism:** 
+   Unhealthy trees are dimmer in all SAR channels proportionally (HV d=-0.34, span d=-0.27), so every ratio normalisation erases the level shift. Optical NDVI measures a different physical quantit (chlorophyll/red-edge absorption) that ratios do not cancel.
+5. **No ML pushes past NDVI.** 
+   Best honest spatial PR 0.14 (+RVI/LogReg) vs 0.133 NDVI-only (noise); RF/XGB trail linear LogReg everywhere andMLP collapses below no-skill. Capacity hurts at n=160 positives.
+6. **Red-edge/SWIR is the only genuine lift** 
+   (spatial PR 0.145, both protocols agree); temporal NDVI over +/-90 d is flat.
 
 
 ## Data & Method
@@ -78,7 +74,7 @@ no further RVI variants are warranted.
 | RVI+NDVI+HV | 0.146 / 0.65 | 0.135 / 0.65 |
   
   
-### Rerun on non-multilook scenes \The intensity scene was re-exported without aggressive multilooking
+### Rerun on non-multilook scenes
 
 
 (`ALOS2-Subset_AirHitam_260610_Cal_Spk_TC.tif`: 4 bands [HH, HV, VH, VV],
@@ -104,6 +100,48 @@ is independent of speckle filtering/multilooking. All verdicts stand.
 - `fig_rvi_ndvi_scatter.png` - separation is vertical (NDVI); RVI axis is noise.
 - `fig_fusion_roc.png` - NDVI curves dominate; RVI curves hug diagonal.
 
+### ML probe (LogReg / RF / XGB / MLP, spectral-only, no coords)
+
+No model beats univariate NDVI by more than noise. Nonlinear models do worse than linear everywhere (160 positives cannot support interactions); MLP collapses (0.048 on NDVI-only, below no-skill).
+
+| Features (spatial-block PR) | LogReg | RF | XGB | MLP |
+|---|---:|---:|---:|---:|
+| NDVI only | 0.133 | 0.080 | 0.094 | 0.048 |
+| NDVI+B4/B8 | 0.132 | 0.122 | 0.108 | 0.085 |
+| +SAR levels | 0.133 | 0.124 | 0.109 | 0.079 |
+| +RVI | 0.140 | 0.122 | 0.096 | 0.064 |
+| SAR only | 0.140 | 0.095 | 0.072 | 0.068 |
+
+Triage: top-25% review finds ~45% of Unhealthy (~1.8x enrichment).
+`fig_ml_spatial_pr.png`, `fig_ml_recall_budget.png`.
+
+### Richer spectra + temporal NDVI
+
+Red-edge/SWIR (same window): NDRE5 d=-0.41, NDRE6 d=-0.36, NDMI d=-0.30 (all p<1e-3, same direction as NDVI); EVI weak. Fusion NDVI+rededge/SWIR: spatial PR **0.145** / ROC **0.680** vs 0.133/0.653 NDVI-only, both protocols agree - first genuine lift from adding features (modest, +0.012).
+
+Temporal NDVI (+/-90 d of SAR): slope/delta/min/std all null
+(|d|<=0.20, p>=0.01); +temporal fusion 0.131 = nothing. Oil palm is stable; single-composite NDVI already captures what is there.
+`fig_spectral_kde.png`, `fig_spectral_d.png`.
+
+### Block-size sweep
+
+| PR-AUC | random | K100 (~25 trees, ~38 m) | K50 | K15 | K5 (~500 trees, ~212 m) |
+|---|---:|---:|---:|---:|---:|
+| NDVI only | 0.142 | 0.144 | 0.142 | 0.133 | 0.129 |
+| +rededge/SWIR | 0.152 | 0.157 | 0.157 | 0.145 | 0.123 |
+| +RVI | 0.164 | 0.165 | 0.175 | 0.145 | 0.125 |
+
+NDVI base is flat across the whole leakage spectrum; every additive gain shrinks with block size and vanishes at ~200 m. Measured train-test separation explains why: median nearest-train-tree 8.5 m (random) / 24 m (K50) / 52 m (K15) / 113 m (K5) - at K50, 91% of test trees sit within 50 m of a train tree, inside the disease-correlation radius.
+`fig_block_gradient.png`.
+
+### Corner deployment (product decision)
+
+Disease anatomy: 160 Unhealthy = 33 pockets of 2-10 trees + 35 isolated singles (30 m rule); median nearest-sick-neighbour 17 m. Recall by distance to nearest train sick tree: 0.55 (<25 m) -> 0.36 (25-100 m). Pocket-holdout (never-seen pockets): recall **0.26** vs 0.42 random-split - and 0.25 is coin-flip under a top-25% rule. On unseen pockets the model is chance; near labelled pockets it works.
+
+Deployment test (train one estate quadrant, predict rest):
+NDVI-only corner-train mean PR 0.127 vs 0.131 size-matched random-train - the spatial gap costs ~nothing. Corner lottery applies: SW (63 pos) -> 0.083 worst, NW (33 pos) -> 0.148 best; representativeness beats quantity. At corner sizes NDVI-only beats +rededge (extra features overfit). SAR-only corner: 0.06-0.09 (~no-skill).
+`fig_pockets.png`, `fig_corner.png`.
+
 ## Limitations
 
 - S2 10 m vs SAR 6.4 m vs ~9 m crown spacing: per-pixel NDVI mixes neighbours;
@@ -111,9 +149,8 @@ is independent of speckle filtering/multilooking. All verdicts stand.
 - Single-date S2 composite; multi-temporal NDVI change may be stronger still
 ## Recommended follow-ups (ranked)
 
-1. **Temporal S2:** time-series / change NDVI around census dates 
-2. **SAR + NDVI spatial-fusion triage test** under the broad-region protocol -
-   does NDVI raise the deployable operating point or just the univariate?
+1. **S2 pull for Palong/Serting** - optical-transfer evidence (labels are prediction-derived; treat as supporting, not validation).
+2. Closed, do not rerun: RVI variants, temporal NDVI (+/-90 d), DL at this sample size, threshold tuning.
 
 ## Artifacts
 
@@ -122,4 +159,13 @@ is independent of speckle filtering/multilooking. All verdicts stand.
 - `misc/analysis/poc_rvi_ndvi_stage1b_quadpol.py` - T3 sampling + eigenvalue RVI
 - `misc/analysis/poc_rvi_ndvi_stage2_gee.py` - GEE pull (needs SA + role above)
 - `misc/analysis/poc_rvi_ndvi_stage2b_fusion.py` - offline NDVI/RVI fusion stats
-- Artifacts: `misc/POC_Results/RVI_NDVI/` (CSVs, JSONs, 8 figures)
+- `misc/analysis/poc_rvi_ndvi_stage3_ml.py` - classical ML probe (spectral-only)
+- `misc/analysis/poc_rvi_ndvi_stage4_spectrotemporal.py` - GEE red-edge/SWIR + temporal pull and test
+- `misc/analysis/poc_rvi_ndvi_stage5_blocksize.py` - leakage-gradient sweep
+- `misc/analysis/poc_rvi_ndvi_stage5b_distances.py` - train-test separation diagnostic
+- `misc/analysis/poc_rvi_ndvi_stage6_pockets.py` - pocket anatomy + holdout tests
+- `misc/analysis/poc_rvi_ndvi_stage7_corner.py` - corner-deployment simulation
+- Artifacts: `misc/POC_Results/RVI_NDVI/` (CSVs, JSONs, 15 figures)
+
+
+
