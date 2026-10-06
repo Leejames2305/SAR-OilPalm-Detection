@@ -192,8 +192,8 @@ def _(loc_select, seed_number, test_size_slider, window_slider):
 
     # Yama scenes are dB by SNAP export default and are kept as is.
     YAMA_IN_DB = True
-    # Intensity scenes are EPSG:32648 while decomps are EPSG:4326, so every
-    # sampler must reproject tree coordinates per scene.
+    # Scene CRS varies per product (on disk: intensity/yama EPSG:4326,
+    # halpha EPSG:32648), so the sampler reprojects tree coords per scene.
     CRS_AWARE_SAMPLING = True
 
     RANDOM_STATE = int(seed_number.value)
@@ -429,7 +429,7 @@ def _():
     **Scale, CRS and band-order notes (authoritative for Sections 2 to 4)**
 
     - Intensity scenes are **linear power**, except Yama decomposition **(dB by SNAP export default, kept as is)**
-    - Intensity scenes are **EPSG:32648 (UTM 48N)**; decomposition scenes are **EPSG:4326**. Section 2 reprojects tree coordinates per scene.
+    - Scene CRS varies per product (verified: intensity/yama **EPSG:4326**, HAlpha **EPSG:32648 UTM 48N**). Section 2 reprojects tree coordinates per scene.
     - Subset GeoTIFFs carry no band names. Positional order used throughout:
       **Intensity** `[HH, HV, VH, VV]`, **HAlpha** `[H, A, alpha]`, **Yama** `[Pd, Pv, Ps, Pc]`.
     """)
@@ -443,8 +443,7 @@ def _():
 
     For every tree in the label CSVs, a window (default 3x3 - configurable above) sampling is done from all three scene products:
 
-    - **Intensity** (`EPSG:32648`): Statistics are computed over **linear power**. Only positive finite pixels count as valid.
-    - **HAlpha / Yama** (`EPSG:4326`): Sampled directly except Yama scenes that are **dB default**. HAlpha stays **linear.**
+    - **Intensity / Yama** (`EPSG:4326`) and **HAlpha** (`EPSG:32648`): tree lon/lat are reprojected per scene before sampling. Intensity stats are over **linear power** (only positive finite pixels count); Yama is **dB by SNAP default, kept as is**; HAlpha stays **linear.**
 
     `Middle` trees are dropped. Processed datasets are written in`data/Processed/`. Existing CSVs are
       reused unless forced.
@@ -465,6 +464,7 @@ def _(
 ):
     try:
         import rasterio
+        from rasterio.errors import WindowError
         from rasterio.warp import transform as warp_transform
         from rasterio.windows import Window
     except ImportError:
@@ -482,13 +482,28 @@ def _(
         "p50": lambda a: float(np.percentile(a, 50)),
     }
 
+    def _xy_for_src(src, lons, lats):
+        # Scene CRS varies per product (verified: intensity/yama EPSG 4326,
+        # halpha EPSG 32648), so reproject WGS84 trees into each scene CRS.
+        return warp_transform("EPSG:4326", src.crs, lons.tolist(), lats.tolist())
+
     def _read_window(src, band_idx, row, col, window):
         half = window // 2
-        win = Window(max(0, col - half), max(0, row - half), window, window)
-        win = win.intersection(Window(0, 0, src.width, src.height))
-        if win.width == 0 or win.height == 0:
+        col_off = int(col) - half
+        row_off = int(row) - half
+        # Manual clip: Window.intersection raises on empty overlap,
+        # so clip first and return empty (caller stores NaN for that tree).
+        x0 = max(0, col_off)
+        y0 = max(0, row_off)
+        x1 = min(src.width, col_off + window)
+        y1 = min(src.height, row_off + window)
+        if x1 <= x0 or y1 <= y0:
             return np.array([], dtype=float)
-        arr = src.read(band_idx + 1, window=win).astype(float)
+        win = Window(x0, y0, x1 - x0, y1 - y0)
+        try:
+            arr = src.read(band_idx + 1, window=win).astype(float)
+        except WindowError:
+            return np.array([], dtype=float)
         if src.nodata is not None:
             arr[arr == src.nodata] = np.nan
         return arr[np.isfinite(arr)]
@@ -523,7 +538,7 @@ def _(
         with rasterio.open(paths["intensity"]) as src:
             if src.count != len(INTENSITY_ORDER):
                 raise ValueError("Intensity band count is " + str(src.count) + ", expected " + str(len(INTENSITY_ORDER)) + ". Check the positional band order.")
-            xs, ys = warp_transform("EPSG:4326", src.crs, lons.tolist(), lats.tolist())
+            xs, ys = _xy_for_src(src, lons, lats)
             for j in range(len(INTENSITY_ORDER)):
                 pol = INTENSITY_ORDER[j]
                 cols = {}
@@ -547,12 +562,13 @@ def _(
             with rasterio.open(paths[pname]) as src:
                 if src.count != len(order):
                     raise ValueError("Decomp band count is " + str(src.count) + ", expected " + str(len(order)) + ". Check the positional band order.")
+                xs, ys = _xy_for_src(src, lons, lats)
                 for j in range(len(order)):
                     feat = order[j]
                     mu = np.full(n, np.nan)
                     sd = np.full(n, np.nan)
                     for i in range(n):
-                        row, col = src.index(lons[i], lats[i])
+                        row, col = src.index(xs[i], ys[i])
                         pix = _read_window(src, j, row, col, window)
                         if pix.size == 0:
                             continue
