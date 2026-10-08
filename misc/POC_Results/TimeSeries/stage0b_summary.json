@@ -1,0 +1,12 @@
+{
+  "window": [
+    "2025-06-10",
+    "2026-07-16"
+  ],
+  "box_half_m": 15,
+  "account": "bucketreader@project-33f6cb27-9693-4728-8d9.iam.gserviceaccount.com",
+  "n_trees": 2511,
+  "s2_scenes": 381,
+  "s1_asc_scenes": 33,
+  "s1_desc_scenes": 18
+}

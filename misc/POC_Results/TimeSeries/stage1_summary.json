@@ -1,0 +1,15 @@
+{
+  "no_skill_pr": 0.0637,
+  "windows": {
+    "12m": {
+      "start": "2025-06-10",
+      "n_feats": 53,
+      "trees_with_nan": 0
+    },
+    "6m": {
+      "start": "2025-12-10",
+      "n_feats": 35,
+      "trees_with_nan": 0
+    }
+  }
+}

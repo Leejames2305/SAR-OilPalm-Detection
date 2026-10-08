@@ -1,0 +1,13 @@
+{
+  "window": [
+    "2025-06-10",
+    "2026-06-11"
+  ],
+  "account": "bucketreader@project-33f6cb27-9693-4728-8d9.iam.gserviceaccount.com",
+  "n_trees": 2511,
+  "smap_note": "retrieval_qual_flag == 1 on all retrieved dates; catalogue says 0 = pass, so flag mask was not applied",
+  "s2_scenes": 345,
+  "landsat_composites": 47,
+  "s1_asc_scenes": 30,
+  "s1_desc_scenes": 17
+}

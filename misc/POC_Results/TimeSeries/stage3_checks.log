@@ -1,0 +1,427 @@
+A pt10m   survey_12m   C=0.01  NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6429
+A pt10m   survey_12m   C=0.01  S1_anom_all        PR 0.0834 (diff -0.0520, better 8%) ROC 0.5570
+A pt10m   survey_12m   C=0.01  S1_anom_all+NDVI   PR 0.1329 (diff -0.0024, better 54%) ROC 0.6378
+A pt10m   survey_12m   C=0.01  S1_anom_desc       PR 0.0923 (diff -0.0431, better 16%) ROC 0.5849
+A pt10m   survey_12m   C=0.01  S1_anom_desc+NDVI  PR 0.1383 (diff +0.0029, better 60%) ROC 0.6508
+A pt10m   survey_12m   C=0.01  S2_anom            PR 0.1068 (diff -0.0286, better 20%) ROC 0.5815
+A pt10m   survey_12m   C=0.01  S2_anom+NDVI       PR 0.1287 (diff -0.0066, better 28%) ROC 0.6166
+A pt10m   survey_12m   C=0.01  S1_desc_all        PR 0.0926 (diff -0.0428, better 20%) ROC 0.5841
+A pt10m   survey_12m   C=0.01  S1_desc_all+NDVI   PR 0.1380 (diff +0.0027, better 56%) ROC 0.6521
+A pt10m   survey_12m   C=0.1   NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6428
+A pt10m   survey_12m   C=0.1   S1_anom_all        PR 0.0827 (diff -0.0527, better 8%) ROC 0.5515
+A pt10m   survey_12m   C=0.1   S1_anom_all+NDVI   PR 0.1295 (diff -0.0058, better 44%) ROC 0.6342
+A pt10m   survey_12m   C=0.1   S1_anom_desc       PR 0.0914 (diff -0.0440, better 14%) ROC 0.5823
+A pt10m   survey_12m   C=0.1   S1_anom_desc+NDVI  PR 0.1367 (diff +0.0014, better 56%) ROC 0.6480
+A pt10m   survey_12m   C=0.1   S2_anom            PR 0.1048 (diff -0.0306, better 20%) ROC 0.5837
+A pt10m   survey_12m   C=0.1   S2_anom+NDVI       PR 0.1277 (diff -0.0077, better 26%) ROC 0.6103
+A pt10m   survey_12m   C=0.1   S1_desc_all        PR 0.0908 (diff -0.0446, better 18%) ROC 0.5829
+A pt10m   survey_12m   C=0.1   S1_desc_all+NDVI   PR 0.1348 (diff -0.0006, better 52%) ROC 0.6498
+A pt10m   survey_12m   C=1.0   NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6428
+A pt10m   survey_12m   C=1.0   S1_anom_all        PR 0.0825 (diff -0.0529, better 8%) ROC 0.5506
+A pt10m   survey_12m   C=1.0   S1_anom_all+NDVI   PR 0.1291 (diff -0.0063, better 42%) ROC 0.6335
+A pt10m   survey_12m   C=1.0   S1_anom_desc       PR 0.0912 (diff -0.0442, better 14%) ROC 0.5819
+A pt10m   survey_12m   C=1.0   S1_anom_desc+NDVI  PR 0.1364 (diff +0.0010, better 56%) ROC 0.6475
+A pt10m   survey_12m   C=1.0   S2_anom            PR 0.1049 (diff -0.0304, better 20%) ROC 0.5854
+A pt10m   survey_12m   C=1.0   S2_anom+NDVI       PR 0.1258 (diff -0.0095, better 20%) ROC 0.6076
+A pt10m   survey_12m   C=1.0   S1_desc_all        PR 0.0857 (diff -0.0497, better 14%) ROC 0.5803
+A pt10m   survey_12m   C=1.0   S1_desc_all+NDVI   PR 0.1295 (diff -0.0059, better 46%) ROC 0.6451
+B pt10m   survey_12m   C=1.0   NDVI_only          SW:0.083/0.139  NW:0.148/0.132  SE:0.137/0.133  NE:0.138/0.119
+B pt10m   survey_12m   C=1.0   S1_anom_all        SW:0.059/0.084  NW:0.066/0.082  SE:0.086/0.081  NE:0.095/0.069
+B pt10m   survey_12m   C=1.0   S1_anom_all+NDVI   SW:0.078/0.118  NW:0.097/0.122  SE:0.130/0.121  NE:0.141/0.113
+B pt10m   survey_12m   C=1.0   S1_anom_desc       SW:0.062/0.079  NW:0.071/0.085  SE:0.092/0.077  NE:0.092/0.086
+B pt10m   survey_12m   C=1.0   S1_anom_desc+NDVI  SW:0.078/0.121  NW:0.106/0.122  SE:0.136/0.134  NE:0.147/0.124
+B pt10m   survey_12m   C=1.0   S2_anom            SW:0.061/0.100  NW:0.087/0.094  SE:0.105/0.096  NE:0.084/0.093
+B pt10m   survey_12m   C=1.0   S2_anom+NDVI       SW:0.084/0.123  NW:0.093/0.131  SE:0.110/0.124  NE:0.119/0.117
+B pt10m   survey_12m   C=1.0   S1_desc_all        SW:0.060/0.081  NW:0.075/0.078  SE:0.099/0.077  NE:0.092/0.079
+B pt10m   survey_12m   C=1.0   S1_desc_all+NDVI   SW:0.085/0.128  NW:0.092/0.112  SE:0.141/0.116  NE:0.143/0.111
+B pt10m   survey_12m   C=0.1   NDVI_only          SW:0.083/0.133  NW:0.148/0.133  SE:0.137/0.133  NE:0.138/0.139
+B pt10m   survey_12m   C=0.1   S1_anom_all        SW:0.059/0.077  NW:0.065/0.079  SE:0.086/0.074  NE:0.096/0.075
+B pt10m   survey_12m   C=0.1   S1_anom_all+NDVI   SW:0.076/0.114  NW:0.096/0.112  SE:0.130/0.119  NE:0.141/0.105
+B pt10m   survey_12m   C=0.1   S1_anom_desc       SW:0.061/0.078  NW:0.071/0.074  SE:0.092/0.085  NE:0.092/0.084
+B pt10m   survey_12m   C=0.1   S1_anom_desc+NDVI  SW:0.076/0.125  NW:0.105/0.130  SE:0.136/0.129  NE:0.147/0.120
+B pt10m   survey_12m   C=0.1   S2_anom            SW:0.062/0.092  NW:0.091/0.090  SE:0.104/0.094  NE:0.078/0.099
+B pt10m   survey_12m   C=0.1   S2_anom+NDVI       SW:0.085/0.117  NW:0.093/0.126  SE:0.114/0.123  NE:0.117/0.134
+B pt10m   survey_12m   C=0.1   S1_desc_all        SW:0.062/0.082  NW:0.075/0.088  SE:0.099/0.090  NE:0.095/0.085
+B pt10m   survey_12m   C=0.1   S1_desc_all+NDVI   SW:0.083/0.114  NW:0.094/0.124  SE:0.140/0.129  NE:0.149/0.132
+A pt10m   survey_6m    C=0.01  NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6429
+A pt10m   survey_6m    C=0.01  S1_anom_all        PR 0.0790 (diff -0.0564, better 4%) ROC 0.5027
+A pt10m   survey_6m    C=0.01  S1_anom_all+NDVI   PR 0.1308 (diff -0.0046, better 44%) ROC 0.6199
+A pt10m   survey_6m    C=0.01  S2_anom            PR 0.1007 (diff -0.0347, better 14%) ROC 0.5637
+A pt10m   survey_6m    C=0.01  S2_anom+NDVI       PR 0.1305 (diff -0.0048, better 36%) ROC 0.6212
+A pt10m   survey_6m    C=0.1   NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6428
+A pt10m   survey_6m    C=0.1   S1_anom_all        PR 0.0798 (diff -0.0556, better 4%) ROC 0.5070
+A pt10m   survey_6m    C=0.1   S1_anom_all+NDVI   PR 0.1309 (diff -0.0045, better 48%) ROC 0.6187
+A pt10m   survey_6m    C=0.1   S2_anom            PR 0.1034 (diff -0.0320, better 22%) ROC 0.5798
+A pt10m   survey_6m    C=0.1   S2_anom+NDVI       PR 0.1312 (diff -0.0042, better 46%) ROC 0.6245
+A pt10m   survey_6m    C=1.0   NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6428
+A pt10m   survey_6m    C=1.0   S1_anom_all        PR 0.0798 (diff -0.0556, better 4%) ROC 0.5077
+A pt10m   survey_6m    C=1.0   S1_anom_all+NDVI   PR 0.1308 (diff -0.0046, better 46%) ROC 0.6184
+A pt10m   survey_6m    C=1.0   S2_anom            PR 0.1046 (diff -0.0308, better 24%) ROC 0.5882
+A pt10m   survey_6m    C=1.0   S2_anom+NDVI       PR 0.1309 (diff -0.0045, better 44%) ROC 0.6251
+A pt10m   matched_12m  C=0.01  NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6429
+A pt10m   matched_12m  C=0.01  S1_anom_all        PR 0.0855 (diff -0.0499, better 4%) ROC 0.5586
+A pt10m   matched_12m  C=0.01  S1_anom_all+NDVI   PR 0.1347 (diff -0.0007, better 50%) ROC 0.6358
+A pt10m   matched_12m  C=0.01  S1_anom_desc       PR 0.0923 (diff -0.0431, better 16%) ROC 0.5849
+A pt10m   matched_12m  C=0.01  S1_anom_desc+NDVI  PR 0.1383 (diff +0.0029, better 60%) ROC 0.6508
+A pt10m   matched_12m  C=0.01  S2_anom            PR 0.1040 (diff -0.0314, better 18%) ROC 0.5746
+A pt10m   matched_12m  C=0.01  S2_anom+NDVI       PR 0.1278 (diff -0.0075, better 26%) ROC 0.6162
+A pt10m   matched_12m  C=0.01  S1_desc_all        PR 0.0926 (diff -0.0428, better 20%) ROC 0.5841
+A pt10m   matched_12m  C=0.01  S1_desc_all+NDVI   PR 0.1380 (diff +0.0027, better 56%) ROC 0.6521
+A pt10m   matched_12m  C=0.1   NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6428
+A pt10m   matched_12m  C=0.1   S1_anom_all        PR 0.0850 (diff -0.0504, better 4%) ROC 0.5534
+A pt10m   matched_12m  C=0.1   S1_anom_all+NDVI   PR 0.1325 (diff -0.0029, better 52%) ROC 0.6317
+A pt10m   matched_12m  C=0.1   S1_anom_desc       PR 0.0914 (diff -0.0440, better 14%) ROC 0.5823
+A pt10m   matched_12m  C=0.1   S1_anom_desc+NDVI  PR 0.1367 (diff +0.0014, better 56%) ROC 0.6480
+A pt10m   matched_12m  C=0.1   S2_anom            PR 0.1046 (diff -0.0308, better 18%) ROC 0.5802
+A pt10m   matched_12m  C=0.1   S2_anom+NDVI       PR 0.1273 (diff -0.0081, better 22%) ROC 0.6112
+A pt10m   matched_12m  C=0.1   S1_desc_all        PR 0.0908 (diff -0.0446, better 18%) ROC 0.5829
+A pt10m   matched_12m  C=0.1   S1_desc_all+NDVI   PR 0.1348 (diff -0.0006, better 52%) ROC 0.6498
+A pt10m   matched_12m  C=1.0   NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6428
+A pt10m   matched_12m  C=1.0   S1_anom_all        PR 0.0850 (diff -0.0504, better 6%) ROC 0.5524
+A pt10m   matched_12m  C=1.0   S1_anom_all+NDVI   PR 0.1322 (diff -0.0031, better 52%) ROC 0.6309
+A pt10m   matched_12m  C=1.0   S1_anom_desc       PR 0.0912 (diff -0.0442, better 14%) ROC 0.5819
+A pt10m   matched_12m  C=1.0   S1_anom_desc+NDVI  PR 0.1364 (diff +0.0010, better 56%) ROC 0.6475
+A pt10m   matched_12m  C=1.0   S2_anom            PR 0.1066 (diff -0.0287, better 18%) ROC 0.5837
+A pt10m   matched_12m  C=1.0   S2_anom+NDVI       PR 0.1268 (diff -0.0086, better 22%) ROC 0.6089
+A pt10m   matched_12m  C=1.0   S1_desc_all        PR 0.0857 (diff -0.0497, better 14%) ROC 0.5803
+A pt10m   matched_12m  C=1.0   S1_desc_all+NDVI   PR 0.1295 (diff -0.0059, better 46%) ROC 0.6451
+B pt10m   matched_12m  C=1.0   NDVI_only          SW:0.083/0.139  NW:0.148/0.132  SE:0.137/0.133  NE:0.138/0.119
+B pt10m   matched_12m  C=1.0   S1_anom_all        SW:0.061/0.085  NW:0.063/0.079  SE:0.084/0.083  NE:0.089/0.070
+B pt10m   matched_12m  C=1.0   S1_anom_all+NDVI   SW:0.088/0.119  NW:0.093/0.126  SE:0.131/0.119  NE:0.133/0.113
+B pt10m   matched_12m  C=1.0   S1_anom_desc       SW:0.062/0.079  NW:0.071/0.085  SE:0.092/0.077  NE:0.092/0.086
+B pt10m   matched_12m  C=1.0   S1_anom_desc+NDVI  SW:0.078/0.121  NW:0.106/0.122  SE:0.136/0.134  NE:0.147/0.124
+B pt10m   matched_12m  C=1.0   S2_anom            SW:0.070/0.099  NW:0.087/0.095  SE:0.105/0.097  NE:0.085/0.093
+B pt10m   matched_12m  C=1.0   S2_anom+NDVI       SW:0.081/0.122  NW:0.087/0.130  SE:0.113/0.124  NE:0.119/0.118
+B pt10m   matched_12m  C=1.0   S1_desc_all        SW:0.060/0.081  NW:0.075/0.078  SE:0.099/0.077  NE:0.092/0.079
+B pt10m   matched_12m  C=1.0   S1_desc_all+NDVI   SW:0.085/0.128  NW:0.092/0.112  SE:0.141/0.116  NE:0.143/0.111
+B pt10m   matched_12m  C=0.1   NDVI_only          SW:0.083/0.133  NW:0.148/0.133  SE:0.137/0.133  NE:0.138/0.139
+B pt10m   matched_12m  C=0.1   S1_anom_all        SW:0.060/0.080  NW:0.063/0.084  SE:0.085/0.075  NE:0.089/0.075
+B pt10m   matched_12m  C=0.1   S1_anom_all+NDVI   SW:0.084/0.119  NW:0.093/0.112  SE:0.131/0.118  NE:0.134/0.103
+B pt10m   matched_12m  C=0.1   S1_anom_desc       SW:0.061/0.078  NW:0.071/0.074  SE:0.092/0.085  NE:0.092/0.084
+B pt10m   matched_12m  C=0.1   S1_anom_desc+NDVI  SW:0.076/0.125  NW:0.105/0.130  SE:0.136/0.129  NE:0.147/0.120
+B pt10m   matched_12m  C=0.1   S2_anom            SW:0.068/0.090  NW:0.087/0.090  SE:0.103/0.093  NE:0.081/0.098
+B pt10m   matched_12m  C=0.1   S2_anom+NDVI       SW:0.081/0.119  NW:0.087/0.127  SE:0.113/0.123  NE:0.120/0.133
+B pt10m   matched_12m  C=0.1   S1_desc_all        SW:0.062/0.082  NW:0.075/0.088  SE:0.099/0.090  NE:0.095/0.085
+B pt10m   matched_12m  C=0.1   S1_desc_all+NDVI   SW:0.083/0.114  NW:0.094/0.124  SE:0.140/0.129  NE:0.149/0.132
+A box3x3  survey_12m   C=0.01  NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6429
+A box3x3  survey_12m   C=0.01  S1_anom_all        PR 0.0947 (diff -0.0407, better 8%) ROC 0.5667
+A box3x3  survey_12m   C=0.01  S1_anom_all+NDVI   PR 0.1360 (diff +0.0006, better 60%) ROC 0.6347
+A box3x3  survey_12m   C=0.01  S1_anom_desc       PR 0.0910 (diff -0.0444, better 8%) ROC 0.5800
+A box3x3  survey_12m   C=0.01  S1_anom_desc+NDVI  PR 0.1412 (diff +0.0058, better 80%) ROC 0.6518
+A box3x3  survey_12m   C=0.01  S2_anom            PR 0.1072 (diff -0.0282, better 12%) ROC 0.5593
+A box3x3  survey_12m   C=0.01  S2_anom+NDVI       PR 0.1284 (diff -0.0070, better 28%) ROC 0.6115
+A box3x3  survey_12m   C=0.01  S1_desc_all        PR 0.0936 (diff -0.0418, better 12%) ROC 0.5695
+A box3x3  survey_12m   C=0.01  S1_desc_all+NDVI   PR 0.1375 (diff +0.0022, better 48%) ROC 0.6503
+A box3x3  survey_12m   C=0.1   NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6428
+A box3x3  survey_12m   C=0.1   S1_anom_all        PR 0.0933 (diff -0.0420, better 8%) ROC 0.5631
+A box3x3  survey_12m   C=0.1   S1_anom_all+NDVI   PR 0.1347 (diff -0.0006, better 60%) ROC 0.6318
+A box3x3  survey_12m   C=0.1   S1_anom_desc       PR 0.0902 (diff -0.0451, better 10%) ROC 0.5769
+A box3x3  survey_12m   C=0.1   S1_anom_desc+NDVI  PR 0.1407 (diff +0.0054, better 70%) ROC 0.6498
+A box3x3  survey_12m   C=0.1   S2_anom            PR 0.1032 (diff -0.0322, better 10%) ROC 0.5450
+A box3x3  survey_12m   C=0.1   S2_anom+NDVI       PR 0.1290 (diff -0.0063, better 38%) ROC 0.6007
+A box3x3  survey_12m   C=0.1   S1_desc_all        PR 0.0902 (diff -0.0452, better 14%) ROC 0.5660
+A box3x3  survey_12m   C=0.1   S1_desc_all+NDVI   PR 0.1358 (diff +0.0005, better 46%) ROC 0.6505
+A box3x3  survey_12m   C=1.0   NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6428
+A box3x3  survey_12m   C=1.0   S1_anom_all        PR 0.0932 (diff -0.0422, better 8%) ROC 0.5625
+A box3x3  survey_12m   C=1.0   S1_anom_all+NDVI   PR 0.1346 (diff -0.0008, better 60%) ROC 0.6312
+A box3x3  survey_12m   C=1.0   S1_anom_desc       PR 0.0903 (diff -0.0451, better 10%) ROC 0.5765
+A box3x3  survey_12m   C=1.0   S1_anom_desc+NDVI  PR 0.1406 (diff +0.0053, better 70%) ROC 0.6494
+A box3x3  survey_12m   C=1.0   S2_anom            PR 0.1017 (diff -0.0337, better 12%) ROC 0.5363
+A box3x3  survey_12m   C=1.0   S2_anom+NDVI       PR 0.1292 (diff -0.0062, better 50%) ROC 0.5949
+A box3x3  survey_12m   C=1.0   S1_desc_all        PR 0.0905 (diff -0.0449, better 16%) ROC 0.5684
+A box3x3  survey_12m   C=1.0   S1_desc_all+NDVI   PR 0.1348 (diff -0.0006, better 32%) ROC 0.6508
+B box3x3  survey_12m   C=1.0   NDVI_only          SW:0.083/0.139  NW:0.148/0.132  SE:0.137/0.133  NE:0.138/0.119
+B box3x3  survey_12m   C=1.0   S1_anom_all        SW:0.054/0.087  NW:0.063/0.085  SE:0.089/0.087  NE:0.092/0.088
+B box3x3  survey_12m   C=1.0   S1_anom_all+NDVI   SW:0.068/0.124  NW:0.087/0.119  SE:0.120/0.125  NE:0.136/0.114
+B box3x3  survey_12m   C=1.0   S1_anom_desc       SW:0.055/0.087  NW:0.074/0.093  SE:0.090/0.080  NE:0.101/0.081
+B box3x3  survey_12m   C=1.0   S1_anom_desc+NDVI  SW:0.067/0.127  NW:0.102/0.133  SE:0.132/0.137  NE:0.150/0.126
+B box3x3  survey_12m   C=1.0   S2_anom            SW:0.063/0.105  NW:0.072/0.092  SE:0.086/0.097  NE:0.061/0.086
+B box3x3  survey_12m   C=1.0   S2_anom+NDVI       SW:0.090/0.133  NW:0.091/0.133  SE:0.105/0.123  NE:0.115/0.129
+B box3x3  survey_12m   C=1.0   S1_desc_all        SW:0.052/0.079  NW:0.082/0.078  SE:0.099/0.080  NE:0.090/0.083
+B box3x3  survey_12m   C=1.0   S1_desc_all+NDVI   SW:0.064/0.127  NW:0.097/0.111  SE:0.138/0.121  NE:0.139/0.117
+B box3x3  survey_12m   C=0.1   NDVI_only          SW:0.083/0.133  NW:0.148/0.133  SE:0.137/0.133  NE:0.138/0.139
+B box3x3  survey_12m   C=0.1   S1_anom_all        SW:0.053/0.092  NW:0.063/0.093  SE:0.089/0.100  NE:0.095/0.084
+B box3x3  survey_12m   C=0.1   S1_anom_all+NDVI   SW:0.067/0.124  NW:0.086/0.121  SE:0.120/0.126  NE:0.137/0.106
+B box3x3  survey_12m   C=0.1   S1_anom_desc       SW:0.055/0.084  NW:0.074/0.076  SE:0.090/0.085  NE:0.103/0.081
+B box3x3  survey_12m   C=0.1   S1_anom_desc+NDVI  SW:0.068/0.118  NW:0.101/0.129  SE:0.132/0.123  NE:0.150/0.120
+B box3x3  survey_12m   C=0.1   S2_anom            SW:0.062/0.094  NW:0.076/0.096  SE:0.097/0.100  NE:0.058/0.099
+B box3x3  survey_12m   C=0.1   S2_anom+NDVI       SW:0.085/0.115  NW:0.090/0.127  SE:0.113/0.124  NE:0.109/0.136
+B box3x3  survey_12m   C=0.1   S1_desc_all        SW:0.053/0.089  NW:0.084/0.086  SE:0.101/0.092  NE:0.100/0.081
+B box3x3  survey_12m   C=0.1   S1_desc_all+NDVI   SW:0.065/0.113  NW:0.102/0.118  SE:0.138/0.123  NE:0.148/0.138
+A box3x3  survey_6m    C=0.01  NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6429
+A box3x3  survey_6m    C=0.01  S1_anom_all        PR 0.1075 (diff -0.0278, better 14%) ROC 0.5227
+A box3x3  survey_6m    C=0.01  S1_anom_all+NDVI   PR 0.1333 (diff -0.0021, better 54%) ROC 0.6264
+A box3x3  survey_6m    C=0.01  S2_anom            PR 0.1021 (diff -0.0333, better 20%) ROC 0.5450
+A box3x3  survey_6m    C=0.01  S2_anom+NDVI       PR 0.1330 (diff -0.0024, better 36%) ROC 0.6294
+A box3x3  survey_6m    C=0.1   NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6428
+A box3x3  survey_6m    C=0.1   S1_anom_all        PR 0.1077 (diff -0.0276, better 16%) ROC 0.5245
+A box3x3  survey_6m    C=0.1   S1_anom_all+NDVI   PR 0.1319 (diff -0.0035, better 46%) ROC 0.6266
+A box3x3  survey_6m    C=0.1   S2_anom            PR 0.1130 (diff -0.0223, better 26%) ROC 0.5744
+A box3x3  survey_6m    C=0.1   S2_anom+NDVI       PR 0.1348 (diff -0.0006, better 46%) ROC 0.6324
+A box3x3  survey_6m    C=1.0   NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6428
+A box3x3  survey_6m    C=1.0   S1_anom_all        PR 0.1065 (diff -0.0289, better 12%) ROC 0.5248
+A box3x3  survey_6m    C=1.0   S1_anom_all+NDVI   PR 0.1319 (diff -0.0035, better 48%) ROC 0.6266
+A box3x3  survey_6m    C=1.0   S2_anom            PR 0.1186 (diff -0.0168, better 28%) ROC 0.5950
+A box3x3  survey_6m    C=1.0   S2_anom+NDVI       PR 0.1347 (diff -0.0007, better 44%) ROC 0.6293
+A box3x3  matched_12m  C=0.01  NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6429
+A box3x3  matched_12m  C=0.01  S1_anom_all        PR 0.0961 (diff -0.0393, better 10%) ROC 0.5606
+A box3x3  matched_12m  C=0.01  S1_anom_all+NDVI   PR 0.1366 (diff +0.0012, better 48%) ROC 0.6280
+A box3x3  matched_12m  C=0.01  S1_anom_desc       PR 0.0899 (diff -0.0455, better 12%) ROC 0.5793
+A box3x3  matched_12m  C=0.01  S1_anom_desc+NDVI  PR 0.1403 (diff +0.0050, better 74%) ROC 0.6489
+A box3x3  matched_12m  C=0.01  S2_anom            PR 0.1090 (diff -0.0264, better 10%) ROC 0.5661
+A box3x3  matched_12m  C=0.01  S2_anom+NDVI       PR 0.1290 (diff -0.0064, better 34%) ROC 0.6143
+A box3x3  matched_12m  C=0.01  S1_desc_all        PR 0.0916 (diff -0.0438, better 14%) ROC 0.5700
+A box3x3  matched_12m  C=0.01  S1_desc_all+NDVI   PR 0.1353 (diff -0.0001, better 52%) ROC 0.6450
+A box3x3  matched_12m  C=0.1   NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6428
+A box3x3  matched_12m  C=0.1   S1_anom_all        PR 0.0960 (diff -0.0394, better 10%) ROC 0.5568
+A box3x3  matched_12m  C=0.1   S1_anom_all+NDVI   PR 0.1356 (diff +0.0002, better 50%) ROC 0.6256
+A box3x3  matched_12m  C=0.1   S1_anom_desc       PR 0.0904 (diff -0.0449, better 14%) ROC 0.5763
+A box3x3  matched_12m  C=0.1   S1_anom_desc+NDVI  PR 0.1400 (diff +0.0046, better 64%) ROC 0.6468
+A box3x3  matched_12m  C=0.1   S2_anom            PR 0.1053 (diff -0.0300, better 14%) ROC 0.5544
+A box3x3  matched_12m  C=0.1   S2_anom+NDVI       PR 0.1305 (diff -0.0048, better 40%) ROC 0.6077
+A box3x3  matched_12m  C=0.1   S1_desc_all        PR 0.0958 (diff -0.0396, better 26%) ROC 0.5783
+A box3x3  matched_12m  C=0.1   S1_desc_all+NDVI   PR 0.1355 (diff +0.0001, better 50%) ROC 0.6461
+A box3x3  matched_12m  C=1.0   NDVI_only          PR 0.1354 (diff +0.0000, better 0%) ROC 0.6428
+A box3x3  matched_12m  C=1.0   S1_anom_all        PR 0.0964 (diff -0.0390, better 10%) ROC 0.5561
+A box3x3  matched_12m  C=1.0   S1_anom_all+NDVI   PR 0.1353 (diff -0.0000, better 50%) ROC 0.6252
+A box3x3  matched_12m  C=1.0   S1_anom_desc       PR 0.0907 (diff -0.0447, better 16%) ROC 0.5759
+A box3x3  matched_12m  C=1.0   S1_anom_desc+NDVI  PR 0.1400 (diff +0.0046, better 64%) ROC 0.6465
+A box3x3  matched_12m  C=1.0   S2_anom            PR 0.1037 (diff -0.0316, better 16%) ROC 0.5456
+A box3x3  matched_12m  C=1.0   S2_anom+NDVI       PR 0.1289 (diff -0.0064, better 40%) ROC 0.6005
+A box3x3  matched_12m  C=1.0   S1_desc_all        PR 0.0928 (diff -0.0426, better 20%) ROC 0.5817
+A box3x3  matched_12m  C=1.0   S1_desc_all+NDVI   PR 0.1331 (diff -0.0023, better 46%) ROC 0.6474
+B box3x3  matched_12m  C=1.0   NDVI_only          SW:0.083/0.139  NW:0.148/0.132  SE:0.137/0.133  NE:0.138/0.119
+B box3x3  matched_12m  C=1.0   S1_anom_all        SW:0.056/0.095  NW:0.061/0.086  SE:0.090/0.089  NE:0.077/0.088
+B box3x3  matched_12m  C=1.0   S1_anom_all+NDVI   SW:0.074/0.126  NW:0.086/0.122  SE:0.127/0.134  NE:0.122/0.120
+B box3x3  matched_12m  C=1.0   S1_anom_desc       SW:0.055/0.089  NW:0.072/0.095  SE:0.094/0.081  NE:0.099/0.082
+B box3x3  matched_12m  C=1.0   S1_anom_desc+NDVI  SW:0.069/0.126  NW:0.112/0.132  SE:0.139/0.137  NE:0.149/0.128
+B box3x3  matched_12m  C=1.0   S2_anom            SW:0.062/0.103  NW:0.069/0.096  SE:0.092/0.095  NE:0.061/0.084
+B box3x3  matched_12m  C=1.0   S2_anom+NDVI       SW:0.071/0.132  NW:0.083/0.135  SE:0.111/0.121  NE:0.107/0.124
+B box3x3  matched_12m  C=1.0   S1_desc_all        SW:0.055/0.078  NW:0.093/0.081  SE:0.096/0.085  NE:0.091/0.088
+B box3x3  matched_12m  C=1.0   S1_desc_all+NDVI   SW:0.066/0.125  NW:0.110/0.112  SE:0.133/0.125  NE:0.139/0.114
+B box3x3  matched_12m  C=0.1   NDVI_only          SW:0.083/0.133  NW:0.148/0.133  SE:0.137/0.133  NE:0.138/0.139
+B box3x3  matched_12m  C=0.1   S1_anom_all        SW:0.056/0.096  NW:0.060/0.098  SE:0.090/0.097  NE:0.077/0.080
+B box3x3  matched_12m  C=0.1   S1_anom_all+NDVI   SW:0.076/0.129  NW:0.084/0.123  SE:0.127/0.123  NE:0.124/0.104
+B box3x3  matched_12m  C=0.1   S1_anom_desc       SW:0.056/0.089  NW:0.071/0.077  SE:0.094/0.088  NE:0.099/0.081
+B box3x3  matched_12m  C=0.1   S1_anom_desc+NDVI  SW:0.070/0.122  NW:0.111/0.128  SE:0.139/0.125  NE:0.150/0.124
+B box3x3  matched_12m  C=0.1   S2_anom            SW:0.068/0.099  NW:0.073/0.101  SE:0.106/0.102  NE:0.058/0.101
+B box3x3  matched_12m  C=0.1   S2_anom+NDVI       SW:0.075/0.117  NW:0.079/0.126  SE:0.114/0.124  NE:0.112/0.135
+B box3x3  matched_12m  C=0.1   S1_desc_all        SW:0.054/0.095  NW:0.098/0.089  SE:0.097/0.090  NE:0.099/0.084
+B box3x3  matched_12m  C=0.1   S1_desc_all+NDVI   SW:0.067/0.111  NW:0.120/0.116  SE:0.133/0.122  NE:0.144/0.135
+
+== A: spatial ==
+source      window    C               set  n_feats  fold_pr  ref_fold_pr  diff_fold_pr  share_cells_better  pooled_roc  ref_pooled_roc
+ pt10m  survey_12m 0.01         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6429          0.6429
+ pt10m  survey_12m 0.01       S1_anom_all       12   0.0834       0.1354       -0.0520                0.08      0.5570          0.6429
+ pt10m  survey_12m 0.01  S1_anom_all+NDVI       13   0.1329       0.1354       -0.0024                0.54      0.6378          0.6429
+ pt10m  survey_12m 0.01      S1_anom_desc        6   0.0923       0.1354       -0.0431                0.16      0.5849          0.6429
+ pt10m  survey_12m 0.01 S1_anom_desc+NDVI        7   0.1383       0.1354        0.0029                0.60      0.6508          0.6429
+ pt10m  survey_12m 0.01           S2_anom        4   0.1068       0.1354       -0.0286                0.20      0.5815          0.6429
+ pt10m  survey_12m 0.01      S2_anom+NDVI        5   0.1287       0.1354       -0.0066                0.28      0.6166          0.6429
+ pt10m  survey_12m 0.01       S1_desc_all       18   0.0926       0.1354       -0.0428                0.20      0.5841          0.6429
+ pt10m  survey_12m 0.01  S1_desc_all+NDVI       19   0.1380       0.1354        0.0027                0.56      0.6521          0.6429
+ pt10m  survey_12m 0.10         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6428          0.6428
+ pt10m  survey_12m 0.10       S1_anom_all       12   0.0827       0.1354       -0.0527                0.08      0.5515          0.6428
+ pt10m  survey_12m 0.10  S1_anom_all+NDVI       13   0.1295       0.1354       -0.0058                0.44      0.6342          0.6428
+ pt10m  survey_12m 0.10      S1_anom_desc        6   0.0914       0.1354       -0.0440                0.14      0.5823          0.6428
+ pt10m  survey_12m 0.10 S1_anom_desc+NDVI        7   0.1367       0.1354        0.0014                0.56      0.6480          0.6428
+ pt10m  survey_12m 0.10           S2_anom        4   0.1048       0.1354       -0.0306                0.20      0.5837          0.6428
+ pt10m  survey_12m 0.10      S2_anom+NDVI        5   0.1277       0.1354       -0.0077                0.26      0.6103          0.6428
+ pt10m  survey_12m 0.10       S1_desc_all       18   0.0908       0.1354       -0.0446                0.18      0.5829          0.6428
+ pt10m  survey_12m 0.10  S1_desc_all+NDVI       19   0.1348       0.1354       -0.0006                0.52      0.6498          0.6428
+ pt10m  survey_12m 1.00         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6428          0.6428
+ pt10m  survey_12m 1.00       S1_anom_all       12   0.0825       0.1354       -0.0529                0.08      0.5506          0.6428
+ pt10m  survey_12m 1.00  S1_anom_all+NDVI       13   0.1291       0.1354       -0.0063                0.42      0.6335          0.6428
+ pt10m  survey_12m 1.00      S1_anom_desc        6   0.0912       0.1354       -0.0442                0.14      0.5819          0.6428
+ pt10m  survey_12m 1.00 S1_anom_desc+NDVI        7   0.1364       0.1354        0.0010                0.56      0.6475          0.6428
+ pt10m  survey_12m 1.00           S2_anom        4   0.1049       0.1354       -0.0304                0.20      0.5854          0.6428
+ pt10m  survey_12m 1.00      S2_anom+NDVI        5   0.1258       0.1354       -0.0095                0.20      0.6076          0.6428
+ pt10m  survey_12m 1.00       S1_desc_all       18   0.0857       0.1354       -0.0497                0.14      0.5803          0.6428
+ pt10m  survey_12m 1.00  S1_desc_all+NDVI       19   0.1295       0.1354       -0.0059                0.46      0.6451          0.6428
+ pt10m   survey_6m 0.01         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6429          0.6429
+ pt10m   survey_6m 0.01       S1_anom_all        6   0.0790       0.1354       -0.0564                0.04      0.5027          0.6429
+ pt10m   survey_6m 0.01  S1_anom_all+NDVI        7   0.1308       0.1354       -0.0046                0.44      0.6199          0.6429
+ pt10m   survey_6m 0.01           S2_anom        4   0.1007       0.1354       -0.0347                0.14      0.5637          0.6429
+ pt10m   survey_6m 0.01      S2_anom+NDVI        5   0.1305       0.1354       -0.0048                0.36      0.6212          0.6429
+ pt10m   survey_6m 0.10         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6428          0.6428
+ pt10m   survey_6m 0.10       S1_anom_all        6   0.0798       0.1354       -0.0556                0.04      0.5070          0.6428
+ pt10m   survey_6m 0.10  S1_anom_all+NDVI        7   0.1309       0.1354       -0.0045                0.48      0.6187          0.6428
+ pt10m   survey_6m 0.10           S2_anom        4   0.1034       0.1354       -0.0320                0.22      0.5798          0.6428
+ pt10m   survey_6m 0.10      S2_anom+NDVI        5   0.1312       0.1354       -0.0042                0.46      0.6245          0.6428
+ pt10m   survey_6m 1.00         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6428          0.6428
+ pt10m   survey_6m 1.00       S1_anom_all        6   0.0798       0.1354       -0.0556                0.04      0.5077          0.6428
+ pt10m   survey_6m 1.00  S1_anom_all+NDVI        7   0.1308       0.1354       -0.0046                0.46      0.6184          0.6428
+ pt10m   survey_6m 1.00           S2_anom        4   0.1046       0.1354       -0.0308                0.24      0.5882          0.6428
+ pt10m   survey_6m 1.00      S2_anom+NDVI        5   0.1309       0.1354       -0.0045                0.44      0.6251          0.6428
+ pt10m matched_12m 0.01         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6429          0.6429
+ pt10m matched_12m 0.01       S1_anom_all       12   0.0855       0.1354       -0.0499                0.04      0.5586          0.6429
+ pt10m matched_12m 0.01  S1_anom_all+NDVI       13   0.1347       0.1354       -0.0007                0.50      0.6358          0.6429
+ pt10m matched_12m 0.01      S1_anom_desc        6   0.0923       0.1354       -0.0431                0.16      0.5849          0.6429
+ pt10m matched_12m 0.01 S1_anom_desc+NDVI        7   0.1383       0.1354        0.0029                0.60      0.6508          0.6429
+ pt10m matched_12m 0.01           S2_anom        4   0.1040       0.1354       -0.0314                0.18      0.5746          0.6429
+ pt10m matched_12m 0.01      S2_anom+NDVI        5   0.1278       0.1354       -0.0075                0.26      0.6162          0.6429
+ pt10m matched_12m 0.01       S1_desc_all       18   0.0926       0.1354       -0.0428                0.20      0.5841          0.6429
+ pt10m matched_12m 0.01  S1_desc_all+NDVI       19   0.1380       0.1354        0.0027                0.56      0.6521          0.6429
+ pt10m matched_12m 0.10         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6428          0.6428
+ pt10m matched_12m 0.10       S1_anom_all       12   0.0850       0.1354       -0.0504                0.04      0.5534          0.6428
+ pt10m matched_12m 0.10  S1_anom_all+NDVI       13   0.1325       0.1354       -0.0029                0.52      0.6317          0.6428
+ pt10m matched_12m 0.10      S1_anom_desc        6   0.0914       0.1354       -0.0440                0.14      0.5823          0.6428
+ pt10m matched_12m 0.10 S1_anom_desc+NDVI        7   0.1367       0.1354        0.0014                0.56      0.6480          0.6428
+ pt10m matched_12m 0.10           S2_anom        4   0.1046       0.1354       -0.0308                0.18      0.5802          0.6428
+ pt10m matched_12m 0.10      S2_anom+NDVI        5   0.1273       0.1354       -0.0081                0.22      0.6112          0.6428
+ pt10m matched_12m 0.10       S1_desc_all       18   0.0908       0.1354       -0.0446                0.18      0.5829          0.6428
+ pt10m matched_12m 0.10  S1_desc_all+NDVI       19   0.1348       0.1354       -0.0006                0.52      0.6498          0.6428
+ pt10m matched_12m 1.00         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6428          0.6428
+ pt10m matched_12m 1.00       S1_anom_all       12   0.0850       0.1354       -0.0504                0.06      0.5524          0.6428
+ pt10m matched_12m 1.00  S1_anom_all+NDVI       13   0.1322       0.1354       -0.0031                0.52      0.6309          0.6428
+ pt10m matched_12m 1.00      S1_anom_desc        6   0.0912       0.1354       -0.0442                0.14      0.5819          0.6428
+ pt10m matched_12m 1.00 S1_anom_desc+NDVI        7   0.1364       0.1354        0.0010                0.56      0.6475          0.6428
+ pt10m matched_12m 1.00           S2_anom        4   0.1066       0.1354       -0.0287                0.18      0.5837          0.6428
+ pt10m matched_12m 1.00      S2_anom+NDVI        5   0.1268       0.1354       -0.0086                0.22      0.6089          0.6428
+ pt10m matched_12m 1.00       S1_desc_all       18   0.0857       0.1354       -0.0497                0.14      0.5803          0.6428
+ pt10m matched_12m 1.00  S1_desc_all+NDVI       19   0.1295       0.1354       -0.0059                0.46      0.6451          0.6428
+box3x3  survey_12m 0.01         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6429          0.6429
+box3x3  survey_12m 0.01       S1_anom_all       12   0.0947       0.1354       -0.0407                0.08      0.5667          0.6429
+box3x3  survey_12m 0.01  S1_anom_all+NDVI       13   0.1360       0.1354        0.0006                0.60      0.6347          0.6429
+box3x3  survey_12m 0.01      S1_anom_desc        6   0.0910       0.1354       -0.0444                0.08      0.5800          0.6429
+box3x3  survey_12m 0.01 S1_anom_desc+NDVI        7   0.1412       0.1354        0.0058                0.80      0.6518          0.6429
+box3x3  survey_12m 0.01           S2_anom        4   0.1072       0.1354       -0.0282                0.12      0.5593          0.6429
+box3x3  survey_12m 0.01      S2_anom+NDVI        5   0.1284       0.1354       -0.0070                0.28      0.6115          0.6429
+box3x3  survey_12m 0.01       S1_desc_all       18   0.0936       0.1354       -0.0418                0.12      0.5695          0.6429
+box3x3  survey_12m 0.01  S1_desc_all+NDVI       19   0.1375       0.1354        0.0022                0.48      0.6503          0.6429
+box3x3  survey_12m 0.10         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6428          0.6428
+box3x3  survey_12m 0.10       S1_anom_all       12   0.0933       0.1354       -0.0420                0.08      0.5631          0.6428
+box3x3  survey_12m 0.10  S1_anom_all+NDVI       13   0.1347       0.1354       -0.0006                0.60      0.6318          0.6428
+box3x3  survey_12m 0.10      S1_anom_desc        6   0.0902       0.1354       -0.0451                0.10      0.5769          0.6428
+box3x3  survey_12m 0.10 S1_anom_desc+NDVI        7   0.1407       0.1354        0.0054                0.70      0.6498          0.6428
+box3x3  survey_12m 0.10           S2_anom        4   0.1032       0.1354       -0.0322                0.10      0.5450          0.6428
+box3x3  survey_12m 0.10      S2_anom+NDVI        5   0.1290       0.1354       -0.0063                0.38      0.6007          0.6428
+box3x3  survey_12m 0.10       S1_desc_all       18   0.0902       0.1354       -0.0452                0.14      0.5660          0.6428
+box3x3  survey_12m 0.10  S1_desc_all+NDVI       19   0.1358       0.1354        0.0005                0.46      0.6505          0.6428
+box3x3  survey_12m 1.00         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6428          0.6428
+box3x3  survey_12m 1.00       S1_anom_all       12   0.0932       0.1354       -0.0422                0.08      0.5625          0.6428
+box3x3  survey_12m 1.00  S1_anom_all+NDVI       13   0.1346       0.1354       -0.0008                0.60      0.6312          0.6428
+box3x3  survey_12m 1.00      S1_anom_desc        6   0.0903       0.1354       -0.0451                0.10      0.5765          0.6428
+box3x3  survey_12m 1.00 S1_anom_desc+NDVI        7   0.1406       0.1354        0.0053                0.70      0.6494          0.6428
+box3x3  survey_12m 1.00           S2_anom        4   0.1017       0.1354       -0.0337                0.12      0.5363          0.6428
+box3x3  survey_12m 1.00      S2_anom+NDVI        5   0.1292       0.1354       -0.0062                0.50      0.5949          0.6428
+box3x3  survey_12m 1.00       S1_desc_all       18   0.0905       0.1354       -0.0449                0.16      0.5684          0.6428
+box3x3  survey_12m 1.00  S1_desc_all+NDVI       19   0.1348       0.1354       -0.0006                0.32      0.6508          0.6428
+box3x3   survey_6m 0.01         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6429          0.6429
+box3x3   survey_6m 0.01       S1_anom_all        6   0.1075       0.1354       -0.0278                0.14      0.5227          0.6429
+box3x3   survey_6m 0.01  S1_anom_all+NDVI        7   0.1333       0.1354       -0.0021                0.54      0.6264          0.6429
+box3x3   survey_6m 0.01           S2_anom        4   0.1021       0.1354       -0.0333                0.20      0.5450          0.6429
+box3x3   survey_6m 0.01      S2_anom+NDVI        5   0.1330       0.1354       -0.0024                0.36      0.6294          0.6429
+box3x3   survey_6m 0.10         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6428          0.6428
+box3x3   survey_6m 0.10       S1_anom_all        6   0.1077       0.1354       -0.0276                0.16      0.5245          0.6428
+box3x3   survey_6m 0.10  S1_anom_all+NDVI        7   0.1319       0.1354       -0.0035                0.46      0.6266          0.6428
+box3x3   survey_6m 0.10           S2_anom        4   0.1130       0.1354       -0.0223                0.26      0.5744          0.6428
+box3x3   survey_6m 0.10      S2_anom+NDVI        5   0.1348       0.1354       -0.0006                0.46      0.6324          0.6428
+box3x3   survey_6m 1.00         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6428          0.6428
+box3x3   survey_6m 1.00       S1_anom_all        6   0.1065       0.1354       -0.0289                0.12      0.5248          0.6428
+box3x3   survey_6m 1.00  S1_anom_all+NDVI        7   0.1319       0.1354       -0.0035                0.48      0.6266          0.6428
+box3x3   survey_6m 1.00           S2_anom        4   0.1186       0.1354       -0.0168                0.28      0.5950          0.6428
+box3x3   survey_6m 1.00      S2_anom+NDVI        5   0.1347       0.1354       -0.0007                0.44      0.6293          0.6428
+box3x3 matched_12m 0.01         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6429          0.6429
+box3x3 matched_12m 0.01       S1_anom_all       12   0.0961       0.1354       -0.0393                0.10      0.5606          0.6429
+box3x3 matched_12m 0.01  S1_anom_all+NDVI       13   0.1366       0.1354        0.0012                0.48      0.6280          0.6429
+box3x3 matched_12m 0.01      S1_anom_desc        6   0.0899       0.1354       -0.0455                0.12      0.5793          0.6429
+box3x3 matched_12m 0.01 S1_anom_desc+NDVI        7   0.1403       0.1354        0.0050                0.74      0.6489          0.6429
+box3x3 matched_12m 0.01           S2_anom        4   0.1090       0.1354       -0.0264                0.10      0.5661          0.6429
+box3x3 matched_12m 0.01      S2_anom+NDVI        5   0.1290       0.1354       -0.0064                0.34      0.6143          0.6429
+box3x3 matched_12m 0.01       S1_desc_all       21   0.0916       0.1354       -0.0438                0.14      0.5700          0.6429
+box3x3 matched_12m 0.01  S1_desc_all+NDVI       22   0.1353       0.1354       -0.0001                0.52      0.6450          0.6429
+box3x3 matched_12m 0.10         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6428          0.6428
+box3x3 matched_12m 0.10       S1_anom_all       12   0.0960       0.1354       -0.0394                0.10      0.5568          0.6428
+box3x3 matched_12m 0.10  S1_anom_all+NDVI       13   0.1356       0.1354        0.0002                0.50      0.6256          0.6428
+box3x3 matched_12m 0.10      S1_anom_desc        6   0.0904       0.1354       -0.0449                0.14      0.5763          0.6428
+box3x3 matched_12m 0.10 S1_anom_desc+NDVI        7   0.1400       0.1354        0.0046                0.64      0.6468          0.6428
+box3x3 matched_12m 0.10           S2_anom        4   0.1053       0.1354       -0.0300                0.14      0.5544          0.6428
+box3x3 matched_12m 0.10      S2_anom+NDVI        5   0.1305       0.1354       -0.0048                0.40      0.6077          0.6428
+box3x3 matched_12m 0.10       S1_desc_all       21   0.0958       0.1354       -0.0396                0.26      0.5783          0.6428
+box3x3 matched_12m 0.10  S1_desc_all+NDVI       22   0.1355       0.1354        0.0001                0.50      0.6461          0.6428
+box3x3 matched_12m 1.00         NDVI_only        1   0.1354       0.1354        0.0000                0.00      0.6428          0.6428
+box3x3 matched_12m 1.00       S1_anom_all       12   0.0964       0.1354       -0.0390                0.10      0.5561          0.6428
+box3x3 matched_12m 1.00  S1_anom_all+NDVI       13   0.1353       0.1354       -0.0000                0.50      0.6252          0.6428
+box3x3 matched_12m 1.00      S1_anom_desc        6   0.0907       0.1354       -0.0447                0.16      0.5759          0.6428
+box3x3 matched_12m 1.00 S1_anom_desc+NDVI        7   0.1400       0.1354        0.0046                0.64      0.6465          0.6428
+box3x3 matched_12m 1.00           S2_anom        4   0.1037       0.1354       -0.0316                0.16      0.5456          0.6428
+box3x3 matched_12m 1.00      S2_anom+NDVI        5   0.1289       0.1354       -0.0064                0.40      0.6005          0.6428
+box3x3 matched_12m 1.00       S1_desc_all       21   0.0928       0.1354       -0.0426                0.20      0.5817          0.6428
+box3x3 matched_12m 1.00  S1_desc_all+NDVI       22   0.1331       0.1354       -0.0023                0.46      0.6474          0.6428
+
+== B: corner (mean over 4 corners) ==
+                                          corner_pr  random_pr  corner_roc
+source window      C   set                                                
+box3x3 matched_12m 0.1 NDVI_only             0.1266     0.1345      0.6514
+                       S1_anom_all           0.0706     0.0926      0.5034
+                       S1_anom_all+NDVI      0.1028     0.1197      0.5746
+                       S1_anom_desc          0.0801     0.0836      0.5386
+                       S1_anom_desc+NDVI     0.1174     0.1246      0.6173
+                       S1_desc_all           0.0870     0.0896      0.5548
+                       S1_desc_all+NDVI      0.1160     0.1209      0.6207
+                       S2_anom               0.0763     0.1008      0.4992
+                       S2_anom+NDVI          0.0951     0.1254      0.5554
+                   1.0 NDVI_only             0.1266     0.1308      0.6514
+                       S1_anom_all           0.0709     0.0897      0.5025
+                       S1_anom_all+NDVI      0.1022     0.1255      0.5730
+                       S1_anom_desc          0.0801     0.0868      0.5367
+                       S1_anom_desc+NDVI     0.1173     0.1309      0.6160
+                       S1_desc_all           0.0838     0.0831      0.5536
+                       S1_desc_all+NDVI      0.1120     0.1189      0.6106
+                       S2_anom               0.0708     0.0945      0.4860
+                       S2_anom+NDVI          0.0932     0.1280      0.5412
+       survey_12m  0.1 NDVI_only             0.1266     0.1345      0.6514
+                       S1_anom_all           0.0749     0.0922      0.4980
+                       S1_anom_all+NDVI      0.1025     0.1190      0.5783
+                       S1_anom_desc          0.0804     0.0814      0.5305
+                       S1_anom_desc+NDVI     0.1128     0.1225      0.6121
+                       S1_desc_all           0.0847     0.0871      0.5363
+                       S1_desc_all+NDVI      0.1133     0.1231      0.6110
+                       S2_anom               0.0732     0.0973      0.5006
+                       S2_anom+NDVI          0.0995     0.1256      0.5628
+                   1.0 NDVI_only             0.1266     0.1308      0.6514
+                       S1_anom_all           0.0746     0.0869      0.4958
+                       S1_anom_all+NDVI      0.1028     0.1205      0.5761
+                       S1_anom_desc          0.0798     0.0853      0.5278
+                       S1_anom_desc+NDVI     0.1127     0.1306      0.6102
+                       S1_desc_all           0.0807     0.0798      0.5373
+                       S1_desc_all+NDVI      0.1094     0.1188      0.6048
+                       S2_anom               0.0709     0.0952      0.5020
+                       S2_anom+NDVI          0.1000     0.1294      0.5638
+pt10m  matched_12m 0.1 NDVI_only             0.1266     0.1345      0.6514
+                       S1_anom_all           0.0743     0.0786      0.5227
+                       S1_anom_all+NDVI      0.1105     0.1132      0.5960
+                       S1_anom_desc          0.0792     0.0804      0.5494
+                       S1_anom_desc+NDVI     0.1162     0.1260      0.6184
+                       S1_desc_all           0.0826     0.0860      0.5680
+                       S1_desc_all+NDVI      0.1166     0.1248      0.6234
+                       S2_anom               0.0848     0.0932      0.5300
+                       S2_anom+NDVI          0.1004     0.1254      0.5698
+                   1.0 NDVI_only             0.1266     0.1308      0.6514
+                       S1_anom_all           0.0740     0.0791      0.5218
+                       S1_anom_all+NDVI      0.1113     0.1190      0.5952
+                       S1_anom_desc          0.0794     0.0819      0.5484
+                       S1_anom_desc+NDVI     0.1168     0.1251      0.6173
+                       S1_desc_all           0.0814     0.0788      0.5686
+                       S1_desc_all+NDVI      0.1152     0.1167      0.6202
+                       S2_anom               0.0866     0.0961      0.5338
+                       S2_anom+NDVI          0.1000     0.1234      0.5674
+       survey_12m  0.1 NDVI_only             0.1266     0.1345      0.6514
+                       S1_anom_all           0.0765     0.0766      0.5248
+                       S1_anom_all+NDVI      0.1108     0.1124      0.6040
+                       S1_anom_desc          0.0792     0.0804      0.5494
+                       S1_anom_desc+NDVI     0.1162     0.1260      0.6184
+                       S1_desc_all           0.0826     0.0860      0.5680
+                       S1_desc_all+NDVI      0.1166     0.1248      0.6234
+                       S2_anom               0.0840     0.0936      0.5314
+                       S2_anom+NDVI          0.1023     0.1247      0.5732
+                   1.0 NDVI_only             0.1266     0.1308      0.6514
+                       S1_anom_all           0.0764     0.0788      0.5239
+                       S1_anom_all+NDVI      0.1113     0.1187      0.6036
+                       S1_anom_desc          0.0794     0.0819      0.5484
+                       S1_anom_desc+NDVI     0.1168     0.1251      0.6173
+                       S1_desc_all           0.0814     0.0788      0.5686
+                       S1_desc_all+NDVI      0.1152     0.1167      0.6202
+                       S2_anom               0.0844     0.0958      0.5338
+                       S2_anom+NDVI          0.1017     0.1235      0.5690
