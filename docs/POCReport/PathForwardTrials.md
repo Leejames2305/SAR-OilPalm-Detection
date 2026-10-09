@@ -69,12 +69,11 @@ The attached RVI review supports the observed null rather than offering an easy 
 
 ## Artifacts
 
-- Detailed report and tables: `misc/POC_Results/PathForwardTrials/REPORT.md`
-- Reproducible scripts: `misc/scripts/path_forward_trials/`
-- Main decision table: `misc/POC_Results/PathForwardTrials/decision_rules.csv`
-- Model race: `misc/POC_Results/PathForwardTrials/best_all14_models.csv`
-- Feature ablation: `misc/POC_Results/PathForwardTrials/feature_ablation_xgboost.csv`
-- Cross-estate: `misc/POC_Results/PathForwardTrials/best_cross_estate.csv`
-- Spatial fusion comparison: `misc/POC_Results/PathForwardTrials/fusion_vs_coords.csv`
-- Review-budget curve: `misc/POC_Results/PathForwardTrials/budget_curve_best_fusion.csv`
-- Cluster diagnostics: `misc/POC_Results/PathForwardTrials/unsupervised_cluster_metrics.csv`
+- Detailed report and tables: `.../PathForwardTrials/REPORT.md`
+- Main decision table: `.../PathForwardTrials/decision_rules.csv`
+- Model race: `.../PathForwardTrials/best_all14_models.csv`
+- Feature ablation: `.../PathForwardTrials/feature_ablation_xgboost.csv`
+- Cross-estate: `.../PathForwardTrials/best_cross_estate.csv`
+- Spatial fusion comparison: `.../PathForwardTrials/fusion_vs_coords.csv`
+- Review-budget curve: `.../PathForwardTrials/budget_curve_best_fusion.csv`
+- Cluster diagnostics: `.../PathForwardTrials/unsupervised_cluster_metrics.csv`

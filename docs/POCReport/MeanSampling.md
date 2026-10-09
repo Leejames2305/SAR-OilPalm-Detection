@@ -1,6 +1,8 @@
 # Mean-Sampling POC — Can 'Unhealthy' Trees Be Seen Statistically in SAR Linear-Power Backscatter?
 
-**Run:** standalone notebook `misc/notebook/POC_MeanSampling.ipynb` on Colab. **Artifacts generated:** `misc/POC_Results/MeanSampling/*` 
+**Run:** standalone notebook `.../MeanSampling/POC_MeanSampling.ipynb` on Colab. 
+
+**Artifacts generated:** `.../MeanSampling/Results/*` 
 
 **Scale:** the scene was re-uploaded to GCS with **linear (power) bands only**; the notebook and
 every statistic in this report operate on **linear power** (no dB). The linear-power rerun
@@ -167,7 +169,7 @@ estate, under the existing spatial-block honest-CV protocol.
 ## 7) Addendum — RVI/RFDI extension & the Middle-class investigation
 
 Follow-up probes after the main POC, run on the linear-power rerun artifacts. Analysis scripts:
-`misc/analysis/middle_class_analysis.py`, `misc/analysis/middle_predictive.py` (repo `.venv`).
+`middle_class_analysis.py`, `middle_predictive.py` (repo `.venv`).
 
 ### 7a) RVI / RFDI (window means, W3 & W5, per-estate evaluation)
 

@@ -92,7 +92,7 @@ vs ~19 m before
 Unsmoothed backscatter does not rescue RVI - the ratio-cancellation mechanism
 is independent of speckle filtering/multilooking. All verdicts stand.
 
-### Results (`misc/POC_Results/RVI_NDVI/`)
+### Results (`.../RVI_NDVI/Results/plots`)
 
 - `fig_rvi_kde.png`, `fig_rvi_roc.png` - RVI/RFDI overlap + diagonal ROC (null).
 - `fig_rvi_qp_kde.png`, `fig_rvi_qp_box.png` - eigenvalue RVI null; span shift.
@@ -152,20 +152,20 @@ NDVI-only corner-train mean PR 0.127 vs 0.131 size-matched random-train - the sp
 1. **S2 pull for Palong/Serting** - optical-transfer evidence (labels are prediction-derived; treat as supporting, not validation).
 2. Closed, do not rerun: RVI variants, temporal NDVI (+/-90 d), DL at this sample size, threshold tuning.
 
-## Artifacts
+## Artifacts (`.../RVI_NDVI/*`)
 
-- `misc/analysis/poc_rvi_ndvi_stage0_resample.py` - 3x3 resampling from (re-exported) scene
-- `misc/analysis/poc_rvi_ndvi_stage1.py` - intensity RVI stats
-- `misc/analysis/poc_rvi_ndvi_stage1b_quadpol.py` - T3 sampling + eigenvalue RVI
-- `misc/analysis/poc_rvi_ndvi_stage2_gee.py` - GEE pull (needs SA + role above)
-- `misc/analysis/poc_rvi_ndvi_stage2b_fusion.py` - offline NDVI/RVI fusion stats
-- `misc/analysis/poc_rvi_ndvi_stage3_ml.py` - classical ML probe (spectral-only)
-- `misc/analysis/poc_rvi_ndvi_stage4_spectrotemporal.py` - GEE red-edge/SWIR + temporal pull and test
-- `misc/analysis/poc_rvi_ndvi_stage5_blocksize.py` - leakage-gradient sweep
-- `misc/analysis/poc_rvi_ndvi_stage5b_distances.py` - train-test separation diagnostic
-- `misc/analysis/poc_rvi_ndvi_stage6_pockets.py` - pocket anatomy + holdout tests
-- `misc/analysis/poc_rvi_ndvi_stage7_corner.py` - corner-deployment simulation
-- Artifacts: `misc/POC_Results/RVI_NDVI/` (CSVs, JSONs, 15 figures)
+- `poc_rvi_ndvi_stage0_resample.py` - 3x3 resampling from (re-exported) scene
+- `poc_rvi_ndvi_stage1.py` - intensity RVI stats
+- `poc_rvi_ndvi_stage1b_quadpol.py` - T3 sampling + eigenvalue RVI
+- `poc_rvi_ndvi_stage2_gee.py` - GEE pull (needs SA + role above)
+- `poc_rvi_ndvi_stage2b_fusion.py` - offline NDVI/RVI fusion stats
+- `poc_rvi_ndvi_stage3_ml.py` - classical ML probe (spectral-only)
+- `poc_rvi_ndvi_stage4_spectrotemporal.py` - GEE red-edge/SWIR + temporal pull and test
+- `poc_rvi_ndvi_stage5_blocksize.py` - leakage-gradient sweep
+- `poc_rvi_ndvi_stage5b_distances.py` - train-test separation diagnostic
+- `poc_rvi_ndvi_stage6_pockets.py` - pocket anatomy + holdout tests
+- `poc_rvi_ndvi_stage7_corner.py` - corner-deployment simulation
+- Artifacts: `.../RVI_NDVI/Results` (CSVs, JSONs, 15 figures)
 
 
 

@@ -1,6 +1,6 @@
 # RF + G-SMOTE POC (AirHitam / Palong / Serting) - Findings and Verdict
 
-**Run:** Colab notebook `misc/notebook/POC_AirHitam_RF_GSMOTE.ipynb`
+**Run:** Colab notebook `misc/POC/AHCensus_RF_GSMOTE/POC_AirHitam_RF_GSMOTE.ipynb`
 
 **Target class:** `Unhealthy` (positive). `Healthy` = negative. `Middle` / `Vacant` dropped.
 

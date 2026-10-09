@@ -92,7 +92,7 @@ Rest ~1311 trees (~84 sick). Review top-25% (~328 trees) -> ~40 sick
 found (~47% recall, ~1.9x enrichment). Same arithmetic holds +/-2% for
 every design and B.
 
-### Figures (`misc/POC_Results/LimitedLabelsTriage/figs/`)
+### Figures (`.../LimitedLabelsTriage/Results/figs/`)
 
 - `fig_p0_qa.png` - estate map + quadrants + NDVI hist.
 - `fig_p1_designs.png` - PR / recall@25% vs B by design (flat bands).
@@ -111,8 +111,8 @@ every design and B.
 
 ## Artifacts
 
-- `misc/analysis/poc_limitedlabels_p0_audit.py` - freeze + QA
-- `misc/analysis/poc_limitedlabels_p1_designs.py` - 336 train/rest runs
-- `misc/analysis/poc_limitedlabels_p2_curve.py` - ceilings + curve
-- `misc/analysis/poc_limitedlabels_p3_model.py` - PCA/QDA/spec check
-- Tables/figs: `misc/POC_Results/LimitedLabelsTriage/{tables,figs}/`
+- `poc_limitedlabels_p0_audit.py` - freeze + QA
+- `poc_limitedlabels_p1_designs.py` - 336 train/rest runs
+- `poc_limitedlabels_p2_curve.py` - ceilings + curve
+- `poc_limitedlabels_p3_model.py` - PCA/QDA/spec check
+- Tables/figs: `.../LimitedLabelsTriage/{tables,figs}/...`

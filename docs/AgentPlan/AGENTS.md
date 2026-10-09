@@ -15,10 +15,11 @@ Due to limitation in local compute power, compute-intensive notebooks (Extractin
 Key things about current project structure:
 - `./data`: Contains clean datasets that is either freshly extracted, or filtered
 - `./docs`: Contains status logs, POC findings, and planned actions
-- `./misc/notebook`: Contains drafts' notebook, mostly for POC purpose
-- `./misc/POC_Results`: Contains results/artifacts collected from POC runs
+- `./misc/POC`: All Proof-Of-Concepts Runs lives here, including scripts, notebook, and generated artifacts
+- `./misc/analysis`: Folder for one-time analysis files
+- `./misc/notebook`: Folder for one-time notebook runs
 - `./misc/scripts`: Useful tools/scripts that helps process datasets
-- `*.ipynb`: Main notebook that will only be updated when POC shows promising direction
+- `main.py`: Main Marimo notebook that contains methods from promising POCs runs
 
 You are highly encouraged to read the `./docs/AgentPlan & POCReport` to understand what has been tried and findings from it. 
 

@@ -1,9 +1,10 @@
 # Workflow Audit - Why the RF is Still Not Good, and What to Actually Do
 
 **Branch audited:** dev (HEAD d840a2f "feat: Top 20 features selection, RF still less than ideal").
+
 **Target class:** Unhealthy (the only true positive we care about).
-**Method:** static code audit + numpy-only POCs (audit/02..05) + the committed datasets
-(data/processed/dataset_{Palong,Serting}_Basemap_w3_v4.csv). A scikit-learn install was
+
+**Method:** static code audit + numpy-only POCs (audit/02..05) + the committed datasets (data/processed/dataset_{Palong,Serting}_Basemap_w3_v4.csv). A scikit-learn install was
 attempted but this machine has no PyPI access, so the modeling POCs reproduce the *mechanism*
 with a logistic-regression proxy and a nearest-neighbour classifier; the exact RandomForest
 numbers are in docs/POCReport/feature_poc_report.md.

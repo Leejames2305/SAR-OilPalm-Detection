@@ -166,11 +166,10 @@ This file is a **terse index only**. It shows what is already settled, what must
 
 | Path | What |
 |---|---|
-| `misc/notebook` | All POCs' Notebook |
-| `misc/scripts` | Includes POCs .py such as `path_forward_trials` |
-| `misc/POC_Results` | Artifacts from POCs |
-| `main.ipynb` | Original pipeline (outdated - random CV) |
-| `docs/POCReport/` | All findings so far |
+| `./misc/POC` | All POCs' Runs (scripts & results)|
+| `./misc/scripts` | Useful tools & automated scripts that help process datasets |
+| `./main.py` | Marimo Notebook, update according to promissing POCs  |
+| `./docs/POCReport/` | All POCs findings documented  |
 
 
 

@@ -1,6 +1,5 @@
 # RF Performance POC — Findings (Palong_Basemap_w3_v4)
 
-Run locally with `feature_poc/poc_*.py` (venv `/tmp/sarrenv`). Notebook NOT modified.
 Dataset: 2171 trees (Middle dropped), 1971 Healthy / 200 Unhealthy (9.9:1), 78 features.
 RF hyperparams held FIXED (400 trees, n_jobs=-1, class_weight ~10:1, random_state 42);
 only the feature-handling step varies. Headline metric = PR-AUC (average_precision).
@@ -82,5 +81,4 @@ spectral signature.
    droppable. Aggregate labels per plot/row (disease spreads spatially) rather
    than per-tree would be the highest-value experiment.
 
-Artifacts: `poc_results.csv` (stratified CV table), logs in /tmp/poc_run3.log,
-/tmp/poc_fam.log, /tmp/poc_sp.log.
+Artifacts: `poc_results.csv` (stratified CV table)

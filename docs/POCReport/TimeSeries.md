@@ -205,17 +205,17 @@ still below NDVI-only.
 
 ## Artifacts
 
-- `misc/analysis/poc_timeseries_stage0_pull.py` - point-sample GEE pull (S1,
+- `poc_timeseries_stage0_pull.py` - point-sample GEE pull (S1,
   S2, L8, DW, covariates)
-- `misc/analysis/poc_timeseries_stage0b_pull_box3x3.py` - 3x3 box pull
+- `poc_timeseries_stage0b_pull_box3x3.py` - 3x3 box pull
   (S1, S2), window to 15 Jul 2026
-- `misc/analysis/poc_timeseries_stage1_eval.py` - temporal features and
+- `poc_timeseries_stage1_eval.py` - temporal features and
   feature-group evaluation
-- `misc/analysis/poc_timeseries_stage2_nested.py` - nested selection test over
+- `poc_timeseries_stage2_nested.py` - nested selection test over
   sources, windows, groups, and block seeds
-- `misc/analysis/poc_timeseries_stage3_checks.py` - anomaly-only regularised
+- `poc_timeseries_stage3_checks.py` - anomaly-only regularised
   spatial CV (check A) and corner deployment (check B)
-- Outputs: `misc/POC_Results/TimeSeries/`
+- Outputs: `.../TimeSeries/Results`
 - Regenerable data: the `ts_*.csv` pulls, which are raw per-tree values from Google Earth Engine.
   Regenerate with
   `poc_timeseries_stage0_pull.py`, 
