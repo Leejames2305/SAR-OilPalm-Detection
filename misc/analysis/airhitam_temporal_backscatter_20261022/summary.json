@@ -1,0 +1,39 @@
+{
+  "dates": [
+    "2026-06-10",
+    "2026-10-14"
+  ],
+  "days_apart": 126,
+  "n_trees": 2511,
+  "classes": {
+    "Healthy": 2351,
+    "Unhealthy": 160
+  },
+  "sampling": "per-tree mean of valid 3x3/5x5 pixels; linear power converted to dB as 10*log10(power)",
+  "scene_grids": {
+    "2026-06-10": {
+      "crs": "EPSG:32648",
+      "width": 461,
+      "height": 351,
+      "resolution_m": 6.4301092,
+      "bounds": [
+        213627.02589404432,
+        324894.27821302175,
+        216591.30623524432,
+        327151.24654222175
+      ]
+    },
+    "2026-10-14": {
+      "crs": "EPSG:32648",
+      "width": 460,
+      "height": 351,
+      "resolution_m": 6.4301092,
+      "bounds": [
+        213628.08707679392,
+        324896.7861876989,
+        216585.93730879392,
+        327153.7545168989
+      ]
+    }
+  }
+}
