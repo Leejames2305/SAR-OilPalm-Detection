@@ -258,7 +258,7 @@ Oracle (starter) reproduces a known score exactly; `nop` scores neutral; adversa
 
 ## 10. Milestones (each has an exit test)
 
-- **M0 Harbor + Podman spike** (blocked on your go-ahead for installs). Install pinned `harbor` (via `uv tool`), a Linux `podman` remote client and a Linux `docker-compose` (PATH must put them **before** Docker Desktop's Windows shims). Point `DOCKER_HOST` and the default connection at the rootful socket. *Exit:* oracle hello-world passes on `-e podman`; a Claude Code trial runs through your gateway; a Codex trial runs; a 2-minute-timeout trial shows **artifacts are collected and the verifier still runs**; a trial with `network_mode = "public"` in all phases runs **without** Harbor building the egress sidecar; the secret route works and **no key value appears** in `jobs/`; resource limits actually bite on rootful; a `regrade` after editing a `tests/` file works.
+- **M0 Harbor + Podman spike** (in progress; results in section 12). Install pinned `harbor` (via `uv tool`), a Linux `podman` remote client and a Linux `docker-compose` (PATH must put them **before** Docker Desktop's Windows shims). Point `DOCKER_HOST` and the default connection at the rootful socket. *Exit:* oracle hello-world passes on `-e podman`; a Claude Code trial runs through your gateway; a Codex trial runs; a 2-minute-timeout trial shows **artifacts are collected and the verifier still runs**; a trial with `network_mode = "public"` in all phases runs **without** Harbor building the egress sidecar; the secret route works and **no key value appears** in `jobs/`; resource limits actually bite on rootful; a `regrade` after editing a `tests/` file works.
 - **M1 Data + sealed split.** `build_data.py`, frozen `split.yaml`, allowlist copier, **gate calibration at candidate block sizes**. *Exit:* canary leak test green; stable split hash; block size chosen.
 - **M2 Verifier v1.** `fit_predict` contract, scoring and gate library with unit tests, pip-install-at-grading, starter pipeline (NDVI-LogReg from `misc/POC/RVI_NDVI/Results/airhitam_ndvi.csv` plus SAR). *Exit:* oracle reproduces a fixed score; `nop` neutral; adversarial pipelines fail safely; runtime inside caps.
 - **M3 Builder + runner + collector.** `build_task` / `run_session` / `collect` plus `lineage.json` and the T-attempt counter. *Exit:* a 20-minute dry session on a cheap model flows end to end; `harbor lint` and `harbor check` pass.
@@ -276,3 +276,34 @@ Still open, neither blocks planning:
 2. **Placeholders** to fill later in `AgentRSI/.env`: provider base URL(s) and model names, `GCP_PROJECT`, and the service-account JSON path. Real values go only in that gitignored file, never in chat.
 
 Things the plan expects to revisit with real data, not now: the gate floor (if it proves too strict after a few sessions), the block size (M1 calibration), and whether to restrict the verifier network again (section 7).
+
+## 12. M0 results (11 Nov 2026)
+
+Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`). Nothing was installed to the global `~/.local/bin`, because the sandbox blocked writes there.
+
+| Exit check | Result | Evidence |
+|---|---|---|
+| Pinned Harbor installs | **Pass.** `harbor==0.25.0` (published 25 Oct 2026, Python 3.12) | `AgentRSI/pyproject.toml`, `uv.lock`; `harbor --version` |
+| Linux `podman` and `docker-compose` | **Pass.** podman remote **v6.1.4** (matches engine), docker-compose **v5.7.0**. Both SHA-256 verified against GitHub digests. Static Linux ELF, not the Windows shims | `AgentRSI/.tools/bin/` |
+| Harbor Podman preflight | **Pass** with the Linux binaries first on `PATH` | `PodmanEnvironment.preflight()` |
+| Oracle hello-world on `-e podman` | **Pass.** reward 1.0 | `jobs/m0-oracle3/` |
+| Artifacts + verifier after agent timeout | **Pass.** The trial recorded `AgentTimeoutError`, `artifacts/app/out.txt` was collected, verifier reward 1 | `jobs/m0-timeout/` |
+| Egress sidecar not built for all-`public` | **Pass.** No sidecar text in any job output; source gates it on non-public policies | `docker.py:307` |
+| Secret via `--ae` env route, no value in `jobs/` | **Pass** (marker, not real key). Value reached the agent container; 0 of 14 job files and the run log contain it | `jobs/m0-secret2/` |
+| Secret via read-only `--mounts` route | **Pass** (marker, not real key). File readable in container, write to it fails (`readonly-ok`), marker in 0 job files and the run log | `jobs/m0-mount/` |
+| `regrade` after editing `tests/` | **Pass.** Same output, edited verifier, reward 1.0 → 0.5; source job unchanged | `jobs/m0-regrade/` |
+| Resource limits bite (rootful) | **Pass.** 256 MB limit killed an 800 MB allocation (exit 137); `--cpus=1` held 4 workers to 0.98 CPU-per-wall (unlimited 3.25) | direct `podman run` tests |
+| Claude Code trial through gateway | **Blocked.** No `claude` CLI in WSL and no gateway key in `.env` | pending |
+| Codex trial | **Blocked.** No `codex` CLI in WSL and no key in `.env` | pending |
+
+**Findings that change the plan:**
+1. **Base image needs bash.** `alpine` fails because Harbor runs `bash -c` in the container. Use `python:3.12-slim-bookworm` (Debian, bash, Python 3.12.16). Update the Dockerfile sketch in section 6.
+2. **Separate verifiers need the tests baked into the verifier image.** If `tests/` has its own `Dockerfile`, Harbor treats that image as owning `/tests` and does not upload `test.sh`. `tests/Dockerfile` must `COPY test.sh /tests/`. Otherwise the verifier fails with `/tests/test.sh: No such file`.
+3. **Artifacts must be declared** in `task.toml` (`artifacts = [...]`), or the verifier can't see the agent's output.
+4. **Regrade needs `-e podman`.** Without it, regrade uses the Docker backend and fails with "Docker daemon is not running". Its task names must also match the source job's trial names.
+5. **`cpus` is a CFS quota, not a cpuset.** `os.cpu_count()` still reports 12 inside a `--cpus=1` container, so any code that sizes workers from `cpu_count` will oversubscribe. The builder should pass the CPU count through `ctx`, which the plan already does, and the agent image should be told the real limit.
+6. **Harbor's `docker-compose` path is the Linux binary only when `.tools/bin` is first on `PATH`.** Harbor shells out to `podman compose`, which hands off to whichever `docker-compose` it finds.
+7. **The WSL VM stalled and restarted** (15:44 to 15:50, 11 Nov). The kernel log shows repeated order-7 page allocation failures (`GFP_KERNEL`, from a `vmbus` device-add worker) from 15:44, then "Under memory pressure" messages before the restart. The user reports disk at 99% and memory very high during the stall. The stalled step was the Podman client download. I have not found the cause. I measured the engine (idle) and the Harbor import (74 MB) only after the reboot, so neither is confirmed as the trigger. The retry on the restarted VM finished in under a minute, with a `MemAvailable` floor of 14.2 GB. Keep a memory guard on long downloads.
+8. **Runner environment must be set explicitly.** A plain shell needs `PATH` (Linux binaries first), `XDG_RUNTIME_DIR` (a writable directory) and `CONTAINER_HOST` / `DOCKER_HOST` (the rootful socket). Without them `podman` fails on `/run/user/1000/libpod` or on the socket. `run_session.py` must set all four.
+
+**Still open for M0:** the two agent trials only. They need the gateway key in `AgentRSI/.env` (placeholders in `AgentRSI/.env.example`) and the `claude` / `codex` CLIs, which Harbor installs inside the container. The gateway key is the user's to supply.

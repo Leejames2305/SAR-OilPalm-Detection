@@ -1,0 +1,11 @@
+# secrets and per-machine config: never commit
+.env
+.secrets/
+
+# generated / heavy
+tasks/
+jobs/
+.venv/
+.tools/
+.uv-cache/
+__pycache__/
