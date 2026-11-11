@@ -3,6 +3,10 @@ data/SAR-scenes
 data/SHPs
 data/ZIPs
 
+docs/Reference
+
+misc/temp
+
 .claude
 CLAUDE.md
 
