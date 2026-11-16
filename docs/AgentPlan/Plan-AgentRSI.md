@@ -1,11 +1,14 @@
-# AgentRSI - Plan (v1.0, final for M0)
+# AgentRSI - Plan (v1.1)
 
-**Date:** 11 November 2026 | **Status:** plan finalized, nothing built yet | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
-**v1.0 changes:** verifier network is **fully public** (your call: throwaway container), so no egress allowlist and no nftables sidecar are needed anywhere; gate parameters locked (effect floor 0.03, T-attempt budget 20). Earlier in v0.3: AirHitam-dominant reward weights, the T-only certification gate (section 7), rootful engine. Only M0's installs and the `.env` placeholders remain open (section 11).
+**Date:** 11 November 2026 (v1.0); revised 16 November 2026 (v1.1) | **Status:** M0 nearly closed (two agent trials wait for a gateway key); v1.1 proposals await your decisions (section 11) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
+
+**v1.1 changes (16 Nov, your two findings):** Palong and Serting labels are trusted, so each estate gets its own sealed T and labels carry a provenance field. And a static dashboard timeline of RSI progress (new milestone M3b). Both are written as **[P]** proposals for your review (section 11).
+
+**v1.0 changes:** verifier network is **fully public** (your call: throwaway container), so no egress allowlist and no nftables sidecar are needed anywhere; gate parameters locked (effect floor 0.03, T-attempt budget 20). Earlier in v0.3: AirHitam-dominant reward weights, the T-only certification gate (section 7), rootful engine. M0's two agent trials and the decisions in section 11 remain open.
 
 Goal: turn this project into an RSI4EO-style loop. A coding agent builds the oil-palm triage model inside a sandbox, a sealed verifier scores it, and each day's session starts from what the last one found. Humans design the harness and verifier. Agents build the models.
 
-Legend: **[V]** verified from Harbor docs or source | **[T]** tested on this machine | **[S]** from a simulation on your real AirHitam tables | **[?]** unverified, check in M0 | **[D]** decided with you.
+Legend: **[V]** verified from Harbor docs or source | **[T]** tested on this machine | **[S]** from a simulation on your real AirHitam tables | **[?]** unverified, check in M0 | **[D]** decided with you | **[U]** your finding (16 Nov 2026) | **[P]** proposal, pending your decision (section 11).
 
 ---
 
@@ -14,7 +17,7 @@ Legend: **[V]** verified from Harbor docs or source | **[T]** tested on this mac
 | RSI4EO concept | Here |
 |---|---|
 | Harness H (data, checkpoints, libs, budget) | Per-tree SAR tables + ROI-masked ALOS-2 rasters for 3 estates, prior POC reports, incumbent pipeline, GEE/GCS access, a generous Python geo/ML stack. **CPU only.** |
-| Verifier V (sealed, scores only) | Sealed held-out blocks for AirHitam (ground truth) and Palong/Serting (proxy labels, discounted). Returns scores, never labels. |
+| Verifier V (sealed, scores only) | **[P]** Sealed held-out blocks for all three estates (AirHitam, Palong, Serting), each with its own T. Returns scores, never labels. (v1.0 called Palong/Serting "proxy" and gave them no T.) |
 | Pipeline pi | `submission/`: `fit_predict(labeled, unlabeled, ctx) -> risk scores`, a **training recipe** (the product trains on ~1000 labels in a new field and predicts the rest). Self-contained apart from pip-installable packages (section 7). |
 | Few-label task (0.2-4% labels) | Same shape: ~1000 labelled trees per estate, the rest is the "unlabeled pool". |
 | Recursion inside a task | Agent-driven within the 8 h session. Pseudo-labelling on the unlabeled pool is permitted, nothing is prescribed. |
@@ -23,21 +26,24 @@ Legend: **[V]** verified from Harbor docs or source | **[T]** tested on this mac
 
 CPU-only is fine: earlier POCs show nonlinear and deep models lose to linear ones at n=160 positives (MainChecklist B). Ideas and verification are the bottleneck, not compute.
 
-## 2. Decisions locked
+## 2. Decisions locked, and what changed on 16 Nov
 
-- **[D] Reward (what the agent optimises)** = `(1.0 * lift_AirHitam + 0.75 * mean(lift_Palong, lift_Serting)) / 1.75`, where `lift = pr_auc - prevalence` on sealed V blocks. AirHitam is ~57% of the total, the two proxy estates ~43% together. Weights live in `verifier.yaml`. The agent sees the per-estate breakdown.
-- **[D] Promotion (what moves the incumbent) is AirHitam-only**, through a **T-only certification gate** (section 7). Proxy estates never vote. They are an advisory sanity check only.
+- **[D] Reward (what the agent optimises)** = `(1.0 * lift_AirHitam + 0.75 * mean(lift_Palong, lift_Serting)) / 1.75`, where `lift = pr_auc - prevalence` on sealed V blocks. AirHitam is ~57% of the total, Palong and Serting ~43% together. Weights live in `verifier.yaml`. The agent sees the per-estate breakdown.
+  - **[P] Keep the 0.75 weight for now (decision 1).** Trusting the labels does not remove spatial smoothness (section 7), so the reason for discounting Palong and Serting still holds. Changing weights mid-epoch would also make scores incomparable.
+- **[U] Label provenance (16 Nov).** You say the Palong and Serting labels are trustworthy, as AirHitam's are. So they are no longer "proxies". The basis is not written down yet (decision 3). Each estate's manifest and `reward.json` carry a `label_source` field: `ground_truth` (AirHitam, per CLAUDE.md), `user_asserted` (Palong and Serting until the basis is recorded), or `prediction_derived` if the basis turns out to be that. **CLAUDE.md and MainChecklist still say Palong and Serting are prediction-derived. I have not changed either.**
+- **[D] Promotion (what moves the incumbent).** v1.0: AirHitam-only, through a T-only certification gate (section 7). **[P] v1.1 proposal:** one composite T test on the reward weights, plus a per-estate non-degradation check (decision 2). The AirHitam-only rule stays as the alternative.
 - **[D] Phased verifier:** v1 grades once at end of session; v2 adds an in-run sealed query tool (MCP sidecar) with a query budget.
-- **[D] Agents:** Claude Code and Codex, both via third-party API (provider supports Anthropic Messages and OpenAI Responses). Agent, model, base URL and key name are run-time parameters with placeholders in `.env`.
+- **[D] Agents:** Claude Code and Codex, both via third-party API (provider supports Anthropic Messages and OpenAI Responses). Agent, model, base URL and key name are run-time parameters with placeholders in `.env`. Codex's key variable is `OPENAI_API_KEY` (section 3), not the `ANTHROPIC_AUTH_TOKEN` currently in `.env.example`.
 - **[D] Budget / network:** 8 h agent timeout (terminal-bench-science's `timeout_sec = 28800` **[V]**). Agent phase `network_mode = "public"`.
 - **[D] Verifier network: fully public** (Harbor's default). The verifier container is throwaway, so we accept open egress there. The real label protection is the unprivileged subprocess plus root-only label files (section 7), not the network. Consequences are listed in section 7 ("Network at grading").
-- **[D] Gate parameters locked:** effect floor `d >= 0.03`, T-attempt budget 20 (section 7). Lowering the floor to 0.02 would roughly double false adoptions, so revisit only after real sessions show the floor is too strict.
+- **[D] Gate parameters locked:** effect floor `d >= 0.03`, T-attempt budget 20 (section 7). Lowering the floor to 0.02 would roughly double false adoptions, so revisit only after real sessions show the floor is too strict. **[P]** The calibration in section 7 was run on AirHitam only. The composite test needs its own calibration in M1 before these numbers are locked for it.
 - **[D] No package list to maintain, no approval flow.** The agent ships a pinned `requirements.txt`; the verifier installs it from PyPI.
 - **[D] Runtime:** Podman from WSL, **rootful** (confirmed), Docker Desktop as fallback.
 - **[D] Focus:** open-ended research is the default and **explicitly includes data expansion**. Optional lenses (`literature`, `data-expansion`, `ablation`) just bias the instruction.
 - **[D] Data egress accepted:** ALOS-2 scenes are ROI-masked and the full images live elsewhere. What leaves the machine to your inference provider: ROI-masked ALOS-2, tree coordinates and labels.
 - **[D] GCS/GEE service-account key is passed to the agent** (delivery and hygiene in sections 6 and 9).
 - **[D]** Generated tasks live in `AgentRSI/tasks/<id>/`. Harbor's file is `instruction.md` (singular) **[V]**.
+- **[U] Dashboard (16 Nov).** You want a timeline of RSI progress, with key events labelled and context on hover or click. Section 5 describes it and M3b builds it. **[P]** It reads verifier numbers, not the agent's report text (section 5).
 
 ## 3. Harbor + Podman: what is verified
 
@@ -46,10 +52,11 @@ CPU-only is fine: earlier POCs show nonlinear and deep models lose to linear one
 - A task is a directory: `instruction.md`, `task.toml`, `environment/`, `tests/` (`test.sh`), optional `solution/`.
 - **Separate verifier** (default for new tasks): grading runs in a fresh sandbox built from `tests/Dockerfile`. Data baked there **never reaches the agent container**. Only declared `artifacts` cross over (at original paths, sanitized: no setuid, no outward symlinks, no special files). Separate verifiers do **not** inherit runtime mounts or `extra_docker_compose` overlays, so the service-account key cannot leak into grading.
 - Reward goes to `/logs/verifier/reward.txt` or `reward.json` (richer; wins if both). terminal-bench-science mandates 0/1; **we deviate on purpose** (graded metrics).
-- Agent timeout **still triggers grading**, and the reward counts. Whether artifacts are collected after a timeout is undocumented **[?]** (M0 tests it).
+- Agent timeout **still triggers grading**, and the reward counts. M0 confirmed artifacts are collected after a timeout **[T]**.
 - **Claude Code:** custom gateway via `ANTHROPIC_BASE_URL` + bearer `ANTHROPIC_AUTH_TOKEN`; options `max_turns`, `max_budget_usd`, `reasoning_effort`, `append_system_prompt`, `disable_web_search`; defaults to `--permission-mode bypassPermissions`; Anthropic Messages only.
-- **Codex:** `OPENAI_BASE_URL` + `OPENAI_API_KEY`; `reasoning_effort`; **Responses API only**.
-- Network modes per phase: `public` | `no-network` | `allowlist` (hostnames, wildcards, IPs, CIDRs). Docker and Podman support all three and per-phase overrides, but restricted modes need **nftables support for Harbor's egress-control sidecar**. We use `public` for every phase, so we should not need the sidecar at all (M0 confirms Harbor does not build it anyway **[?]**).
+- **Codex:** `OPENAI_BASE_URL` + `OPENAI_API_KEY` **[V]** (`codex.py` ~L146–150: host candidates `OPENAI_API_KEY` or `CODEX_API_KEY`, passed into the container as `OPENAI_API_KEY`; base URL from `OPENAI_BASE_URL`); `reasoning_effort`; **Responses API only**.
+- `--api-key-name` **[V]** (`jobs.py` help text) names the **host** environment variable that holds the key. So `.env` needs `API_KEY_NAME=OPENAI_API_KEY` for Codex.
+- Network modes per phase: `public` | `no-network` | `allowlist` (hostnames, wildcards, IPs, CIDRs). Docker and Podman support all three and per-phase overrides, but restricted modes need **nftables support for Harbor's egress-control sidecar**. We use `public` for every phase, so we should not need the sidecar at all (M0 confirmed Harbor does not build it for all-public **[T]**).
 - Flags: `--base-url`, `--api-key-name`, `--api-format`, `--sm`, `--ae`/`--ak`, `-e`, `--override-cpus`/`--override-memory-mb`, `--dry-run`, `--print-config`. `harbor lint` / `harbor check` review a task. `regrade` re-runs a newer verifier on recorded outputs (separate verifier only).
 - `-e podman` exists upstream (merged Sep 2026) but **harbor#398 is open**: with `podman-compose` only, Harbor mis-detects the backend and fails on `compose ls`. A working setup in that thread had `docker-compose` as the compose provider.
 
@@ -61,7 +68,7 @@ CPU-only is fine: earlier POCs show nonlinear and deep models lose to linear one
 | Container run + internet | **Yes.** An alpine container started on the rootful engine, saw 12 CPUs, fetched `pypi.org`. |
 | Resources | Engine sees **15.2 GiB RAM, 12 CPUs**, shared with WSL and Windows (~11.5 GiB free at test time). The "2 GiB / 6 CPU" in `podman machine list` is nominal. |
 | Kernel firewall | `CONFIG_NF_TABLES=y` is built into the WSL2 kernel. Not needed now that every phase is `public`, but it keeps a restricted verifier possible later. |
-| Linux `podman` / `podman-compose` / `harbor` / `claude` / `codex` in WSL | **None installed.** Only `podman.exe` (Windows interop) and Docker Desktop's Windows `docker` / `docker-compose` shims. |
+| Linux `podman` / `podman-compose` / `harbor` / `claude` / `codex` in WSL | **None installed globally** at test time (only `podman.exe` via Windows interop and Docker Desktop's Windows shims). **M0 installed pinned copies** in `AgentRSI/.tools/bin/` and `AgentRSI/.venv/` (section 12). `claude` and `codex` are still missing. |
 
 Findings that shaped the design:
 
@@ -75,23 +82,30 @@ Note: the Bash sandbox inside Claude sessions blocks Unix sockets and Windows in
 ```
 AgentRSI/
   README.md                  how to run a session / how to customise
-  pyproject.toml             uv project; pins harbor==<version chosen in M0>
-  .env.example               AGENT, MODEL, BASE_URL, API_KEY_NAME, API_FORMAT, ENV=podman,
-                             GCP_PROJECT, GCP_SA_KEY_PATH, DAILY_SPEND_CAP_USD ...  (placeholders)
+  pyproject.toml             uv project; pins harbor==0.25.0 (installed in .venv in M0)
+  .env.example               AGENT, MODEL, BASE_URL, API_KEY_NAME (Codex: OPENAI_API_KEY),
+                             API_FORMAT, ENV=podman, GCP_PROJECT, GCP_SA_KEY_PATH,
+                             DAILY_SPEND_CAP_USD ...  (placeholders)
   .secrets/                  GITIGNORED. gcp-sa.json lives here on the WSL disk.
   config/
     session.yaml             focus lens, agent, model, budget, cpus/mem, effort, max_budget_usd
-    split.yaml               FROZEN: seeds, block size, per-estate L/V/T sizes (change = new epoch)
-    verifier.yaml            reward weights, gate thresholds, T-attempt budget, bootstrap B,
-                             runtime caps, verifier network_mode (public)
+    split.yaml               FROZEN: seeds, block size, per-estate L/V/T sizes,
+                             Middle rule (change = new epoch)
+    verifier.yaml            reward weights, [P] composite gate weights + non-degradation floor,
+                             gate thresholds, T-attempt budget, bootstrap B, runtime caps,
+                             verifier network_mode (public)
   templates/                 instruction (base + focus lenses), task.toml, Dockerfile.agent/.verifier
-  src/agentrsi/              builder library (build_task, build_data, stage_secrets, render_handoff, collect, lineage)
+  src/agentrsi/              builder library (build_task, build_data, stage_secrets, render_handoff,
+                             collect, lineage, events)
   verifier/                  scoring + gate library baked into every tests/ image (unit-tested)
   starter/                   session-0 pipeline (NDVI-LogReg incumbent from the POCs)
   scripts/                   thin CLIs: build_task  run_session  collect  regrade  daily
+                             [P] dashboard
   state/lineage.json         incumbent, scores, epochs, spend ledger, T-attempt counter (committed, small)
-  sessions/sNNN/             COLLECTED: REPORT.md HANDOFF.md submission/ datasets/ reward.json meta.json
-  tasks/  jobs/              GENERATED (gitignored)
+  state/events.jsonl         [P] append-only event log, one JSON line per event (committed, small)
+  sessions/sNNN/             COLLECTED: REPORT.md HANDOFF.md submission/ datasets/ reward.json
+                             [P] certification.json (T, host-only) meta.json
+  tasks/  jobs/  dashboard/  GENERATED (gitignored). [P] dashboard/index.html is the static page.
 ```
 
 The builder uses an **allowlist copy**. Nothing reaches `environment/` unless a rule names it, because `data/Labels/*.csv`, the SHPs and the KMLs contain *all* labels.
@@ -107,12 +121,31 @@ tasks/sNNN/  --run_session.py-->  stage secrets -> harbor run -p ... -a <agent> 
         |                          agent sandbox ends -> artifacts copied out -> separate (fresh, public-network) verifier grades
         v
 jobs/sNNN/  --collect.py-->  secret scan -> sessions/sNNN/  +  lineage.json (certify T -> promote or not)
+        |                    [P] also appends state/events.jsonl and writes certification.json
         v   next day: build_task.py reads it all again
+        |
+        [P] dashboard.py  -> dashboard/index.html   (reads reward.json, certification.json, events.jsonl)
 ```
 
 Rules:
 - `collect.py` runs on the host and **only copies, scans and parses**. It never imports or executes agent-written code on the host.
 - **Handoff numbers come from the verifier, not the agent.** `render_handoff` injects `reward.json` values into the next instruction and flags any figure in the agent's HANDOFF that disagrees.
+
+### Dashboard **[U] finding, [P] design** (M3b)
+
+Your request: a simple, interactive timeline that shows RSI progress at a glance, with key events labelled and their context on hover or click.
+
+- **[P] Numbers come from verifier files only:** `reward.json` (V, per session), `certification.json` (T, host-only), and `events.jsonl`. You asked for metrics "from the report". I propose the report only supply event context (the one-line summary and a link to the report section). The report is written by the agent, and the plan already says handoff numbers come from the verifier, not the agent. Reading the report for numbers would break that rule.
+- **[P] Static, offline page:** `scripts/dashboard.py` writes `dashboard/index.html`, a single self-contained file (no server, no CDN) that opens with the network off.
+- **[P] What the timeline shows:**
+  - Composite V per session, plus each estate's V. Labelled **"search signal, optimistic"**, because V is selected on every session (section 7).
+  - Certified T deltas per nominee with CI bands and the **+0.03 line**. T is labelled **"certified"**. The two series are never merged.
+  - Incumbent changes, epoch shading (series are never joined across epoch boundaries), and a small header with the incumbent, T attempts used out of 20, and the current epoch.
+- **[P] Events** (`state/events.jsonl`, one object per line): `ts`, `session`, `epoch`, `type` (session_start, session_end, nominee_declared, certification_pass, certification_fail, promoted, review_flag, split_refresh, budget_alert, spend_cap, run_error), `summary` (one line, shown on hover), `ref` (report section, opened on click), and optional `values` copied from verifier files. Events are append-only and written once per run, so re-collecting does not duplicate them.
+
+Rules:
+- Dashboard data is never written into any `tasks/` directory. Canary test in M3b.
+- Dashboard is regenerated by `collect` and `daily.sh`, never edited by hand.
 
 ## 6. Generated task anatomy (sketch; validate with `harbor lint` / `--dry-run` [?])
 
@@ -132,14 +165,14 @@ artifacts = ["/app/submission", "/app/report", "/app/datasets"]
 Sizing: engine total 15.2 GiB, ~11.5 free; 6 + 4 GiB. Limits are enforced only on the **rootful** engine. One session at a time on this box.
 
 **Agent-visible `environment/`:**
-- `data/`: per estate, the **L** labelled trees; **V and T trees without labels** (coordinates and features, since in deployment you know where every tree is). Palong/Serting L labels are marked `proxy`.
+- `data/`: per estate, the **L** labelled trees; **V and T trees without labels** (coordinates and features, since in deployment you know where every tree is). **[U/P]** Each estate's manifest carries `label_source` (section 7). The v1.0 `proxy` marking is retired. **[P]** Middle trees are not scored (decision 4).
 - `rasters/`: the ROI-masked ALOS-2 scenes.
 - `prior/`: `docs/POCReport/*`, MainChecklist (settled facts and dead ends), `GEECatalogSurvey.md`, the last `HANDOFF.md`, incumbent `submission/`, earlier derived datasets (size-capped).
 - Base image: Python geo/ML stack (numpy/scipy/pandas/sklearn/xgboost/lightgbm, torch CPU, rasterio/geopandas, `earthengine-api`, `google-cloud-storage`), plus the helper CLI `agentrsi`: `cv` (reusable spatial-block CV on L, like the paper's local validation), `selfcheck` (runs the verifier contract offline on L only), `gcp-init`.
 
 **Google credentials.** The agent may use GEE and GCS. Delivery avoids baking the key into any image layer:
-- **Preferred:** `stage_secrets.py` copies `.secrets/gcp-sa.json` to a mode-0600 file under `/mnt/wsl/agentrsi/` (tmpfs the engine can see; wiped on WSL restart, restaged each run). The task mounts it **read-only** via `environment.mounts` **[V]** at `/run/secrets/gcp-sa.json`, with `GOOGLE_APPLICATION_CREDENTIALS` pointing there.
-- **Fallback:** inject as an agent-phase env var (`--ae`), scoped to the agent phase only **[V]**. M0 must check that neither route writes the key into `jobs/*/config.json`, logs or trajectories **[?]**.
+- **Preferred:** `stage_secrets.py` copies `.secrets/gcp-sa.json` to a mode-0600 file under `/mnt/wsl/agentrsi/` (tmpfs the engine can see; wiped on WSL restart, restaged each run). The task mounts it **read-only** via `environment.mounts` **[V]** at `/run/secrets/gcp-sa.json`, with `GOOGLE_APPLICATION_CREDENTIALS` pointing there. **[T]** M0 confirmed the mount is readable, read-only, and the value stays out of `jobs/`.
+- **Fallback:** inject as an agent-phase env var (`--ae`), scoped to the agent phase only **[V]**. **[T]** M0 confirmed the value stays out of `jobs/` and the run log.
 - Only the placeholders `GCP_PROJECT` and `GCP_SA_KEY_PATH` live in `.env`. The instruction gives the key's location, says to initialise `ee` with it, and **never to print or copy it**.
 
 **`instruction.md` sections:** Mission | Harness map | Pipeline contract | Deliverables with absolute paths | Freedom (internet, papers, GEE/GCS, pseudo-labelling, data expansion all welcome) | Constraints (CPU only, 28800 s, never touch `/tests`, never try to recover sealed labels, never print the credentials) | **Checkpoint rule** | **Nominee** (name the one pipeline to certify) | Handoff from the previous session (auto-injected). The paper's "do not use online solutions" line is dropped on purpose; recovering the *sealed labels* stays forbidden.
@@ -152,14 +185,24 @@ Sizing: engine total 15.2 GiB, ~11.5 free; 6 + 4 GiB. Limits are enforced only o
 
 ### Splits
 
-Frozen in `split.yaml`, stratified so each part keeps enough positives.
-- **AirHitam:** L ~1000 (~64 pos, matches "saturates by ~1000 labels"), V ~750 (~48 pos), **T ~760 (~48 pos, never reported to the agent)**.
-- **Palong, Serting:** L ~1000 each, V = the remainder (~108 / ~62 proxy positives). No T.
-- **Block size is open [S].** At 220 m AirHitam has only **15 blocks**, so T would hold ~4-5 blocks and a block bootstrap over 4-5 clusters is unreliable (see calibration: nominal 5% false-adopt came out at 7-16%). M1 re-runs the gate calibration on finer blocks (110 m gives 42) and picks the coarsest block size whose null false-adopt rate is close to nominal. The 110 m run so far covers only the V-selection simulation, not the gate.
+Frozen in `split.yaml`, stratified so each part keeps enough positives. Counts below are from the label CSVs (16 Nov). They follow the POC convention: `Middle` is excluded from scoring (decision 4).
+
+| Estate | Scored trees (H + U) | Unhealthy | Prevalence | Remainder after L ~1000 |
+|---|---|---|---|---|
+| AirHitam | 2511 | 160 | 6.4% | ~96 U → V ~48, T ~48 |
+| Palong | 2171 (+493 Middle) | 200 | 9.2% | ~108 U → V and T both fit |
+| Serting | 1667 (+378 Middle) | 154 | 9.2% | **~62 U: too few for V ≥35 and T ≥35** |
+
+- **AirHitam** (`ground_truth`): L ~1000 (~64 pos, matches "saturates by ~1000 labels"), V ~750 (~48 pos), **T ~760 (~48 pos, never reported to the agent)**. Unchanged from v1.0.
+- **[U][P] Palong and Serting** (`user_asserted` until the basis is recorded): L ~1000 each, V and T from the remainder, so **each now gets a T** (v1.0 had none).
+  - Palong fits at L ~1000: ~92 Unhealthy in L, ~108 in the remainder.
+  - **Serting does not fit at L ~1000.** The remainder holds ~62 Unhealthy trees, short of the 35 + 35 needed for V and T. **[P] Serting L should drop to ~800** (about 74 Unhealthy in L and ~80 in the remainder, so V ~40 and T ~40). Settled in M1, once the Middle rule is fixed.
+  - These are proportional estimates. Actual L draws are stratified in M1.
+- **Block size is open [S].** At 220 m AirHitam has only **15 blocks**, so T would hold ~4-5 blocks and a block bootstrap over 4-5 clusters is unreliable (see calibration: nominal 5% false-adopt came out at 7-16%). M1 re-runs the gate calibration on finer blocks (110 m gives 42) and picks the coarsest block size whose null false-adopt rate is close to nominal. **[P]** Calibrate on all three estates together, since the composite test uses all three.
 
 ### Contract
 
-Per estate the verifier calls `fit_predict(labeled=L, unlabeled=V(+T), ctx)`. `ctx` holds the estate name, the agent's `datasets/` path, the other estates' L data, a scratch dir and the CPU count. It runs in an **unprivileged subprocess that cannot read the labels** (label files root-owned, mode 0700); a separate trusted process scores afterwards. The verifier also runs the **incumbent** and a **coordinates-only** baseline in the same run, so every result is a **paired delta**.
+Per estate the verifier calls `fit_predict(labeled=L, unlabeled=V(+T), ctx)`. `ctx` holds the estate name, the agent's `datasets/` path, the other estates' L data, a scratch dir and the CPU count. It runs in an **unprivileged subprocess that cannot read the labels** (label files root-owned, mode 0700); a separate trusted process scores afterwards. The verifier also runs the **incumbent** and a **coordinates-only** baseline in the same run, so every result is a **paired delta**. **[P]** It returns per-estate scores and the composite (reward weights).
 
 ### Packages (replaces the wheelhouse and approval flow)
 
@@ -181,19 +224,19 @@ New covariates ship as `datasets/<name>/features.parquet` keyed by `(estate, tre
 
 ### Roles of V and T
 
-- **V:** its score is returned to the agent (session-end `reward.json` in v1, in-run queries in v2). It is the agent's search signal and **is expected to become optimistic**.
-- **T:** never reported to the agent, **spent only on certification**: one evaluation per session, for the single declared nominee. Every certification is one **T attempt** in the ledger.
+- **V:** its score is returned to the agent (session-end `reward.json` in v1, in-run queries in v2). It is the agent's search signal and **is expected to become optimistic**. **[P]** Labelled "search signal" on the dashboard.
+- **T:** never reported to the agent. **[P]** Now held for all three estates. Spent only on certification: one evaluation per session, for the single declared nominee. Every certification is one **T attempt** in the ledger.
 
 ### Why a T-only gate **[S]**
 
-Simulation on your real AirHitam tables (`misc/temp/sim_winners_curse.py`, `misc/temp/sim_certification_gate.py`; scratch and gitignored). "Agent ideas" were LogReg on random subsets of the 26 NDVI/spectral/SAR features, split at 220 m blocks into ~40/30/30 L/V/T (~47 positives in V and in T), compared with the NDVI-LogReg incumbent. This is a rough stand-in for agent behaviour, not a model of it.
+Simulation on your real AirHitam tables (`misc/temp/sim_winners_curse.py`, `misc/temp/sim_certification_gate.py`; scratch and gitignored). "Agent ideas" were LogReg on random subsets of the 26 NDVI/spectral/SAR features, split at 220 m blocks into ~40/30/30 L/V/T (~47 positives in V and in T), compared with the NDVI-LogReg incumbent. This is a rough stand-in for agent behaviour, not a model of it. **[P]** The simulation covers AirHitam only. The three-estate composite is not yet simulated.
 
 - A typical idea is slightly **worse** than the incumbent (mean dPR-AUC -0.005, matching the POCs). The spread between candidates (SD ~0.026) is as large as any real gain.
 - **Selecting on V inflates V.** Best-of-k apparent gain on V versus the same candidate on fresh T: k=1: -0.008 / -0.006; k=3: +0.009 / 0.000; k=10: +0.023 / +0.002; k=30: +0.033 / +0.005; k=60: +0.038 / +0.007. 110 m blocks gave the same pattern.
 - **In v1 the agent touches V once per session**, so selection pressure on V is roughly the number of sessions, adaptively through handoffs. A few days is mild (best-of-3 optimism ~+0.01, best-of-10 ~+0.02). **In v2 (in-run queries) k reaches 30-60 within one session (+0.03 to +0.04).** The gate below is cheap, so adopt it from day one.
 - The v0.2 gate (V CI-separated from zero and T non-degrading) passed a null idea **21-25%** of the time once k was 10-30.
 
-Gate calibration (T-only, one nominee, paired block bootstrap, 220 m blocks, 120 repetitions):
+Gate calibration (T-only, one nominee, paired block bootstrap, 220 m blocks, 120 repetitions; AirHitam only, see the note above):
 
 | Gate | Null idea, V-winner of k=10 | Null, k=30 | Real +0.02 (ceiling) | Real +0.04 (ceiling) | Real +0.06 (ceiling) |
 |---|---|---|---|---|---|
@@ -206,7 +249,14 @@ The "real gain" columns are a **ceiling**: the synthetic candidates carry no can
 
 ### Promotion gate (host-side, in `collect.py`)
 
-Promote the nominee only if on **AirHitam T**: paired block-bootstrap 5th percentile of dPR-AUC vs the incumbent is **> 0 and dPR-AUC >= 0.03**. Thresholds live in `verifier.yaml`. Advisory flag, not a vote: if the nominee is significantly worse than the incumbent on Palong and Serting (untested **[?]**), `collect.py` marks the session `REVIEW` and you decide.
+**v1.0 rule (in force until you decide):** promote the nominee only if on **AirHitam T**, the paired block-bootstrap 5th percentile of dPR-AUC vs the incumbent is **> 0 and dPR-AUC >= 0.03**. Palong and Serting are an advisory flag only: if the nominee is significantly worse than the incumbent there, `collect.py` marks the session `REVIEW` and you decide.
+
+**[P] v1.1 proposal (decision 2, recommended): one composite T test.**
+- Composite = the reward's weights over T: AirHitam 57%, Palong 21%, Serting 21%.
+- Promote only if the composite's 5th percentile of paired dPR-AUC is **> 0** and the composite dPR-AUC is **>= 0.03**, **and** no estate's paired dPR-AUC is below **-0.01** (non-degradation; the value is set in M1).
+- **Why this shape:** the agent optimises the reward, so the gate certifies the reward. One composite test per session keeps one T attempt per session, so the 20-attempt budget keeps its meaning. The non-degradation check can only block adoptions, so it cannot add false adopts. Paired deltas of lift and PR-AUC are identical, because prevalence cancels in a paired difference.
+- **Alternative:** the v1.0 AirHitam-only rule, with Palong and Serting kept as the REVIEW flag.
+- Either way, the 0.03 floor and the 20-attempt budget are recalibrated for the chosen test in M1.
 
 ### What this gate cannot do
 
@@ -214,39 +264,47 @@ Promote the nominee only if on **AirHitam T**: paired block-bootstrap 5th percen
 - A false adopt costs little when it happens: an adopted null idea has a true effect around -0.005 to +0.005. The real cost of reuse is a T score that is optimistic for the incumbent and a spent T.
 - At ~5% per attempt, 20 attempts give about a 64% chance of at least one false adopt. Hence a **T-attempt budget (default 20)**. When exhausted, or when new labels arrive, the split is refreshed as a new epoch. Incumbent T scores are never headline numbers; only paired deltas are.
 
-### `reward.json`
+### `reward.json` and `certification.json`
 
-`score` (weighted composite), per-estate `pr_auc_lift`, `pr_auc`, `prevalence`, `recall_at_25`, `enrichment_top10`, `roc_auc`, V CI bounds, paired delta vs incumbent, delta vs coordinates-only per estate, runtime, `pip freeze`. AirHitam **T** metrics go to a separate file that is never injected into any instruction.
+`reward.json` (V, per session, visible to the agent at session end): `score` (weighted composite), per-estate `pr_auc_lift`, `pr_auc`, `prevalence`, `recall_at_25`, `enrichment_top10`, `roc_auc`, V CI bounds, paired delta vs incumbent, delta vs coordinates-only per estate, `label_source` per estate, runtime, `pip freeze`.
 
-### Proxy-label caveat
+**[P] `certification.json`** (T, host-only, never injected into any instruction): the composite T result, per-estate T deltas, the non-degradation values, the test outcome, and the T-attempt count. The dashboard reads it.
 
-Palong/Serting labels are model-derived and spatially smooth (POC lifts 0.15-0.24 vs 0.06 for AirHitam). A coordinates-only model already scores well there, so an agent can earn reward from spatial smoothing. The 0.75 weight discounts it, promotion ignores it, and the coordinates-only baseline is reported per estate so inflated proxy scores are visible.
+### Label provenance and spatial smoothness **[U] + [P]**
+
+Palong and Serting labels are now treated as trustworthy (your finding, 16 Nov). The basis is pending (decision 3). `label_source` records what each estate's labels are, and it changes only once the basis is written down.
+
+Trust in labels does not remove spatial smoothness. POC lifts on Palong and Serting (0.15-0.24) are well above AirHitam's 0.06. Disease here clusters in space: in MeanSampling §7b, the median distance from a Healthy tree to its nearest Unhealthy neighbour is 21-27 m, and from a Middle tree it is about 15 m. So a coordinates-only model can score well there, and an agent can earn reward from location alone. That is why the coordinates-only baseline is still reported per estate, and why the 0.75 weight stays for now (decision 1). The baseline's job is now to show how much of a score comes from location. It no longer discounts the labels themselves.
 
 ### Checks before trusting it
 
-Oracle (starter) reproduces a known score exactly; `nop` scores neutral; adversarial pipelines (read `/tests`, write the reward, import the labels, run forever, malicious package build code) all fail safely, and a pipeline that fetches data from the internet at grading time is flagged; gate calibration re-run on the real verifier and chosen block size.
+Oracle (starter) reproduces a known score exactly; `nop` scores neutral; adversarial pipelines (read `/tests`, write the reward, import the labels, run forever, malicious package build code) all fail safely, and a pipeline that fetches data from the internet at grading time is flagged; gate calibration re-run on the real verifier and chosen block size. **[P]** All of this is run for all three estates, plus the composite gate's calibration and a check that Middle trees are excluded from every scored set.
 
 ## 8. Iteration and resume
 
 - State is **files, not conversation**. Each session starts fresh with curated context: ledger, HANDOFF, incumbent code, dead-end list. No trajectory replay, because it restores no sandbox files and bloats context **[V]**.
 - Dead ends from `MainChecklist.md` section B go into every `prior/`.
 - Several agents or models can attempt from the same parent. They are branches in `lineage.json`, and the gate picks. **Each branch's certification spends a T attempt**, so branching speeds up T consumption.
-- A verifier or split change creates a new **epoch**. The incumbent is re-scored with `regrade` or a rerun; scores are never compared across epochs.
+- A verifier or split change creates a new **epoch**. The incumbent is re-scored with `regrade` or a rerun; scores are never compared across epochs. **[P]** The v1.1 changes (Serting T, Middle rule, composite gate) happen before S1, so they are not an epoch change. Once S1 has run, any change to `split.yaml` starts a new epoch.
 
 ## 9. Risks
 
 | Risk | Mitigation |
 |---|---|
-| Label leakage into the agent image | Allowlist copy. Automated canary test: no sealed id has a label anywhere in the image or build context. Runs in M1 and on every build. |
+| Label leakage into the agent image | Allowlist copy. Automated canary test: no sealed id has a label anywhere in the image or build context, for all three estates. Runs in M1 and on every build. |
 | Agent code reads sealed labels at grading time | Separate sandbox, unprivileged subprocess, root-only label files, scoring in a trusted process. **The network is open (decided), so a pipeline that escaped this isolation could send labels out.** Accepted for a throwaway container. Alternative: restrict the verifier network (section 7). |
 | Pipeline depends on the internet at grading time (unreproducible, not self-contained) | Instruction rule to ship all weights and data; URL/network-call grep in `collect.py` flags it in the report; optional offline re-grade of a nominee before promotion. |
-| **Holdout overuse / false adoption over weeks** | T-only certification of one nominee, effect-size floor, T-attempt budget, epoch refresh, paired deltas only (section 7). |
+| **Holdout overuse / false adoption over weeks** | T-only certification of one nominee per session, effect-size floor, T-attempt budget, epoch refresh, paired deltas only (section 7). **[P]** One composite test per nominee in v1.1. |
 | Gate cannot see small gains | Stated openly; batch certification; the report ledger preserves them. |
-| Block bootstrap unreliable with few blocks | Block size chosen by calibration in M1 (section 7). |
-| Proxy labels steering the search | 0.75 weight on their mean, no vote in promotion, coordinates-only baseline reported per estate. |
+| Block bootstrap unreliable with few blocks | Block size chosen by calibration in M1 (section 7), on all three estates. |
+| **[U][P] Spatial smoothness steering the search** (labels now trusted, so the risk is location, not label noise) | 0.75 weight on the Palong/Serting mean (decision 1); coordinates-only baseline reported per estate; `label_source` recorded per estate. |
+| **[P] Middle class handled inconsistently** | One fixed rule in `split.yaml` (POC convention: Middle excluded from scoring), recorded in each manifest. Counting Middle as positive would move prevalence to ~26% and change the whole problem. |
+| **[P] Serting T below the minimum size** | Serting L reduced to ~800 (section 7); M1 checks the counts and flags any estate that falls short of 35 V / 35 T / 50 L. |
+| **[P] Dashboard shows optimistic V as if it were certified** | V labelled "search signal"; T shown separately with its CI and the +0.03 line; the two series are never merged. |
+| **[P] Dashboard numbers drift from the verifier** | Dashboard reads only `reward.json`, `certification.json` and `events.jsonl`; M3b exit test diffs the page against those files. |
 | Spatial prior mistaken for model skill | Same baseline (MainChecklist section E gotcha). |
 | **Credential theft:** the agent browses the open web while holding a service-account key | Least-privilege SA (Object Viewer plus Earth Engine read only), key in a read-only mount not env or image, instruction forbids printing it, rotate on a schedule and after any anomaly. |
-| Key leaks into artifacts, logs or git | Read-only mount outside the build context, `collect.py` secret scan (`private_key`, `BEGIN PRIVATE KEY`, key id) that **fails collection**, `jobs/`, `tasks/`, `.secrets/`, `.env` gitignored. M0 confirms Harbor never records the value. |
+| Key leaks into artifacts, logs or git | Read-only mount outside the build context, `collect.py` secret scan (`private_key`, `BEGIN PRIVATE KEY`, key id) that **fails collection**, `jobs/`, `tasks/`, `.secrets/`, `.env`, `dashboard/` gitignored. M0 confirmed Harbor never records the value. |
 | GEE quota or cost from an unattended agent | Instruction asks for point sampling at tree coordinates rather than full-scene exports; check quota and billing; the ledger logs usage. |
 | Package install runs untrusted code in the verifier | Unprivileged user, labels unreadable by it. |
 | PyPI drift makes a rerun differ | Exact pins required; `pip freeze` recorded. |
@@ -258,24 +316,36 @@ Oracle (starter) reproduces a known score exactly; `nop` scores neutral; adversa
 
 ## 10. Milestones (each has an exit test)
 
-- **M0 Harbor + Podman spike** (in progress; results in section 12). Install pinned `harbor` (via `uv tool`), a Linux `podman` remote client and a Linux `docker-compose` (PATH must put them **before** Docker Desktop's Windows shims). Point `DOCKER_HOST` and the default connection at the rootful socket. *Exit:* oracle hello-world passes on `-e podman`; a Claude Code trial runs through your gateway; a Codex trial runs; a 2-minute-timeout trial shows **artifacts are collected and the verifier still runs**; a trial with `network_mode = "public"` in all phases runs **without** Harbor building the egress sidecar; the secret route works and **no key value appears** in `jobs/`; resource limits actually bite on rootful; a `regrade` after editing a `tests/` file works.
-- **M1 Data + sealed split.** `build_data.py`, frozen `split.yaml`, allowlist copier, **gate calibration at candidate block sizes**. *Exit:* canary leak test green; stable split hash; block size chosen.
-- **M2 Verifier v1.** `fit_predict` contract, scoring and gate library with unit tests, pip-install-at-grading, starter pipeline (NDVI-LogReg from `misc/POC/RVI_NDVI/Results/airhitam_ndvi.csv` plus SAR). *Exit:* oracle reproduces a fixed score; `nop` neutral; adversarial pipelines fail safely; runtime inside caps.
-- **M3 Builder + runner + collector.** `build_task` / `run_session` / `collect` plus `lineage.json` and the T-attempt counter. *Exit:* a 20-minute dry session on a cheap model flows end to end; `harbor lint` and `harbor check` pass.
-- **M4 First real session (S1, 8 h, spend-capped).** *Exit:* you review the report; we tune templates.
-- **M5 Iteration + schedule.** S2 generated from S1; the gate works; resume is frictionless. Then Windows Task Scheduler or cron triggers `daily.sh`, with the spend ledger and kill switch.
-- **M6 (v2) In-run verifier.** Multi-container sidecar, MCP score tool, query budget, noise added to returned V scores. The gate is already in place.
+- **M0 Harbor + Podman spike** (nearly closed; results in section 12). Pinned `harbor==0.25.0` in `AgentRSI/pyproject.toml`, installed in `AgentRSI/.venv`. A Linux `podman` remote client and a Linux `docker-compose` in `AgentRSI/.tools/bin` (PATH must put them **before** Docker Desktop's Windows shims). Point `DOCKER_HOST` and the default connection at the rootful socket. *Exit:* oracle hello-world passes on `-e podman`; a Claude Code trial runs through your gateway; a Codex trial runs; a 2-minute-timeout trial shows **artifacts are collected and the verifier still runs**; a trial with `network_mode = "public"` in all phases runs **without** Harbor building the egress sidecar; the secret route works and **no key value appears** in `jobs/`; resource limits actually bite on rootful; a `regrade` after editing a `tests/` file works. **Status:** all done except the two agent trials (blocked on the key, section 11).
+- **M1 Data, labels and sealed split.** `build_data.py`, frozen `split.yaml` with L/V/T for all three estates, `label_source` per estate, the Middle rule, allowlist copier, **gate calibration at candidate block sizes on all three estates**. **[P]** Decide the Serting L size, and calibrate the composite test and the non-degradation value (decision 2). *Exit:* canary leak test green for all three estates; stable split hash; per-estate counts ≥35 V, ≥35 T, ≥50 L (or the estate is flagged); block size chosen; composite gate calibrated; decisions 1-4 recorded.
+- **M2 Verifier v1.** `fit_predict` contract; per-estate scoring and T scoring for all three; composite and gate library with unit tests; pip-install-at-grading; starter pipeline (NDVI-LogReg from `misc/POC/RVI_NDVI/Results/airhitam_ndvi.csv` plus SAR). **[P]** Coordinates-only baseline per estate. *Exit:* oracle reproduces a fixed composite and per-estate score; `nop` neutral for all three estates; adversarial pipelines fail safely; runtime inside caps.
+- **M3 Builder + runner + collector.** `build_task` / `run_session` / `collect` plus `lineage.json`, the T-attempt counter per nominee, and **[P]** `events.jsonl` and `certification.json`. *Exit:* a 20-minute dry session on a cheap model flows end to end; `harbor lint` and `harbor check` pass; **[P]** re-collecting the same job does not duplicate events.
+- **[P] M3b Dashboard (new, before the first real session).** `scripts/dashboard.py` builds `dashboard/index.html`: a static, offline page showing the composite and per-estate V timeline, certified T deltas with CI bands and the +0.03 line, epoch shading, and event markers. Hover shows the event summary; click opens its report section. *Exit:* numbers match `reward.json` and `certification.json` exactly (scripted diff); every event shows context on hover and click; epoch boundaries are not joined; CI bands and the +0.03 line are shown; the page works with the network off; no T numbers in any `tasks/` directory (canary).
+- **M4 First real session (S1, 8 h, spend-capped).** *Exit:* you review the report and the dashboard; we tune templates.
+- **M5 Iteration + schedule.** S2 generated from S1; the gate works; resume is frictionless. **[P]** `daily.sh` regenerates the dashboard after each collect. Then Windows Task Scheduler or cron triggers `daily.sh`, with the spend ledger and kill switch.
+- **M6 (v2) In-run verifier.** Multi-container sidecar, MCP score tool, query budget covering all three estates **[P]**, noise added to returned V scores. The gate is already in place.
 - **Later:** more focus lenses, split refresh epochs, extra estates as folds, remote sandboxes.
 
-## 11. Open items (the design questions are all closed)
+## 11. Open items and decisions
 
-Closed on 11 Nov 2026: reward weights, rootful engine, package policy, verifier network (fully public), gate floor 0.03 and T budget 20.
+Closed on 11 Nov 2026: reward weights (v1.0), rootful engine, package policy, verifier network (fully public), gate floor 0.03 and T budget 20.
+
+**[P] Decisions needed from you (16 Nov), with my recommendation for each:**
+
+1. **Proxy weight.** Keep 0.75 on the Palong/Serting mean (**recommended**: spatial smoothness is still there, and changing weights mid-epoch breaks comparability), or equalise to 1/3 each.
+2. **Promotion test.** One composite T test on the reward weights plus per-estate non-degradation (**recommended**, section 7), or the v1.0 AirHitam-only T test with Palong and Serting as an advisory flag.
+3. **Basis for trusting Palong and Serting.** What makes them trustworthy: field survey, manual annotation, ground truth, or something else? Once known, should CLAUDE.md ("only AirHitam is fully one-to-one ground truth") and MainChecklist be updated? **I have not changed either.**
+4. **Middle class.** Options: drop it from scoring as the POCs did (**recommended**; 493 Palong and 378 Serting trees excluded), count it as positive (prevalence ~26%), or keep it as an unscored severity covariate in L only.
+5. **Dashboard form.** A static offline HTML page generated by a script (**recommended**), not a server. Numbers come from verifier files only, and the report supplies event context only. Not pulled from `REPORT.md`.
+
+**To settle in M1, not now:** the Serting L size (~800 recommended, section 7), the non-degradation value, and the block size.
 
 Still open, neither blocks planning:
-1. **M0 installs** (`harbor` via `uv tool`, a Linux `podman` client and a Linux `docker-compose` into `~/.local/bin`): waiting on your go-ahead. They download third-party binaries, so I will not run them before you say so.
-2. **Placeholders** to fill later in `AgentRSI/.env`: provider base URL(s) and model names, `GCP_PROJECT`, and the service-account JSON path. Real values go only in that gitignored file, never in chat.
+- **M0 agent trials.** You supply the gateway key in `AgentRSI/.env` (never in chat). Also confirm the BASE_URL form, with or without `/v1`. **[P]** `.env.example` says `API_KEY_NAME=ANTHROPIC_AUTH_TOKEN`; for Codex it should be `OPENAI_API_KEY` (section 3). The `claude` and `codex` CLIs are installed inside the container by Harbor, not in WSL.
+- **Placeholders** to fill in `AgentRSI/.env`: `GCP_PROJECT` and the service-account JSON path. Real values go only in that gitignored file, never in chat.
+- **Spend cap.** `DAILY_SPEND_CAP_USD` is not enforced until the M3 ledger exists.
 
-Things the plan expects to revisit with real data, not now: the gate floor (if it proves too strict after a few sessions), the block size (M1 calibration), and whether to restrict the verifier network again (section 7).
+Things the plan expects to revisit with real data, not now: the gate floor (if it proves too strict after a few sessions), the block size (M1 calibration), whether to restrict the verifier network again (section 7), and the non-degradation value.
 
 ## 12. M0 results (11 Nov 2026)
 
@@ -306,4 +376,4 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`). Nothing was insta
 7. **The WSL VM stalled and restarted** (15:44 to 15:50, 11 Nov). The kernel log shows repeated order-7 page allocation failures (`GFP_KERNEL`, from a `vmbus` device-add worker) from 15:44, then "Under memory pressure" messages before the restart. The user reports disk at 99% and memory very high during the stall. The stalled step was the Podman client download. I have not found the cause. I measured the engine (idle) and the Harbor import (74 MB) only after the reboot, so neither is confirmed as the trigger. The retry on the restarted VM finished in under a minute, with a `MemAvailable` floor of 14.2 GB. Keep a memory guard on long downloads.
 8. **Runner environment must be set explicitly.** A plain shell needs `PATH` (Linux binaries first), `XDG_RUNTIME_DIR` (a writable directory) and `CONTAINER_HOST` / `DOCKER_HOST` (the rootful socket). Without them `podman` fails on `/run/user/1000/libpod` or on the socket. `run_session.py` must set all four.
 
-**Still open for M0:** the two agent trials only. They need the gateway key in `AgentRSI/.env` (placeholders in `AgentRSI/.env.example`) and the `claude` / `codex` CLIs, which Harbor installs inside the container. The gateway key is the user's to supply.
+**Still open for M0:** the two agent trials only. They need the gateway key in `AgentRSI/.env` (section 11 covers `API_KEY_NAME` and the BASE_URL form) and the `claude` / `codex` CLIs, which Harbor installs inside the container. The gateway key is the user's to supply.
