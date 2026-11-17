@@ -13,6 +13,8 @@ Read the POC reports @ `docs/POCReport/...` first, before planning anything:
 
 This file is a **terse index only**. It shows what is already settled, what must never be re-run, and what is still open. Do not write analysis prose here - put findings in `docs/POCReport/`. Only update this list when given permission to.
 
+> **Outdated assumption in older reports.** Several POC reports (`AirHitamRF.md`, `RVI_NDVI.md`, `LimitedLabelsTriage.md`, `TimeSeries.md`) describe Palong/Serting labels as derived, estimated or less trustworthy than AirHitam's. That is outdated: all three estates' labels are verified and trusted equally (same screening methodology and tools). Their metrics and findings still stand. Where a report and `docs/AgentPlan/AGENTS.md` disagree on this, always trust the latest `AGENTS.md`.
+
 
 ## Legend
 
@@ -29,7 +31,7 @@ This file is a **terse index only**. It shows what is already settled, what must
 - **Task:** per-tree binary `Unhealthy` (positive) vs `Healthy`.
   - `Middle` / `Vacant` currently dropped.
 - **Locations:** 
-  `AirHitam_Basemap` 2511 trees @ 6.37% positive (real field ground truth); `Palong_Basemap` 2171 @ 9.21%; `Serting_Basemap` 1667 @ 9.24%.
+  `AirHitam_Basemap` 2511 trees @ 6.37% positive; `Palong_Basemap` 2171 @ 9.21%; `Serting_Basemap` 1667 @ 9.24%. All three label sets are verified and trusted equally.
 - **Honest CV:** 
   primary = `StratifiedGroupKFold` on spatial blocks, 3 repeated seeds.Broader = four adjacent-block regions, leave-one-region-out. Transfer = leave-one-estate-out.
 - **Leaky reference CV:** 
@@ -142,7 +144,7 @@ This file is a **terse index only**. It shows what is already settled, what must
 - [ ] **2. Window statistics (`winstats`) on the multi-estate dataset.**
   The older 78-feature Palong run found `_max` / `_min` / percentile window statistics were the dominant SAR family, but the current `dataset_all_estates.csv` is mean-only. Re-run them under the same repeated block and broad-region protocols. Do not confuse them with the local residual features already tested in `PathForwardTrials.md`.
 - [x] **3. Optical complement (Sentinel-2 NDVI / NDWI), per tree or per block.**
-  Done for AirHitam: single-composite NDVI is the deployment baseline (d=-0.51, spatial PR 0.133-0.135); +rededge/SWIR small agreed lift (0.145) but fragile (see Section B); 12-month S2-temporal closed as negative. Remaining: S2 pull for Palong/Serting (labels are prediction-derived there - treat as supporting, not validation).
+  Done for AirHitam: single-composite NDVI is the deployment baseline (d=-0.51, spatial PR 0.133-0.135); +rededge/SWIR small agreed lift (0.145) but fragile (see Section B); 12-month S2-temporal closed as negative. Remaining: S2 pull for Palong/Serting (labels are verified and trusted equally with AirHitam's).
 - [ ] **4. Aggregate the target to plot / row / cell level or severity.**
   Cell-level hotspot aggregation reached ROC 0.62-0.80 within-estate where per-tree spatial CV fails [`PipelineAudit.md` Sec 2E, n=15 cells] - treat as headroom. The spatial-fusion result points in the same broad direction.
 - [ ] **5. More estates as LOCO validation folds** 
@@ -164,7 +166,7 @@ This file is a **terse index only**. It shows what is already settled, what must
 - [ ] **Is a precision floor or a recall floor acceptable?** 
   Needed to define the acceptance bar for a triage tool. Express it as top-k / top-x% review budget, not only as a probability threshold.
 - [ ] **Keep or drop `Middle` / `Vacant`?** 
-  Currently dropped; `Middle` is spatially meaningful (median 14.6 m from nearest Unhealthy) even though it is spectrally inconsistent.
+  Currently dropped; `Middle` is spatially meaningful (median 14.6 m from nearest Unhealthy) even though it is spectrally inconsistent. Stays open: unverified. AgentRSI shows `Middle` to the agent but never scores it (`Plan-AgentRSI.md`), so its sessions may produce evidence.
 
 
 ## E. Known gotchas

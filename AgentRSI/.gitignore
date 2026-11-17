@@ -5,6 +5,7 @@
 # generated / heavy
 tasks/
 jobs/
+dashboard/
 .venv/
 .tools/
 .uv-cache/
