@@ -29,7 +29,7 @@ This file is a **terse index only**. It shows what is already settled, what must
 ## A. Settled facts - quick reference
 
 - **Task:** per-tree binary `Unhealthy` (positive) vs `Healthy`.
-  - `Middle` / `Vacant` currently dropped.
+  - `Middle` / `Vacant` currently dropped (Visible but unscored in AgentRSI).
 - **Locations:** 
   `AirHitam_Basemap` 2511 trees @ 6.37% positive; `Palong_Basemap` 2171 @ 9.21%; `Serting_Basemap` 1667 @ 9.24%. All three label sets are verified and trusted equally.
 - **Honest CV:** 

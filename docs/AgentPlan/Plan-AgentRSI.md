@@ -1,10 +1,10 @@
 # AgentRSI Plan
 
-**Version:** 1.3 (17 Nov 2026) | **Phase:** M0 nearly closed, M1 next | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
+**Version:** 1.4 (19 Nov 2026) | **Phase:** M0 closed, M1 next | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
 
 **Goal.** Turn this project into an RSI4EO-style loop. A coding agent builds the oil-palm triage model in a sandbox, a sealed verifier scores it, and each day's session starts from what the last one found. Humans design the harness and verifier. Agents build the models.
 
-**Where we are.** M0 passes every check except the two agent trials, which wait on your gateway key (see Progress). The design decisions are made. What is left open is calibration work for M1 (block size, gate values) and the GCP placeholders (see Decisions).
+**Where we are.** M0 is closed: every exit check passes, including the Codex and Claude Code trials through your gateway (see Progress). The design decisions are made. What is left open is calibration work for M1 (block size, gate values) and the GCP placeholders (see Decisions).
 
 Evidence tags: **[V]** read in Harbor docs or source | **[T]** tested on this machine | **[S]** simulation on the real AirHitam tables | **[?]** unverified.
 
@@ -241,7 +241,7 @@ A simple, interactive timeline of RSI progress. It is part of the `AgentRSI/` pr
 
 Each has an exit test.
 
-- **M0 — Harbor + Podman spike** · *nearly closed.* Everything passes except the two agent trials. *Exit:* the full list in Progress.
+- **M0 — Harbor + Podman spike** · *closed 19 Nov 2026.* *Exit:* the full list in Progress.
 - **M1 — Data and sealed split** · *next.* `build_data.py`, frozen `split.yaml` with L/V/T for all three estates (proportional, Middle visible but unscored), the allowlist copier. **Calibrate the block size** (try 220 m, 110 m and finer) on all three estates, then calibrate the **composite gate**, the non-degradation criterion, and re-check the 0.03 floor and the 20-attempt budget. *Exit:* canary leak test green for all three estates; stable split hash; every part clears 35 V / 35 T / 50 L positives; block size chosen; composite gate calibrated.
 - **M2 — Verifier v1.** `fit_predict` contract; per-estate and composite scoring; T scoring; gate library with unit tests; pip-install at grading; starter pipeline (NDVI-LogReg from `misc/POC/RVI_NDVI/Results/airhitam_ndvi.csv` plus SAR); coordinates-only baseline per estate. *Exit:* oracle reproduces a fixed composite and per-estate score; `nop` neutral on all three; adversarial pipelines fail safely; runtime inside caps.
 - **M3 — Builder, runner, collector.** `build_task`, `run_session`, `collect`, `lineage.json`, the T-attempt counter per nominee, the spend ledger, `events.jsonl` and `certification.json`. *Exit:* a 20-minute dry session on a cheap model flows end to end; `harbor lint` and `harbor check` pass; re-collecting the same job does not duplicate events.
@@ -271,19 +271,15 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`). Nothing was insta
 | Secret via read-only `--mounts` | **Pass** (marker). Readable in the container, write fails, marker in 0 job files and the run log | `jobs/m0-mount/` |
 | `regrade` after editing `tests/` | **Pass.** Same output, edited verifier, reward 1.0 to 0.5; source job unchanged | `jobs/m0-regrade/` |
 | Resource limits bite (rootful) | **Pass.** 256 MB limit killed an 800 MB allocation (exit 137); `--cpus=1` held 4 workers to 0.98 CPU-per-wall (unlimited 3.25) | direct `podman run` |
-| Claude Code trial through the gateway | **Blocked.** No gateway key in `.env` | pending |
-| Codex trial | **Blocked.** No gateway key in `.env` | pending |
+| Claude Code trial through the gateway | **Pass.** reward 1.0. `claude-haiku-5-5` via `anthropic_messages` at the gateway root (no `/v1`). 3 steps, about $0.0025 | `jobs/m0-claude-ok/` (first attempt `jobs/m0-claude/` failed at install, see Observations) |
+| Codex trial through the gateway | **Pass.** reward 1.0. `gpt-6.1-terra` via `openai_responses` at `…/v1`. 8 steps, about $0.015 | `jobs/m0-codex-ok/` (first attempt `jobs/m0-codex/` failed at install, see Observations) |
 
 ### Next actions
 
-1. **You:** put the gateway key in `AgentRSI/.env` (never in chat), with `BASE_URL` ending in `/v1` for the Codex trial.
-2. Run the Codex trial, then the Claude Code trial. Harbor installs both CLIs inside the container (`npm install -g @openai/codex`, and npm or a bootstrap script for Claude Code), so WSL needs neither. **[V]**
-3. Start M1.
+1. Start M1: `build_data.py`, frozen `split.yaml`, allowlist copier, block-size calibration on all three estates, composite gate calibration.
+2. Before M3, `run_session.py` picks `BASE_URL` per agent (Codex keeps `/v1`, Claude Code drops it) and strips the inline `# ...` comment from `.env` values. The current `.env` has one on `BASE_URL`.
 
-### Follow-ups
-
-- Delete `AgentRSI/.tools/m0-marker.txt` (a dummy marker) once M0 closes. `AgentRSI/jobs/m0-secret/` was removed on 17 Nov. `jobs/m0-secret2/` stays because the table above cites it.
-- The POC reports still describe Palong/Serting labels as derived or estimated. `MainChecklist.md` now tells readers that this is outdated and that the latest `AGENTS.md` wins, so the reports stay as dated records.
+M0 spend was about $0.02 in total. The $1/day cap is not enforced until M3.
 
 ---
 
@@ -330,8 +326,8 @@ The "real gain" columns are a **ceiling**. The synthetic candidates carry no can
 - **Separate verifier:** grading runs in a fresh sandbox built from `tests/Dockerfile`. Data baked there never reaches the agent. Only declared `artifacts` cross over (sanitized: no setuid, no outward symlinks, no special files). Separate verifiers do not inherit runtime mounts, so the service-account key cannot reach grading.
 - **Reward** goes to `/logs/verifier/reward.txt` or `reward.json` (richer, and wins if both exist). terminal-bench-science mandates 0/1. We use graded metrics on purpose.
 - **Claude Code:** gateway via `ANTHROPIC_BASE_URL` plus bearer `ANTHROPIC_AUTH_TOKEN`; options `max_turns`, `max_budget_usd`, `reasoning_effort`, `append_system_prompt`, `disable_web_search`; defaults to `--permission-mode bypassPermissions`; Anthropic Messages only.
-- **Codex:** Responses API only. `codex.py` injects the key as `OPENAI_API_KEY` and the URL as `OPENAI_BASE_URL`.
-- **`--api-key-name`** names the **host** environment variable that holds the key (`agent_auth_resolution.py` reads it, then maps it to the agent's own variable). Any valid variable name works, so `API_KEY_NAME=ANTHROPIC_AUTH_TOKEN` should also work for Codex and is only misleading (read from source, not yet run; the Codex trial confirms it).
+- **Codex:** Responses API only. `codex.py` injects the key as `OPENAI_API_KEY` and the URL as `OPENAI_BASE_URL`. **[T]** The gateway returns 404 for the Responses WebSocket, so Codex retries five times (about 10 s) and then falls back to HTTPS, which works. Harmless, but each session pays the delay.
+- **`--api-key-name`** names the **host** environment variable that holds the key (`agent_auth_resolution.py` reads it, then maps it to the agent's own variable). Any valid variable name works, so `API_KEY_NAME=ANTHROPIC_AUTH_TOKEN` should also work for Codex and is only misleading. Both trials passed with their own names (**[T]**, 19 Nov): `OPENAI_API_KEY` for Codex and `ANTHROPIC_AUTH_TOKEN` for Claude Code.
 - **Network modes** per phase: `public`, `no-network`, `allowlist`. Restricted modes need an nftables egress sidecar. We use `public` everywhere.
 - **Flags:** `--base-url`, `--api-key-name`, `--api-format`, `--ae`/`--ak`, `--mounts`, `-e`, `--override-cpus`/`--override-memory-mb`, `--dry-run`, `--print-config`. `harbor lint` is a static check; `harbor check` is an LLM rubric (not yet run). `regrade` re-runs a newer verifier on recorded outputs.
 - **`-e podman`** exists upstream (merged Sep 2026), but harbor#398 is open. With `podman-compose` only, Harbor mis-detects the backend. A working setup in that thread used `docker-compose` as the compose provider, which is what we do.
@@ -354,6 +350,8 @@ The "real gain" columns are a **ceiling**. The synthetic candidates carry no can
 6. **Harbor uses the Linux `docker-compose` only when `.tools/bin` is first on `PATH`.** Harbor shells out to `podman compose`, which hands off to whichever `docker-compose` it finds.
 7. **The WSL VM stalled and restarted** (15:44 to 15:50, 11 Nov). The kernel log shows repeated order-7 page allocation failures from a `vmbus` worker, then memory-pressure messages. You saw disk at 99% and memory very high. The stalled step was the Podman client download. **The cause is not confirmed**, and I only measured the engine and Harbor after the reboot. Keep a memory guard on long downloads.
 8. **The runner must set `PATH`, `XDG_RUNTIME_DIR`, `CONTAINER_HOST` and `DOCKER_HOST`.** Without them `podman` fails on `/run/user/1000/libpod` or on the socket.
+9. **`podman compose` prints a banner to stdout** ("Executing external compose provider…"). Harbor's package-manager probe reads that text as the manager name, so the Codex install fails (`jobs/m0-codex/`). Set `PODMAN_COMPOSE_WARNING_LOGS=false` (**[T]**, fixed in `jobs/m0-codex-ok/`).
+10. **One Claude Code install failed with `curl: (60) self-signed certificate in certificate chain`** on `downloads.claude.ai` (`jobs/m0-claude/`). The same host passed from a fresh container and the rerun passed (`jobs/m0-claude-ok/`). The cause is not confirmed. The runner should keep install errors visible in the job record.
 
 ---
 
@@ -387,6 +385,7 @@ The "real gain" columns are a **ceiling**. The synthetic candidates carry no can
 
 | Version | Date | Change |
 |---|---|---|
+| 1.4 | 19 Nov 2026 | M0 closed: Codex and Claude Code trials pass through the gateway. Podman compose banner workaround. Dummy M0 marker deleted. |
 | 1.3 | 17 Nov 2026 | Middle is visible but unscored (was dropped). Dashboard paths pinned inside `AgentRSI/`, inputs listed. `MainChecklist.md` marks old POC label assumptions as outdated. |
 | 1.2 | 17 Nov 2026 | Restructured by topic. All three estates trusted equally (equal reward weights, composite T gate). Proportional splits, Middle dropped, `/v1` rule per API format. Dashboard added (M4). Fixed v1.1 errors: POC lifts, Serting split sizes, Palong/Serting block counts, `--api-key-name`. |
 | 1.1 | 16 Nov 2026 | Trusted-labels and dashboard findings added as proposals. |
