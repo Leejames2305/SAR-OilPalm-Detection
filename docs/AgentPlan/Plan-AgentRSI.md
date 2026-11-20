@@ -1,10 +1,10 @@
 # AgentRSI Plan
 
-**Version:** 1.6 (20 Nov 2026) | **Phase:** M0 closed, M1 exit checks met (confirmation of design choices open) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
+**Version:** 1.9 (20 Nov 2026) | **Phase:** M0 and M1 closed (20 Nov) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
 
 **Goal.** Turn this project into an RSI4EO-style loop. A coding agent builds the oil-palm triage model in a sandbox, a sealed verifier scores it, and each day's session starts from what the last one found. Humans design the harness and verifier. Agents build the models.
 
-**Where we are.** M0 is closed: every exit check passes, including the Codex and Claude Code trials through your gateway (see Progress). The design decisions are made. The M1 data work is done: features come from the raw sources only, the split is frozen at 80 m, and the composite gate is calibrated in simulation. What is open is the M1 exit checks (repo moves, copier), the decisions listed in Progress, and the GCP placeholders (see Decisions).
+**Where we are.** M0 is closed: every exit check passes, including the Codex and Claude Code trials through your gateway (see Progress). The design decisions are made. The M1 data work is done: features come from the raw sources only, the split is frozen at 80 m, and the composite gate is calibrated in simulation. M1 is closed. Later milestones and the GCP placeholders are parked.
 
 Evidence tags: **[V]** read in Harbor docs or source | **[T]** tested on this machine | **[S]** simulation on the real AirHitam tables | **[?]** unverified.
 
@@ -35,11 +35,11 @@ CPU-only is fine: earlier POCs show nonlinear and deep models lose to linear one
 | **Label trust** | All three estates are treated identically: same split rule, same reward weight, same certification. No provenance field. | Your call (17 Nov): same screening methodology and tools at every site. |
 | **Reward** | Mean over the three estates of `lift = pr_auc - prevalence` on V. Equal weights, kept in `verifier.yaml`. The agent sees the per-estate breakdown. | Follows from label trust: no estate is discounted. |
 | **Promotion** | One **composite T test** on the same equal weights, plus a per-estate non-degradation check. One nominee per session. Effect floor `d >= 0.03`, T-attempt budget 20. | Your call (17 Nov), confirmed 20 Nov. Floor and budget came from the AirHitam-only simulation. M1 re-checked the floor on all three estates (Observations › Gate calibration, M1). |
-| **Non-degradation** | An estate fails if its T dPR-AUC against the incumbent is below `-0.03` (pre-registered 19 Nov). The rule only blocks adoption. Tested at -0.02 and -0.04 on the same harness (20 Nov): adoption is identical on the synthetic arms, so the pre-registered value stays. | My choice after the runs (20 Nov). Open: real-candidate cost. |
+| **Non-degradation** | An estate fails if its T dPR-AUC against the incumbent is below `-0.03` (pre-registered 19 Nov). The rule only blocks adoption. Tested at -0.02 and -0.04 on the same harness (20 Nov): adoption is identical on the synthetic arms, so the pre-registered value stays. | Your call (20 Nov), confirmed at -0.03. Open: real-candidate cost. |
 | **Dashboard** | A static HTML page inside `AgentRSI/`: `AgentRSI/scripts/dashboard.py` writes `AgentRSI/dashboard/index.html`. Numbers come from verifier and collector files only. The report supplies event context only. | Your call (17 Nov). Design in Design › Dashboard. |
 | **Verifier phases** | v1 grades once at session end. v2 adds an in-run sealed query tool with a query budget. | |
 | **Agents** | Claude Code and Codex through a third-party gateway. Agent, model, base URL and key name are run-time parameters. Current default: Codex, `gpt-6.1-terra`, OpenAI Responses. | |
-| **Budget and network** | 8 h agent timeout. Agent has public internet. **Verifier network is fully public** (throwaway container). Label protection is the unprivileged subprocess plus root-only label files, not the network. | Your call (11 Nov). |
+| **Budget and network** | 8 h agent timeout. Agent has public internet, with one blocked site: this research repo, `https://github.com/Leejames2305/SAR-OilPalm-Detection`. The agent has full access to everything else. **Verifier network is fully public** (throwaway container). Label protection is the unprivileged subprocess plus root-only label files, not the network. | Your call (11 Nov). Repo block added 20 Nov. The block covers the agent only; the verifier stays unblocked (your call, 20 Nov). |
 | **Packages** | The agent ships a pinned `requirements.txt` and the verifier installs it from PyPI. No allowlist, no approval flow. | Your call (11 Nov). |
 | **Runtime** | Rootful Podman from WSL, Docker Desktop as fallback. Harbor pinned at 0.25.0. | Rootless cannot enforce CPU or memory limits. |
 | **Focus** | Open-ended research, explicitly including data expansion. Optional lenses (`literature`, `data-expansion`, `ablation`) bias the instruction. | |
@@ -49,13 +49,13 @@ CPU-only is fine: earlier POCs show nonlinear and deep models lose to linear one
 | **Block size** | 80 m spatial blocks, frozen in `split.yaml` (epoch 1). | Your call in M1. 220 m is infeasible for Serting. 165 m was the coarsest size under the positives-only cap (at most 10 expected redraws), but it failed the ±10-point tree-share rule for Serting (about 13 expected redraws). The cap was set after seeing the feasibility table. Leakage evidence is noisy and did not pick the size (Observations). |
 | **Middle class** | **Visible but unscored.** Middle trees go through the same block split as every other tree. In L the agent sees them labelled `Middle`. In V and T they sit unmarked in the unlabeled pool, as they would in a new field. They are never in the positive class and never in any metric. The starter pipeline and the baselines train without them (the POC convention). | Your call (17 Nov): "exclude first", then "visible but unscored". Whether Middle helps is still open (below). Evidence in Observations. |
 | **Gateway URL** | The path suffix depends on the API format: `BASE_URL` ends in `/v1` for OpenAI Responses (Codex) and has no `/v1` for Anthropic Messages (Claude Code). `run_session.py` must therefore pick the URL by agent. | Your gateway (17 Nov). The Codex trial confirms Harbor passes it through correctly. |
-| **Sealed labels and keys** | The master labels live in `AgentRSI/.sealed/` (git-ignored, directory 700, files 600). Agent-visible rows carry a pseudonymous `row_key`, an HMAC-SHA256 of estate and id with the salt kept in `.sealed/` only, so no raw tree id reaches the agent view, `tasks/` or `jobs/`. The verifier copy is staged in `.sealed/verifier_context/`. The root-owned copy inside the verifier image is an M2 build step. | My design (20 Nov). It goes beyond the literal "no sealed ID in `tasks/` or `jobs/`" check, so it needs your confirmation. |
+| **Sealed labels** | The master labels live in `AgentRSI/.sealed/` (git-ignored, directory 700, files 600). The agent view has no tree id, and V and T have no label. Estate and coordinates identify a tree, and the agent already sees them as features, so there are no keys or salts. The verifier copy is staged in `.sealed/verifier_context/`. The root-owned copy inside the verifier image is an M2 build step. | Your call (20 Nov): no pseudonymous keys. The literal "no sealed ID in `tasks/` or `jobs/`" check is the rule. The split CSV with raw ids and parts (no labels) is accepted too. |
 
 ### Open
 
 | Item | Current default | Resolved by |
 |---|---|---|
-| **Non-degradation cost on real candidates** | Value -0.03 (Made, 20 Nov). The synthetic arms adopt identically at -0.02, -0.03 and -0.04, and the rule never fires on a synthetic gain. A rough estimate (not simulated) puts the chance that some estate falls below the threshold for a neutral real candidate at about 0.53, 0.33 and 0.18. Real per-estate noise is unmeasured. | You: accept -0.03, or move to -0.04 (blocks less, catches less). Measure per-estate noise on real candidates before M5. |
+| **Non-degradation cost on real candidates** | Value -0.03 (Made, 20 Nov). The synthetic arms adopt identically at -0.02, -0.03 and -0.04, and the rule never fires on a synthetic gain. A rough estimate (not simulated) puts the chance that some estate falls below the threshold for a neutral real candidate at about 0.53, 0.33 and 0.18. Real per-estate noise is unmeasured. | Measure per-estate noise on real candidates before M5. The -0.03 value is confirmed (20 Nov). | 
 | **Keep or drop `Middle`** (does it help a model at all?) | Unverified, mirrored from `MainChecklist.md` §D. Agents may use the `Middle` rows in L however they like. Their reports show whether it helped. | Session evidence (M5 onward) |
 | **`GCP_PROJECT` and service-account key path** | Placeholders in `.env.example`. Real values go only in the gitignored `.env` and `.secrets/`. | You, before the first session |
 
@@ -99,6 +99,7 @@ AgentRSI/
     split.yaml               FROZEN: seeds, block size, L/V/T fractions (change = new epoch)
     verifier.yaml            reward weights, gate thresholds, T-attempt budget, bootstrap B, caps
   templates/                 instruction (base + focus lenses), task.toml, Dockerfile.agent / .verifier
+  src/DataPipeline/          M1 data steps: build, leak check, calibration
   src/libbuilder/            builder library (build_task, build_data, stage_secrets, render_handoff,
                              collect, lineage, events)
   verifier/                  scoring + gate library baked into every tests/ image (unit-tested)
@@ -243,9 +244,9 @@ A simple, interactive timeline of RSI progress. It is part of the `AgentRSI/` pr
 Each has an exit test.
 
 - **M0 — Harbor + Podman spike** · *closed 19 Nov 2026.* *Exit:* the full list in Progress.
-- **M1 — Data and sealed split** · *exit checks met 20 Nov (see Progress); your confirmation of the design choices is open.* The `src/M1/` pipeline (001 to 011), frozen `split.yaml` with L/V/T for all three estates (proportional, Middle visible but unscored), the allowlist copier. **Calibrate the block size** (try 220 m, 110 m and finer) on all three estates, then calibrate the **composite gate**, the non-degradation criterion, and re-check the 0.03 floor and the 20-attempt budget. *Exit:* canary leak test green for all three estates; stable split hash; every part clears 35 V / 35 T / 50 L positives; block size chosen; composite gate calibrated.
+- **M1 — Data and sealed split** · *closed 20 Nov 2026 (see Progress).* The `src/DataPipeline/` pipeline (see its README), frozen `split.yaml` with L/V/T for all three estates (proportional, Middle visible but unscored). **Calibrate the block size** (try 220 m, 110 m and finer) on all three estates, then calibrate the **composite gate**, the non-degradation criterion, and re-check the 0.03 floor and the 20-attempt budget. *Exit:* canary leak test green for all three estates; stable split hash; every part clears 35 V / 35 T / 50 L positives; block size chosen; composite gate calibrated.
 - **M2 — Verifier v1.** `fit_predict` contract; per-estate and composite scoring; T scoring; gate library with unit tests; pip-install at grading; starter pipeline (NDVI-LogReg from `misc/POC/RVI_NDVI/Results/airhitam_ndvi.csv` plus SAR); coordinates-only baseline per estate. *Exit:* oracle reproduces a fixed composite and per-estate score; `nop` neutral on all three; adversarial pipelines fail safely; runtime inside caps.
-- **M3 — Builder, runner, collector.** `build_task`, `run_session`, `collect`, `lineage.json`, the T-attempt counter per nominee, the spend ledger, `events.jsonl` and `certification.json`. *Exit:* a 20-minute dry session on a cheap model flows end to end; `harbor lint` and `harbor check` pass; re-collecting the same job does not duplicate events.
+- **M3 — Builder, runner, collector.** `build_task` with the allowlist copier into `environment/`, `run_session`, `collect`, `lineage.json`, the T-attempt counter per nominee, the spend ledger, `events.jsonl` and `certification.json`. *Exit:* a 20-minute dry session on a cheap model flows end to end; `harbor lint` and `harbor check` pass; re-collecting the same job does not duplicate events.
 - **M4 — Dashboard.** `AgentRSI/scripts/dashboard.py` writes `AgentRSI/dashboard/index.html`, as specified in Design. Built on fixtures and the M3 dry session. *Exit:* page numbers match `reward.json`, `certification.json` and `lineage.json` exactly (scripted diff); every event shows context on hover and on click; epoch boundaries are not joined; CI bands and the +0.03 line are shown; the page works with the network off; no T number appears in any `tasks/` directory (canary).
 - **M5 — First real session (S1, 8 h, spend-capped).** *Exit:* you review the report and the dashboard; we tune the templates.
 - **M6 — Iteration and schedule.** S2 is generated from S1, the gate works, resume is frictionless. Then Windows Task Scheduler or cron runs `daily.sh` (collect, dashboard, ledger, kill switch).
@@ -279,13 +280,15 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`). Nothing was insta
 
 | Exit check | Result | Evidence |
 |---|---|---|
-| Canary leak test green for all three estates | **Pass.** `src/M1/010-CanaryCheck.py` passes on the agent view (L 2747, V 2123, T 2350 trees, all three estates) and on `jobs/` (143 files). `tasks/` does not exist yet. The negative control `src/M1/controls/001-SeededLeakCopier.py` seeds a leaky view and a leaky task file, and `010` catches both. | `.work/agent_view/`, `src/M1/010-CanaryCheck.py`, `src/M1/controls/` |
-| Stable split hash | **Pass.** `26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed`, the same on two runs and in the M1 rebuild (`006-BuildSplit.py`, `config/split_assignment.csv` byte-identical). | `config/split.yaml`, `config/split_assignment.csv` |
+| Canary leak test green for all three estates | **Pass.** The leak check in `src/DataPipeline/` passes on the agent view (L 2747, V 2123, T 2350 trees, all three estates) and on `jobs/` (143 files). `tasks/` does not exist yet. Its seeded-leak control plants a leaky V file in a view and in a task folder, and the check catches it. | `.work/agent_view/`, `src/DataPipeline/` |
+| Stable split hash | **Pass.** `26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed`, the same on two runs and in the M1 rebuild (the M1 build, which writes nothing unless the hash matches; `config/split_assignment.csv` byte-identical). | `config/split.yaml`, `config/split_assignment.csv` |
 | Every part clears 35 V / 35 T / 50 L positives | **Pass.** Lowest Unhealthy counts: L 56 and V 38 (AirHitam), T 47 (Serting). | Table below |
 | Tree shares near target | **Pass.** Largest deviation 3.7 points (Palong L), tolerance 10. | Table below |
 | Block size chosen | **Pass.** 80 m (Decisions › Made). | |
-| Sealed master and verifier staging | **Partly.** The master is in `AgentRSI/.sealed/` (git-ignored, directory 700, files 600) and matches the scratch master (`001-BuildSealedMaster.py --compare`: identical). `011-StageVerifierContext.py` stages it in `.sealed/verifier_context/`. The root-owned copy inside the verifier image is an M2 task. The image route is unverified **[?]**: Harbor's `tests/` build context cannot reach `.sealed/`, so a prebuilt local image with `FROM` is the likely route. | `.sealed/`, `.sealed/verifier_context/manifest.json` |
-| Composite gate calibrated | **Pass for the synthetic arms.** Non-degradation value set at -0.03 (Decisions › Made) after the -0.02 and -0.04 runs. Real candidates are still open. | Observations › Gate calibration, M1, and Non-degradation threshold, M1 |
+| Sealed master and verifier staging | **Partly.** The master is in `AgentRSI/.sealed/` (git-ignored, directory 700, files 600). The M1 build rebuilds it from the raw labels with the same sha256 (`ea434957…`) and stages a copy in `.sealed/verifier_context/`. The root-owned copy inside the verifier image is an M2 task. The image route is unverified **[?]**: Harbor's `tests/` build context cannot reach `.sealed/`, so a prebuilt local image with `FROM` is the likely route. | `.sealed/`, `.sealed/verifier_context/manifest.json` |
+| Composite gate calibrated | **Pass for the synthetic arms.** Non-degradation value confirmed at -0.03 (Decisions › Made, 20 Nov) after the -0.02 and -0.04 runs. Real candidates are still open. | Observations › Gate calibration, M1, and Non-degradation threshold, M1 |
+| Features reproduce from raw sources | **Pass.** A fresh Earth Engine and SAR extraction matches the frozen table exactly: 7,220 trees, 11 features, zero differences (20 Nov). The frozen table was not replaced. | `.work/features.csv` |
+| SAR band order | **Pass, on your word.** The POC's positional order is used: Spk HH, HV, VH, VV and HAlpha H, A, alpha. You confirmed the SNAP pipeline is the same. The GeoTIFFs carry no band names, so the files themselves were not checked (20 Nov). | POC `main.py` (positional order) |
 
 | Estate | L: trees · U | V: trees · U | T: trees · U | Blocks | Tree share L / T / V (%) |
 |---|---|---|---|---|---|
@@ -297,16 +300,13 @@ U = Unhealthy, M = Middle (unscored, unmarked in V and T). Trees include Middle.
 
 ### Next actions
 
-1. **Confirm the design choices before M2** (Decisions › Made): the pseudonymous `row_key`s, which go beyond the literal "no sealed ID in `tasks/` or `jobs/`" check; the `src/M1/` location, `NNN-` numbering and `extract.py` moved there; the non-degradation value (-0.03, with -0.04 as the alternative).
-2. **Root-owned verifier copy (M2).** `011-StageVerifierContext.py` has staged the master and salt in `.sealed/verifier_context/`. The root-owned copy inside the verifier image is built from there in M2. Harbor's `tests/` build context cannot reach `.sealed/`, so a prebuilt local image with `FROM` is the likely route **[?]**, unverified.
-3. **Exposures to review.** `config/split_assignment.csv` holds raw tree ids and the part (no labels), outside `tasks/` and `jobs/` but in the repo. The raw labels in `data/Labels/` sit in the same repo, so the sealed copy alone does not isolate them. `AgentRSI/.env` is mode 644. It is unchanged; say if you want it 600.
-4. **M2 (verifier v1):** `fit_predict` contract, scoring, gate library, the starter pipeline and the coordinates-only baseline. The sealed labels move from `.sealed/` into the root-owned image copy in item 2.
-5. Before M3, `run_session.py` picks `BASE_URL` per agent (Codex keeps `/v1`, Claude Code drops it) and strips the inline `# ...` comment from `.env` values. The current `.env` has one on `BASE_URL`.
-6. Yamaguchi SAR (dB-like bands) is deferred. A conversion rule must be chosen before it is used.
-7. Confirm the HAlpha band meanings and the Spk band order (HH, HV, VH, VV). Both are inferred, not documented.
-8. `002-BuildFeatures.py` has not been run. The features in `.work/` are copied from the scratch `features_v3.csv`, not re-extracted from Earth Engine. A re-extraction is needed to reproduce them from scratch.
+**M2 is next and has not started. It waits for your go-ahead.**
 
-M0 spend was about $0.02 in total. The $1/day cap is not enforced until M3.
+**Parked until M2 starts**
+
+- **Root-owned verifier copy and M2 (verifier v1).** The master copy is staged in `.sealed/verifier_context/`. Harbor's `tests/` build context cannot reach `.sealed/`, so a prebuilt local image with `FROM` is the likely route **[?]**.
+- **Before M3:** `run_session.py` picks `BASE_URL` per agent and strips inline `# ...` comments from `.env` values.
+- **Yamaguchi SAR** (dB-like bands): deferred until a conversion rule is chosen.
 
 ---
 
@@ -464,6 +464,9 @@ Same harness and seed as the composite run above (6,349 scored trees, 80 m block
 
 | Version | Date | Change |
 |---|---|---|
+| 1.9 | 20 Nov 2026 | M1 closed. SAR band order taken from the POC on your word (same SNAP pipeline). M2 not started. |
+| 1.8 | 20 Nov 2026 | Non-degradation -0.03 confirmed. Split CSV exposure accepted. Network decision records the one blocked site, this research repo (agent only). Re-extraction from raw sources matches the frozen features exactly. Items beyond M1 parked. |
+| 1.7 | 20 Nov 2026 | M1 pipeline consolidated into `src/DataPipeline/` (see its README). Pseudonymous row keys and the salt removed: agent view rows are identified by estate and coordinates, which are unique per tree. The copier moved from M1 to M3. Re-run: master and split hashes unchanged, leak check PASS, control CAUGHT, gate numbers identical to the earlier run. |
 | 1.6 | 20 Nov 2026 | M1 exit checks met in the repo: `src/M1/` pipeline (001 to 011 plus a seeded-leak control), pseudonymous row keys, sealed master in `.sealed/` with a verifier staging copy, canary PASS and control CAUGHT. Floor 0.03 and budget 20 confirmed. Non-degradation kept at -0.03 after the -0.02 and -0.04 runs (identical adoption on synthetic arms). Harbor image route marked unverified. |
 | 1.5 | 20 Nov 2026 | M1 data and split: features from raw sources only (Earth Engine NDVI, ALOS-2 Spk and HAlpha), split frozen at 80 m, composite gate calibrated in simulation. Block size moved to Made. |
 | 1.4 | 19 Nov 2026 | M0 closed: Codex and Claude Code trials pass through the gateway. Podman compose banner workaround. Dummy M0 marker deleted. |
