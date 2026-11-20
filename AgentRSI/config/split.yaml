@@ -1,0 +1,74 @@
+epoch: 1
+block_m: 80
+block_grid: local metres from each estate's label minimum, cos(mean lat) longitude
+  scaling; key = floor(x/80)*1e5 + floor(y/80)
+seed: 20261119
+fractions:
+  L: 0.4
+  V: 0.3
+  T: 0.3
+tree_share_tolerance: 0.1
+minimum_unhealthy:
+  L: 50
+  V: 35
+  T: 35
+middle_policy: travels with its block; never counted toward minimums or metrics
+sha256_of_assignment: 26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed
+assignment_file: config/split_assignment.csv
+counts:
+  AirHitam:
+    L:
+      trees: 964
+      Unhealthy: 56
+      Healthy: 908
+      Middle: 0
+    T:
+      trees: 817
+      Unhealthy: 66
+      Healthy: 751
+      Middle: 0
+    V:
+      trees: 730
+      Unhealthy: 38
+      Healthy: 692
+      Middle: 0
+  Palong:
+    L:
+      trees: 968
+      Unhealthy: 66
+      Healthy: 704
+      Middle: 198
+    T:
+      trees: 855
+      Unhealthy: 80
+      Healthy: 610
+      Middle: 165
+    V:
+      trees: 841
+      Unhealthy: 54
+      Healthy: 657
+      Middle: 130
+  Serting:
+    L:
+      trees: 815
+      Unhealthy: 67
+      Healthy: 597
+      Middle: 151
+    T:
+      trees: 678
+      Unhealthy: 47
+      Healthy: 507
+      Middle: 124
+    V:
+      trees: 552
+      Unhealthy: 40
+      Healthy: 409
+      Middle: 103
+source: data/Labels/*.csv only (raw)
+assignment_columns:
+- estate
+- id
+- block
+- part
+assignment_hash_basis: sha256 of CSV over (estate, id, part), sorted by estate then
+  id

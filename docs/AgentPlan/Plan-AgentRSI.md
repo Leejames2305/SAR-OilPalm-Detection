@@ -1,10 +1,10 @@
 # AgentRSI Plan
 
-**Version:** 1.4 (19 Nov 2026) | **Phase:** M0 closed, M1 next | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
+**Version:** 1.6 (20 Nov 2026) | **Phase:** M0 closed, M1 exit checks met (confirmation of design choices open) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
 
 **Goal.** Turn this project into an RSI4EO-style loop. A coding agent builds the oil-palm triage model in a sandbox, a sealed verifier scores it, and each day's session starts from what the last one found. Humans design the harness and verifier. Agents build the models.
 
-**Where we are.** M0 is closed: every exit check passes, including the Codex and Claude Code trials through your gateway (see Progress). The design decisions are made. What is left open is calibration work for M1 (block size, gate values) and the GCP placeholders (see Decisions).
+**Where we are.** M0 is closed: every exit check passes, including the Codex and Claude Code trials through your gateway (see Progress). The design decisions are made. The M1 data work is done: features come from the raw sources only, the split is frozen at 80 m, and the composite gate is calibrated in simulation. What is open is the M1 exit checks (repo moves, copier), the decisions listed in Progress, and the GCP placeholders (see Decisions).
 
 Evidence tags: **[V]** read in Harbor docs or source | **[T]** tested on this machine | **[S]** simulation on the real AirHitam tables | **[?]** unverified.
 
@@ -34,7 +34,8 @@ CPU-only is fine: earlier POCs show nonlinear and deep models lose to linear one
 |---|---|---|
 | **Label trust** | All three estates are treated identically: same split rule, same reward weight, same certification. No provenance field. | Your call (17 Nov): same screening methodology and tools at every site. |
 | **Reward** | Mean over the three estates of `lift = pr_auc - prevalence` on V. Equal weights, kept in `verifier.yaml`. The agent sees the per-estate breakdown. | Follows from label trust: no estate is discounted. |
-| **Promotion** | One **composite T test** on the same equal weights, plus a per-estate non-degradation check. One nominee per session. Effect floor `d >= 0.03`, T-attempt budget 20. | Your call (17 Nov). Floor and budget came from the AirHitam-only simulation, so M1 re-checks them on all three estates. |
+| **Promotion** | One **composite T test** on the same equal weights, plus a per-estate non-degradation check. One nominee per session. Effect floor `d >= 0.03`, T-attempt budget 20. | Your call (17 Nov), confirmed 20 Nov. Floor and budget came from the AirHitam-only simulation. M1 re-checked the floor on all three estates (Observations › Gate calibration, M1). |
+| **Non-degradation** | An estate fails if its T dPR-AUC against the incumbent is below `-0.03` (pre-registered 19 Nov). The rule only blocks adoption. Tested at -0.02 and -0.04 on the same harness (20 Nov): adoption is identical on the synthetic arms, so the pre-registered value stays. | My choice after the runs (20 Nov). Open: real-candidate cost. |
 | **Dashboard** | A static HTML page inside `AgentRSI/`: `AgentRSI/scripts/dashboard.py` writes `AgentRSI/dashboard/index.html`. Numbers come from verifier and collector files only. The report supplies event context only. | Your call (17 Nov). Design in Design › Dashboard. |
 | **Verifier phases** | v1 grades once at session end. v2 adds an in-run sealed query tool with a query budget. | |
 | **Agents** | Claude Code and Codex through a third-party gateway. Agent, model, base URL and key name are run-time parameters. Current default: Codex, `gpt-6.1-terra`, OpenAI Responses. | |
@@ -45,16 +46,16 @@ CPU-only is fine: earlier POCs show nonlinear and deep models lose to linear one
 | **Data egress** | ROI-masked ALOS-2, tree coordinates and labels go to your inference provider. The GCS/GEE service-account key is passed to the agent. | Your call (11 Nov). |
 | **Layout** | Everything AgentRSI builds, runs or generates lives under `AgentRSI/`, the dashboard included. Generated tasks are in `AgentRSI/tasks/<id>/`. Harbor's file is `instruction.md` (singular) **[V]**. | |
 | **Split sizes** | Proportional: each estate's scored trees go to L / V / T at about 40 / 30 / 30 %, so L is about 1004 / 868 / 667 trees (AirHitam / Palong / Serting). It scales to any estate size. | Your call (17 Nov). Accepts an L below the "about 1000 labels" product shape for the two smaller estates. |
+| **Block size** | 80 m spatial blocks, frozen in `split.yaml` (epoch 1). | Your call in M1. 220 m is infeasible for Serting. 165 m was the coarsest size under the positives-only cap (at most 10 expected redraws), but it failed the ±10-point tree-share rule for Serting (about 13 expected redraws). The cap was set after seeing the feasibility table. Leakage evidence is noisy and did not pick the size (Observations). |
 | **Middle class** | **Visible but unscored.** Middle trees go through the same block split as every other tree. In L the agent sees them labelled `Middle`. In V and T they sit unmarked in the unlabeled pool, as they would in a new field. They are never in the positive class and never in any metric. The starter pipeline and the baselines train without them (the POC convention). | Your call (17 Nov): "exclude first", then "visible but unscored". Whether Middle helps is still open (below). Evidence in Observations. |
 | **Gateway URL** | The path suffix depends on the API format: `BASE_URL` ends in `/v1` for OpenAI Responses (Codex) and has no `/v1` for Anthropic Messages (Claude Code). `run_session.py` must therefore pick the URL by agent. | Your gateway (17 Nov). The Codex trial confirms Harbor passes it through correctly. |
+| **Sealed labels and keys** | The master labels live in `AgentRSI/.sealed/` (git-ignored, directory 700, files 600). Agent-visible rows carry a pseudonymous `row_key`, an HMAC-SHA256 of estate and id with the salt kept in `.sealed/` only, so no raw tree id reaches the agent view, `tasks/` or `jobs/`. The verifier copy is staged in `.sealed/verifier_context/`. The root-owned copy inside the verifier image is an M2 build step. | My design (20 Nov). It goes beyond the literal "no sealed ID in `tasks/` or `jobs/`" check, so it needs your confirmation. |
 
 ### Open
 
 | Item | Current default | Resolved by |
 |---|---|---|
-| **Block size** for the bootstrap | Not chosen. 220 m is too coarse for Palong and Serting (see Observations). | M1 calibration |
-| **Non-degradation criterion** (what counts as "worse" on one estate) | Not chosen | M1 calibration |
-| **Gate floor and budget on three estates** | 0.03 and 20 carry over | M1 calibration |
+| **Non-degradation cost on real candidates** | Value -0.03 (Made, 20 Nov). The synthetic arms adopt identically at -0.02, -0.03 and -0.04, and the rule never fires on a synthetic gain. A rough estimate (not simulated) puts the chance that some estate falls below the threshold for a neutral real candidate at about 0.53, 0.33 and 0.18. Real per-estate noise is unmeasured. | You: accept -0.03, or move to -0.04 (blocks less, catches less). Measure per-estate noise on real candidates before M5. |
 | **Keep or drop `Middle`** (does it help a model at all?) | Unverified, mirrored from `MainChecklist.md` §D. Agents may use the `Middle` rows in L however they like. Their reports show whether it helped. | Session evidence (M5 onward) |
 | **`GCP_PROJECT` and service-account key path** | Placeholders in `.env.example`. Real values go only in the gitignored `.env` and `.secrets/`. | You, before the first session |
 
@@ -98,7 +99,7 @@ AgentRSI/
     split.yaml               FROZEN: seeds, block size, L/V/T fractions (change = new epoch)
     verifier.yaml            reward weights, gate thresholds, T-attempt budget, bootstrap B, caps
   templates/                 instruction (base + focus lenses), task.toml, Dockerfile.agent / .verifier
-  src/agentrsi/              builder library (build_task, build_data, stage_secrets, render_handoff,
+  src/libbuilder/            builder library (build_task, build_data, stage_secrets, render_handoff,
                              collect, lineage, events)
   verifier/                  scoring + gate library baked into every tests/ image (unit-tested)
   starter/                   session-0 pipeline (NDVI-LogReg incumbent from the POCs)
@@ -163,7 +164,7 @@ AirHitam's L of about 1000 matches the finding that NDVI-LogReg saturates by abo
 
 - **V** is the agent's search signal. Its score is returned to the agent (session-end `reward.json` in v1, in-run queries in v2). It is **expected to become optimistic**.
 - **T** is never reported to the agent. It is spent only on certification: one evaluation per session, for the single declared nominee. Each is one **T attempt** in the ledger.
-- **Block size is open.** See Observations › Block counts. M1 picks it by calibration, and re-counts blocks on the grid that includes Middle trees (the Observations counts use scored trees only).
+- **Block size is 80 m** (Decisions › Made). The block counts in Observations use scored trees only. The split counts in Progress include Middle, as the split does.
 
 **Data expansion.** New covariates ship as `datasets/<name>/features.parquet` keyed by `(estate, tree_id)` for **all** trees, plus `MANIFEST.md` (source, date, resolution, licence) and the extraction script. The agent has no V or T labels, so features at those coordinates cannot leak labels. The script exists for the product, since a new field needs the same features for its own coordinates. The verifier checks id coverage, schema and a size cap.
 
@@ -205,7 +206,7 @@ A simple, interactive timeline of RSI progress. It is part of the `AgentRSI/` pr
 
 | | Path |
 |---|---|
-| Generator | `AgentRSI/scripts/dashboard.py` (thin CLI, logic in `AgentRSI/src/agentrsi/`) |
+| Generator | `AgentRSI/scripts/dashboard.py` (thin CLI, logic in `AgentRSI/src/libbuilder/`) |
 | Output | `AgentRSI/dashboard/index.html` (gitignored, regenerated) |
 | Inputs, read-only | `AgentRSI/sessions/*/reward.json`, `AgentRSI/sessions/*/certification.json`, `AgentRSI/state/events.jsonl`, and `AgentRSI/state/lineage.json` (header only) |
 | Context text, read-only | `AgentRSI/sessions/*/REPORT.md` and `HANDOFF.md`, for event context only |
@@ -242,7 +243,7 @@ A simple, interactive timeline of RSI progress. It is part of the `AgentRSI/` pr
 Each has an exit test.
 
 - **M0 — Harbor + Podman spike** · *closed 19 Nov 2026.* *Exit:* the full list in Progress.
-- **M1 — Data and sealed split** · *next.* `build_data.py`, frozen `split.yaml` with L/V/T for all three estates (proportional, Middle visible but unscored), the allowlist copier. **Calibrate the block size** (try 220 m, 110 m and finer) on all three estates, then calibrate the **composite gate**, the non-degradation criterion, and re-check the 0.03 floor and the 20-attempt budget. *Exit:* canary leak test green for all three estates; stable split hash; every part clears 35 V / 35 T / 50 L positives; block size chosen; composite gate calibrated.
+- **M1 — Data and sealed split** · *exit checks met 20 Nov (see Progress); your confirmation of the design choices is open.* The `src/M1/` pipeline (001 to 011), frozen `split.yaml` with L/V/T for all three estates (proportional, Middle visible but unscored), the allowlist copier. **Calibrate the block size** (try 220 m, 110 m and finer) on all three estates, then calibrate the **composite gate**, the non-degradation criterion, and re-check the 0.03 floor and the 20-attempt budget. *Exit:* canary leak test green for all three estates; stable split hash; every part clears 35 V / 35 T / 50 L positives; block size chosen; composite gate calibrated.
 - **M2 — Verifier v1.** `fit_predict` contract; per-estate and composite scoring; T scoring; gate library with unit tests; pip-install at grading; starter pipeline (NDVI-LogReg from `misc/POC/RVI_NDVI/Results/airhitam_ndvi.csv` plus SAR); coordinates-only baseline per estate. *Exit:* oracle reproduces a fixed composite and per-estate score; `nop` neutral on all three; adversarial pipelines fail safely; runtime inside caps.
 - **M3 — Builder, runner, collector.** `build_task`, `run_session`, `collect`, `lineage.json`, the T-attempt counter per nominee, the spend ledger, `events.jsonl` and `certification.json`. *Exit:* a 20-minute dry session on a cheap model flows end to end; `harbor lint` and `harbor check` pass; re-collecting the same job does not duplicate events.
 - **M4 — Dashboard.** `AgentRSI/scripts/dashboard.py` writes `AgentRSI/dashboard/index.html`, as specified in Design. Built on fixtures and the M3 dry session. *Exit:* page numbers match `reward.json`, `certification.json` and `lineage.json` exactly (scripted diff); every event shows context on hover and on click; epoch boundaries are not joined; CI bands and the +0.03 line are shown; the page works with the network off; no T number appears in any `tasks/` directory (canary).
@@ -274,10 +275,36 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`). Nothing was insta
 | Claude Code trial through the gateway | **Pass.** reward 1.0. `claude-haiku-5-5` via `anthropic_messages` at the gateway root (no `/v1`). 3 steps, about $0.0025 | `jobs/m0-claude-ok/` (first attempt `jobs/m0-claude/` failed at install, see Observations) |
 | Codex trial through the gateway | **Pass.** reward 1.0. `gpt-6.1-terra` via `openai_responses` at `…/v1`. 8 steps, about $0.015 | `jobs/m0-codex-ok/` (first attempt `jobs/m0-codex/` failed at install, see Observations) |
 
+### M1 exit checks (20 Nov 2026)
+
+| Exit check | Result | Evidence |
+|---|---|---|
+| Canary leak test green for all three estates | **Pass.** `src/M1/010-CanaryCheck.py` passes on the agent view (L 2747, V 2123, T 2350 trees, all three estates) and on `jobs/` (143 files). `tasks/` does not exist yet. The negative control `src/M1/controls/001-SeededLeakCopier.py` seeds a leaky view and a leaky task file, and `010` catches both. | `.work/agent_view/`, `src/M1/010-CanaryCheck.py`, `src/M1/controls/` |
+| Stable split hash | **Pass.** `26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed`, the same on two runs and in the M1 rebuild (`006-BuildSplit.py`, `config/split_assignment.csv` byte-identical). | `config/split.yaml`, `config/split_assignment.csv` |
+| Every part clears 35 V / 35 T / 50 L positives | **Pass.** Lowest Unhealthy counts: L 56 and V 38 (AirHitam), T 47 (Serting). | Table below |
+| Tree shares near target | **Pass.** Largest deviation 3.7 points (Palong L), tolerance 10. | Table below |
+| Block size chosen | **Pass.** 80 m (Decisions › Made). | |
+| Sealed master and verifier staging | **Partly.** The master is in `AgentRSI/.sealed/` (git-ignored, directory 700, files 600) and matches the scratch master (`001-BuildSealedMaster.py --compare`: identical). `011-StageVerifierContext.py` stages it in `.sealed/verifier_context/`. The root-owned copy inside the verifier image is an M2 task. The image route is unverified **[?]**: Harbor's `tests/` build context cannot reach `.sealed/`, so a prebuilt local image with `FROM` is the likely route. | `.sealed/`, `.sealed/verifier_context/manifest.json` |
+| Composite gate calibrated | **Pass for the synthetic arms.** Non-degradation value set at -0.03 (Decisions › Made) after the -0.02 and -0.04 runs. Real candidates are still open. | Observations › Gate calibration, M1, and Non-degradation threshold, M1 |
+
+| Estate | L: trees · U | V: trees · U | T: trees · U | Blocks | Tree share L / T / V (%) |
+|---|---|---|---|---|---|
+| AirHitam | 964 · 56 | 730 · 38 | 817 · 66 | 70 | 38.4 / 32.5 / 29.1 |
+| Palong | 968 · 66 (198 M) | 841 · 54 (130 M) | 855 · 80 (165 M) | 47 | 36.3 / 32.1 / 31.6 |
+| Serting | 815 · 67 (151 M) | 552 · 40 (103 M) | 678 · 47 (124 M) | 29 | 39.9 / 33.2 / 27.0 |
+
+U = Unhealthy, M = Middle (unscored, unmarked in V and T). Trees include Middle. Shares are of all trees. Per-estate totals match the Data table. Source: `config/split.yaml`.
+
 ### Next actions
 
-1. Start M1: `build_data.py`, frozen `split.yaml`, allowlist copier, block-size calibration on all three estates, composite gate calibration.
-2. Before M3, `run_session.py` picks `BASE_URL` per agent (Codex keeps `/v1`, Claude Code drops it) and strips the inline `# ...` comment from `.env` values. The current `.env` has one on `BASE_URL`.
+1. **Confirm the design choices before M2** (Decisions › Made): the pseudonymous `row_key`s, which go beyond the literal "no sealed ID in `tasks/` or `jobs/`" check; the `src/M1/` location, `NNN-` numbering and `extract.py` moved there; the non-degradation value (-0.03, with -0.04 as the alternative).
+2. **Root-owned verifier copy (M2).** `011-StageVerifierContext.py` has staged the master and salt in `.sealed/verifier_context/`. The root-owned copy inside the verifier image is built from there in M2. Harbor's `tests/` build context cannot reach `.sealed/`, so a prebuilt local image with `FROM` is the likely route **[?]**, unverified.
+3. **Exposures to review.** `config/split_assignment.csv` holds raw tree ids and the part (no labels), outside `tasks/` and `jobs/` but in the repo. The raw labels in `data/Labels/` sit in the same repo, so the sealed copy alone does not isolate them. `AgentRSI/.env` is mode 644. It is unchanged; say if you want it 600.
+4. **M2 (verifier v1):** `fit_predict` contract, scoring, gate library, the starter pipeline and the coordinates-only baseline. The sealed labels move from `.sealed/` into the root-owned image copy in item 2.
+5. Before M3, `run_session.py` picks `BASE_URL` per agent (Codex keeps `/v1`, Claude Code drops it) and strips the inline `# ...` comment from `.env` values. The current `.env` has one on `BASE_URL`.
+6. Yamaguchi SAR (dB-like bands) is deferred. A conversion rule must be chosen before it is used.
+7. Confirm the HAlpha band meanings and the Spk band order (HH, HV, VH, VV). Both are inferred, not documented.
+8. `002-BuildFeatures.py` has not been run. The features in `.work/` are copied from the scratch `features_v3.csv`, not re-extracted from Earth Engine. A re-extraction is needed to reproduce them from scratch.
 
 M0 spend was about $0.02 in total. The $1/day cap is not enforced until M3.
 
@@ -296,20 +323,32 @@ M0 spend was about $0.02 in total. The $1/day cap is not enforced until M3.
 Block counts use the simulation's grid on the scored trees (the AirHitam counts match the simulation's 15 and 42). **[S]**
 
 - **Block counts.** T holds about 30% of the blocks. At 220 m that is 4 to 5 blocks for AirHitam and 1 to 2 for the other two, so a block bootstrap there is not credible. At 110 m it is roughly 13, 7 and 4 to 5, and Serting is still thin. Even AirHitam at 220 m (15 blocks) gave a nominal-5% test (CI > 0 alone) that passed 7 to 16% of null ideas. M1 therefore has to find a block size that still respects spatial correlation but leaves enough blocks in T for all three estates. Going finer than 110 m for Serting is likely.
+- **M1 split feasibility (19 Nov, raw labels, Middle travels with its block).** Expected redraws until every part meets 50 L / 35 V / 35 T positives, from 200,000 draws per size:
+
+  | Block size | AirHitam | Palong | Serting |
+  |---|---|---|---|
+  | 220 m | 5.7 (15 blocks) | 21 (6) | **none** (4) |
+  | 165 m | 3.7 (19) | 2.9 (12) | 6.9 (9) |
+  | 110 m | 2.3 (42) | 2.0 (24) | 6.1 (15) |
+  | 80 m | 1.7 (70) | 1.5 (47) | 4.2 (29) |
+  | 55 m | 1.3 (129) | 1.2 (86) | 2.3 (54) |
+
+  Serting's 154 Unhealthy trees sit in few clusters, so its split is the binding constraint at every size.
+- **Leakage check (19 Nov, NDVI-only balanced LogReg, 5-fold, 5 seeds; PR-AUC, spatial minus random).** AirHitam -0.013 / -0.012 / -0.012 at 220 / 165 / 110 m. Palong +0.042 / +0.026 / +0.008. Serting not testable at 220 m (4 blocks); +0.055 / +0.011 at 165 / 110 m. The gap moves with block size and changes sign on AirHitam, so it is noise at these sample sizes, not a clean leakage measure. It does not by itself pick a size. Per-estate NDVI from Earth Engine reproduces the POC table exactly on AirHitam (2511/2511 trees). Palong and Serting have about 10 clear S2 observations per tree against about 26 on AirHitam, so their composites are noisier.
 - **Spatial clustering.** The chance that an Unhealthy tree's ten nearest neighbours are Unhealthy is 0.119 / 0.336 / 0.255 (AirHitam / Palong / Serting), against 0.060 / 0.060 / 0.070 for Healthy trees (`PathForwardTrials.md`). A coordinates-only model is therefore strong, which is why the baseline is reported per estate. Location is a property of the data. It is not a label-quality problem.
 - **POC lift** (best SAR + spatial fusion, broad holdout): +0.062 / +0.150 / +0.071 over prevalence; PR-AUC 0.125 / 0.242 / 0.164. Adding SAR to coordinates gave only +0.016 to +0.053 PR-AUC, with several confidence intervals crossing zero.
 - **Middle** (`MeanSampling.md` §7b): it is the disease front. Its nearest Unhealthy tree is 14.6 m away, against 26.5 m (Palong) and 20.7 m (Serting) for Healthy trees. Folding Middle into the positive class dilutes the signal, and training with Middle as weak positives lowered ROC in the POCs (Palong HGB 0.606 to 0.562-0.590; Serting 0.500 to 0.462-0.492). Counting Middle as positive would also move prevalence to about 26%. That is why Middle stays out of the positive class and out of the metrics. Showing it to the agent in L is a bet that the label is still useful as context. Nothing here verifies that (Decisions › Open).
 
 ### Simulation [S]
 
-Source: `misc/temp/sim_winners_curse.py` and `sim_certification_gate.py` (scratch, gitignored). "Agent ideas" were LogReg on random subsets of the 26 NDVI/spectral/SAR features, split at 220 m blocks into about 40/30/30 L/V/T (about 47 positives in V and in T), compared with the NDVI-LogReg incumbent. This is a rough stand-in for agent behaviour, not a model of it. **It covers AirHitam only. The three-estate composite is not simulated yet.**
+Source: `misc/temp/sim_winners_curse.py` and `sim_certification_gate.py` (scratch, gitignored). "Agent ideas" were LogReg on random subsets of the 26 NDVI/spectral/SAR features, split at 220 m blocks into about 40/30/30 L/V/T (about 47 positives in V and in T), compared with the NDVI-LogReg incumbent. This is a rough stand-in for agent behaviour, not a model of it. **The winner's-curse part covers AirHitam only. The three-estate composite gate is calibrated in the M1 run below.**
 
 - A typical idea is slightly **worse** than the incumbent (mean dPR-AUC -0.005, matching the POCs). The spread between candidates (SD about 0.026) is as large as any real gain.
 - **Selecting on V inflates V.** Best-of-k apparent gain on V versus the same candidate on fresh T: k=1 -0.008 / -0.006; k=3 +0.009 / 0.000; k=10 +0.023 / +0.002; k=30 +0.033 / +0.005; k=60 +0.038 / +0.007. 110 m blocks gave the same pattern.
 - In v1 the agent touches V once per session, so selection pressure is roughly the number of sessions (best-of-3 optimism about +0.01, best-of-10 about +0.02). In v2, k reaches 30 to 60 inside one session (+0.03 to +0.04). The gate is cheap, so it is in place from day one rather than added with v2.
 - The old gate (V CI-separated from zero and T non-degrading) passed a null idea **21 to 25%** of the time at k=10 to 30.
 
-Gate calibration (T-only, one nominee, paired block bootstrap, 220 m blocks, 15 blocks, 120 repetitions):
+Gate calibration, AirHitam only (superseded by the M1 composite run below; T-only, one nominee, paired block bootstrap, 220 m blocks, 15 blocks, 120 repetitions):
 
 | Gate | Null, V-winner of k=10 | Null, k=30 | Real +0.02 | Real +0.04 | Real +0.06 |
 |---|---|---|---|---|---|
@@ -319,6 +358,46 @@ Gate calibration (T-only, one nominee, paired block bootstrap, 220 m blocks, 15 
 | CI > 0 and d >= 0.04 | 1.7% | 2.5% | 0% | 50% | 93% |
 
 The "real gain" columns are a **ceiling**. The synthetic candidates carry no candidate-specific noise, while real candidates differ from the incumbent with SD about 0.026. Lowering the floor to 0.02 would roughly double false adopts.
+
+### Gate calibration, M1 (composite, all three estates, 80 m) **[S]**
+
+Source: scratch `gate.py` (not in the repo). 6,349 scored trees, 80 m blocks, 200 bootstrap draws per test, 120 repetitions. The composite is the equal-weight mean of per-estate ΔPR-AUC on T against the NDVI-LogReg incumbent (balanced LogReg on NDVI only, trained on L). Gain arms add `gamma · y` to the incumbent score, with gamma set to hit a target mean gain (+0.02 → 0.13, +0.04 → 0.244, +0.06 → 0.344). Null arms take the V-winner of k random feature subsets (2 to 10 features, NDVI forced in half the time). The incumbent scored against itself gives Δ = 0 and does not adopt.
+
+| Arm | P(adopt) | Mean composite ΔPR-AUC | Mean worst-estate ΔPR-AUC | P(any estate below −0.03) |
+|---|---|---|---|---|
+| Null, V-winner of k=1 | 0.000 | −0.029 | −0.070 | 0.82 |
+| Null, V-winner of k=10 | 0.000 | −0.014 | −0.031 | 0.42 |
+| Null, V-winner of k=30 | 0.000 | −0.010 | −0.023 | 0.39 |
+| Gain +0.02 | 0.000 | +0.020 | +0.019 | 0.00 |
+| Gain +0.04 | 1.000 | +0.041 | +0.039 | 0.00 |
+| Gain +0.06 | 1.000 | +0.060 | +0.058 | 0.00 |
+
+- **Power.** The floor passes +0.04 every time and +0.02 never. This matches the AirHitam-only result. The 0.03 floor reliably detects gains of about +0.04 and above.
+- **False adopts.** None of the 120 null draws adopted in any null arm, so the 95% upper bound is about 2.5% per attempt (rule of three). That is below the AirHitam-only figure of 4 to 6% at 220 m, but 120 repetitions is a coarse estimate.
+- **Non-degradation.** It fires on 39 to 82% of null ideas and on no synthetic gain. It only blocks adoption, so it adds no false adopts, but it also blocks some ideas the composite alone would have passed on. Its threshold is tested on the synthetic arms only (table below).
+
+Caveats:
+- The null and gain arms are synthetic. Real candidates differ from the incumbent with SD about 0.026 (AirHitam), and differ per estate. The power numbers are a ceiling.
+- Gain arms use an oracle shift, so they measure power only, not any agent's behaviour.
+- The block size was chosen under the tree-share rule, not by this run. The leakage check above did not pick a size.
+
+### Non-degradation threshold, M1 (20 Nov) **[S]**
+
+Same harness and seed as the composite run above (6,349 scored trees, 80 m blocks, 200 bootstrap draws, 120 repetitions). The earlier run at −0.03 was the reference. This run covers all three values in one pass, and its −0.03 column matches that reference to three decimals in every arm.
+
+| Arm | P(adopt) at −0.02 / −0.03 / −0.04 | Mean composite ΔPR-AUC | Mean worst-estate ΔPR-AUC | P(any estate below t) at −0.02 / −0.03 / −0.04 |
+|---|---|---|---|---|
+| Null, V-winner of k=1 | 0.000 / 0.000 / 0.000 | −0.029 | −0.070 | 0.892 / 0.817 / 0.742 |
+| Null, V-winner of k=10 | 0.000 / 0.000 / 0.000 | −0.014 | −0.031 | 0.608 / 0.417 / 0.175 |
+| Null, V-winner of k=30 | 0.000 / 0.000 / 0.000 | −0.010 | −0.023 | 0.633 / 0.392 / 0.025 |
+| Gain +0.02 | 0.000 / 0.000 / 0.000 | +0.020 | +0.019 | 0.000 / 0.000 / 0.000 |
+| Gain +0.04 | 1.000 / 1.000 / 1.000 | +0.041 | +0.039 | 0.000 / 0.000 / 0.000 |
+| Gain +0.06 | 1.000 / 1.000 / 1.000 | +0.060 | +0.058 | 0.000 / 0.000 / 0.000 |
+
+- **No difference in adoption.** The three thresholds adopt the same draws on every synthetic arm. They differ only in how often the rule fires on null ideas, and it never fires on a synthetic gain.
+- **Why −0.03 stays.** No run favours another value, and the pre-registered value should not move on synthetic evidence alone. It also matches the 0.03 floor's scale.
+- **What the synthetic arms cannot show.** They add no per-estate noise to gains, so they cannot measure how often the rule blocks a real gain. A rough estimate, not simulated, assumes independent per-estate ΔPR-AUC with SD 0.026 and no true effect. Then the chance that some estate falls below the threshold is about 0.53, 0.33 and 0.18 at −0.02, −0.03 and −0.04. That cost is open (Decisions › Open).
+- The run does not record the composite-alone adoption rate, so the table cannot say how many null draws the rule blocks that the composite would have passed.
 
 ### Harbor design **[V]**
 
@@ -364,7 +443,7 @@ The "real gain" columns are a **ceiling**. The synthetic candidates carry no can
 | Pipeline depends on the internet at grading | Instruction rule, URL/network-call grep in `collect.py`, optional offline re-grade of a nominee. |
 | **Holdout overuse and false adoption** | T-only certification of one nominee, effect floor, T-attempt budget, epoch refresh, paired deltas only. |
 | Gate cannot see small gains | Stated openly. Batch certification, and the report ledger preserves them. |
-| **Block bootstrap unreliable with few blocks** | Block size chosen by calibration on all three estates in M1. |
+| **Block bootstrap unreliable with few blocks** | Block size 80 m gives 70 / 47 / 29 blocks (AirHitam / Palong / Serting). Serting is the thinnest. The leakage check did not pick the size (Observations). |
 | **Spatial location mistaken for model skill** | Coordinates-only baseline reported per estate. Location is a real signal in the data. |
 | **Dashboard shows optimistic V as certified** | V labelled "search signal"; T shown separately with its CI and the +0.03 line; never merged. |
 | Dashboard numbers drift from the verifier | Reads only the verifier and collector files listed in Design › Dashboard. M4 diffs the page against them. |
@@ -385,6 +464,8 @@ The "real gain" columns are a **ceiling**. The synthetic candidates carry no can
 
 | Version | Date | Change |
 |---|---|---|
+| 1.6 | 20 Nov 2026 | M1 exit checks met in the repo: `src/M1/` pipeline (001 to 011 plus a seeded-leak control), pseudonymous row keys, sealed master in `.sealed/` with a verifier staging copy, canary PASS and control CAUGHT. Floor 0.03 and budget 20 confirmed. Non-degradation kept at -0.03 after the -0.02 and -0.04 runs (identical adoption on synthetic arms). Harbor image route marked unverified. |
+| 1.5 | 20 Nov 2026 | M1 data and split: features from raw sources only (Earth Engine NDVI, ALOS-2 Spk and HAlpha), split frozen at 80 m, composite gate calibrated in simulation. Block size moved to Made. |
 | 1.4 | 19 Nov 2026 | M0 closed: Codex and Claude Code trials pass through the gateway. Podman compose banner workaround. Dummy M0 marker deleted. |
 | 1.3 | 17 Nov 2026 | Middle is visible but unscored (was dropped). Dashboard paths pinned inside `AgentRSI/`, inputs listed. `MainChecklist.md` marks old POC label assumptions as outdated. |
 | 1.2 | 17 Nov 2026 | Restructured by topic. All three estates trusted equally (equal reward weights, composite T gate). Proportional splits, Middle dropped, `/v1` rule per API format. Dashboard added (M4). Fixed v1.1 errors: POC lifts, Serting split sizes, Palong/Serting block counts, `--api-key-name`. |

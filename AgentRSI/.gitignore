@@ -10,3 +10,5 @@ dashboard/
 .tools/
 .uv-cache/
 __pycache__/
+.sealed/
+.work/
