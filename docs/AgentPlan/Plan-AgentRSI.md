@@ -1,10 +1,10 @@
 # AgentRSI Plan
 
-**Version:** 2.2 (23 Nov 2026) | **Phase:** M0, M1 and M2 closed (23 Nov) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
+**Version:** 2.4 (23 Nov 2026) | **Phase:** M0–M3 closed (23 Nov; Harbor `0.27.0`) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
 
 **Goal.** Turn this project into an RSI4EO-style loop. A coding agent builds the oil-palm triage model in a sandbox, a sealed verifier scores it, and each day's session starts from what the last one found. Humans design the harness and verifier. Agents build the models.
 
-**Where we are.** M0, M1, and M2 are closed. Harbor + Podman gateways pass (M0); the data pipeline, frozen 80 m split, multi-date SAR + NDVI tables, GEE-only SA, leak checks, and resampled gate calibration pass (M1); and Verifier v1 (`config/verifier.yaml`, `starter/`, `verifier/`, `localhost/agentrsi-sealed:epoch1`, 11 unit tests, Harbor Oracle/Nop trials, and 5 container adversarial/pip checks) passes end to end (M2). **M3 (Builder, runner, collector) is next and waits for go-ahead.**
+**Where we are.** M0, M1, M2, and M3 are closed. Harbor + Podman gateways pass (M0); the data pipeline, frozen 80 m split, multi-date SAR + NDVI tables, GEE-only SA, leak checks, and resampled gate calibration pass (M1); Verifier v1 passes end to end (M2); and the Builder, Runner, Collector, `localhost/agentrsi-agent-base:latest`, `agentrsi` CLI, spend/T-budget guards, idempotent collection, and live `s000-dry` dry session pass end to end (M3). **M4 (Dashboard) is next and waits for go-ahead.**
 
 Evidence tags: **[V]** read in Harbor docs or source | **[T]** tested on this machine | **[S]** simulation on the real estate tables | **[?]** unverified.
 
@@ -41,7 +41,7 @@ CPU-only is fine: earlier POCs show nonlinear and deep models lose to linear one
 | **Agents** | Claude Code and Codex through a third-party gateway. Agent, model, base URL and key name are run-time parameters. Current default: Codex, `gpt-6.1-terra`, OpenAI Responses. | |
 | **Budget and network** | 8 h agent timeout. Agent has public internet, with one blocked site: this research repo, `https://github.com/Leejames2305/SAR-OilPalm-Detection`. **Verifier network is fully public** (throwaway container). Label protection is the unprivileged subprocess plus root-only label files, not the network. | Your calls (11 Nov, 20 Nov). Block covers the agent only; verifier stays unblocked. |
 | **Packages** | The agent ships a pinned `requirements.txt` and the verifier installs it from PyPI. No allowlist, no approval flow. | Your call (11 Nov). |
-| **Runtime** | Rootful Podman from WSL, Docker Desktop as fallback. Harbor pinned at `0.25.0`. | Rootless cannot enforce CPU or memory limits. |
+| **Runtime** | Rootful Podman from WSL, Docker Desktop as fallback. Harbor pinned at `0.27.0`. | Rootless cannot enforce CPU or memory limits. |
 | **Focus** | Open-ended research, explicitly including data expansion. Optional lenses (`literature`, `data-expansion`, `ablation`) bias the instruction. | |
 | **Data egress & GEE SA** | ROI-masked ALOS-2, tree coordinates and labels go to the inference provider. A **GEE-only** service-account key (`Keys_SAEarthEngine.json`, Earth Engine viewer only — **no GCS bucket access**) is mounted read-only into the agent sandbox. Verified live (23 Nov): GEE Sentinel-2 queries succeed while GCS `sar-oilpalm` (metadata/list/read) and IAM all return HTTP 403. **[T]** | Your calls (11 Nov, 23 Nov): least-privilege GEE-only SA protects the `sar-oilpalm` bucket holding ground-truth labels. |
 | **Optional Colab GPU offload** | **Host-side WSL MCP broker** wrapping `google-colab-cli`, never direct Google OAuth/ADC tokens inside the container. Planned for **M8**. | `google-colab-cli` requires `https://www.googleapis.com/auth/cloud-platform` scope, which would grant full personal GCP access (including `sar-oilpalm` truth labels) if passed into the container. |
@@ -92,7 +92,7 @@ scripts/dashboard.py --> dashboard/index.html   (the page you open; regenerated 
 ```
 AgentRSI/
   README.md                  how to run a session, how to customise
-  pyproject.toml             uv project, pinned deps (harbor==0.25.0, pyyaml==6.0.3, ...)
+  pyproject.toml             uv project, pinned deps (harbor==0.27.0, pyyaml==6.0.3, ...)
   .env.example               AGENT, MODEL, BASE_URL, API_FORMAT, API_KEY_NAME, API_KEY, ENV,
                              CONTAINER_HOST, GCP_PROJECT, GCP_SA_KEY_PATH, DAILY_SPEND_CAP_USD
   .secrets/                  GITIGNORED. Service-account JSON lives here.
@@ -237,7 +237,7 @@ On-demand GPU VMs via `google-colab-cli` can accelerate offline feature/embeddin
 - **Architecture (WSL host MCP broker):**
   1. **Host-only auth:** authenticate `google-colab-cli` once on the WSL host (native keyring or `--auth=adc`). No user Google token ever touches `/mnt/wsl/` or any container.
   2. **Hardened MCP broker (`AgentRSI/src/colab_broker/`):** runs on the WSL host during GPU-enabled sessions and listens on a Unix domain socket under `/mnt/wsl/agentrsi/colab-mcp.sock` (mounted into the agent container, reusing the `/mnt/wsl/` bridge proven in M0 **[T]**; alternatively Streamable HTTP via sidecar with per-session `${COLAB_MCP_TOKEN}`).
-  3. **Harbor native MCP wiring **[V]**:** registered in `task.toml` via `[[environment.mcp_servers]]` (natively supported by both Claude Code and Codex in Harbor `0.25.0`, with `stdio` relay over the mounted socket or `streamable-http` + `headers` resolved from host env).
+  3. **Harbor native MCP wiring **[V]**:** registered in `task.toml` via `[[environment.mcp_servers]]` (natively supported by both Claude Code and Codex in Harbor `0.27.0`, with `stdio` relay over the mounted socket or `streamable-http` + `headers` resolved from host env).
 - **Mandatory broker guardrails:**
   - **Narrow tool surface only:** `colab_run(script, files, gpu, timeout_min)`, `colab_status(job_id)`, `colab_fetch(job_id)`, `colab_stop(job_id)`. **Never** expose raw `colab` CLI, `colab auth` (which injects personal GCP credentials into the VM), or Google Drive mounting.
   - **Credit & lifecycle guards:** GPU tier allowlist (`T4`/`L4` default, `A100` opt-in), max 1 active VM per session, hard per-job timeout + per-session GPU wall-clock cap, automatic `colab delete`/unassign on idle or session exit (`finally:` in `run_session.py`), and audit entries in `state/events.jsonl`.
@@ -247,7 +247,7 @@ On-demand GPU VMs via `google-colab-cli` can accelerate offline feature/embeddin
 
 - **Sizing.** The engine has 15.2 GiB and 12 CPUs, shared with WSL and Windows. One session at a time (`6 + 4 GiB` agent + verifier). Limits are enforced only on the **rootful** engine.
 - **Runner environment.** `run_session.py` sets `PATH` (Linux binaries first), `XDG_RUNTIME_DIR`, `CONTAINER_HOST`, `DOCKER_HOST`, `PODMAN_COMPOSE_WARNING_LOGS=false`, picks `BASE_URL` by agent, strips inline `# ...` comments from `.env`, and exports `API_KEY` under `API_KEY_NAME`.
-- **Spend guards.** `max_budget_usd`, `max_turns`, a dedicated spend-capped key, and a ledger with a hard daily cap and kill switch (`DAILY_SPEND_CAP_USD=1` enforced once the ledger lands in M3).
+- **Spend guards.** `max_budget_usd` / `max_turns` (for `claude-code`; Codex rejects those kwargs **[V]/[T]**), a dedicated spend-capped key, and `state/lineage.json` enforcing `DAILY_SPEND_CAP_USD`, `t_attempt_budget`, and `kill_switch` inside `run_session.py`.
 
 ---
 
@@ -258,7 +258,7 @@ Each has an exit test.
 - **M0 — Harbor + Podman spike** · *closed 19 Nov 2026.* *Exit:* full list in Progress.
 - **M1 — Data and sealed split** · *closed 20 Nov 2026, hardened 23 Nov 2026.* `src/DataPipeline/` reading `config/split.yaml` (single source of truth), frozen 80 m split with proportional L/V/T (Middle visible but unscored), multi-date SAR (`260610`, `261014`, auto-discovered, `HAlpha_H/A/alpha`) + S2 NDVI, combined `L_labelled.csv` + merged `unlabelled.csv`, hardened leak checker (verified clean on `prior/` docs and GeoTIFF rasters), and resampled-split composite gate calibration. *Exit:* all checks green in Progress.
 - **M2 — Verifier v1** · *closed 23 Nov 2026.* `verifier/` scoring, baselines (`incumbent_fit_predict`, `coords_only_fit_predict`), isolated `runner` subprocess + pinned PyPI `pip install`, `config/verifier.yaml`, `starter/`, local sealed base image (`localhost/agentrsi-sealed:epoch1` via `scripts/build_verifier_base.py`), 11 unit tests, Harbor Oracle/Nop integration trials (`spike/m2-verifier`), and 5 container adversarial/pip checks. *Exit:* all checks green in Progress.
-- **M3 — Builder, runner, collector.** `build_task` with the allowlist copier into `environment/` (data, all rasters, prior docs), `run_session`, `collect`, `lineage.json`, T-attempt counter per nominee, spend ledger, `events.jsonl` and `certification.json`. *Exit:* a 20-minute dry session on a cheap model flows end to end; `harbor lint` and `harbor check` pass; `002-CheckLeaks.py` passes on the generated `tasks/` and `jobs/`; re-collecting the same job does not duplicate events.
+- **M3 — Builder, runner, collector** · *closed 23 Nov 2026.* Prebuilt `localhost/agentrsi-agent-base:latest` (`scripts/build_agent_base.py`) with in-container `agentrsi` CLI (`selfcheck`, `cv`, `gcp-init`), `config/session.yaml`, `templates/`, `src/libbuilder/` (`build_task`, `run_session`, `collect`, `render_handoff`, `stage_secrets`, `lineage`, `events`, `env_utils`), `scripts/{build_task,run_session,collect,regrade}.py`, 5 builder/collector unit tests, and end-to-end `s000-dry` session (`claude-code` / `claude-haiku-5-5`). *Exit:* all checks green in Progress (`harbor check` waived on `-e podman`: empirically confirmed still broken in Harbor `0.27.0` because `_wait_until_compose_exec_ready()` runs before `_upload_environment_dir_after_start()` on `crun`).
 - **M4 — Dashboard.** `AgentRSI/scripts/dashboard.py` writes `AgentRSI/dashboard/index.html`, built on fixtures and the M3 dry session. *Exit:* page numbers match `reward.json`, `certification.json` and `lineage.json` exactly (scripted diff); events show context on hover/click; epoch boundaries not joined; CI bands and `+0.03` line shown; works offline; no T number in any `tasks/` dir.
 - **M5 — First real session (S1, 8 h, spend-capped).** *Exit:* you review the report and dashboard; we tune the templates.
 - **M6 — Iteration and schedule.** S2 generated from S1, gate works, resume is frictionless. Then Windows Task Scheduler or cron runs `daily.sh` (collect, dashboard, ledger, kill switch).
@@ -276,7 +276,7 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 
 | Exit check | Result | Evidence |
 |---|---|---|
-| Pinned Harbor installs | **Pass.** `harbor==0.25.0` (Python 3.12) | `pyproject.toml`, `uv.lock` |
+| Pinned Harbor installs | **Pass.** `harbor==0.27.0` (upgraded from `0.25.0`, Python 3.12) | `pyproject.toml`, `uv.lock` |
 | Linux `podman` and `docker-compose` | **Pass.** podman remote v6.1.4, docker-compose v5.7.0, SHA-256 verified | `.tools/bin/` |
 | Harbor Podman preflight | **Pass** with `.tools/bin` first on `PATH` | `PodmanEnvironment.preflight()` |
 | Oracle hello-world on `-e podman` | **Pass.** reward `1.0` | `jobs/m0-oracle3/` |
@@ -313,13 +313,22 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 | Pinned PyPI install & adversarial isolation | **Pass (5/5 container tests).** In `localhost/agentrsi-sealed:epoch1`: `read_sealed` (`PermissionError`), `write_reward_json` (`PermissionError`, `/logs/verifier` locked `0700`), `timeout_loop` (killed in `3.24s`), `pip_tabulate` (`tabulate==0.9.0` installed as `runner`, `score = 0.054469`, recorded in `pip_freeze`), `malicious_reqs` (blocked `-r /sealed/...` before pip). **[T]** | `verifier/runner.py` |
 | `harbor lint` & leak check on M2 task/jobs | **Pass.** `harbor lint` exits 0; `002-CheckLeaks.py` passes on `spike/m2-verifier` (8 files) and `jobs/` (172 files). **[T]** | `spike/m2-verifier/`, `jobs/m2-*` |
 
+### M3 exit checks (closed 23 Nov 2026)
+
+| Exit check | Result | Evidence |
+|---|---|---|
+| Agent base image & `agentrsi` CLI | **Pass.** `scripts/build_agent_base.py` builds `localhost/agentrsi-agent-base:latest` (`numpy`, `pandas`, `scipy`, `scikit-learn`, `pyarrow`, `rasterio`, `earthengine-api`, `xgboost`, `lightgbm`, `geopandas`, `/usr/local/bin/agentrsi`). `agentrsi --help` verified inside container. **[T]** | `scripts/build_agent_base.py`, `templates/agentrsi_cli.py` |
+| Builder, runner & collector unit tests | **Pass.** 5/5 new tests pass (16/16 total suite): `.env` `#` stripping & gateway `/v1` rule, strict allowlist task build, handoff V-injection & disagreement warning, secret scan abort, smell flags, idempotent re-collect + promotion, spend cap guard. **[T]** | `tests/test_builder_collector.py`, `src/libbuilder/` |
+| Live dry session (`s000-dry`) | **Pass.** `claude-code` / `claude-haiku-5-5` (`--max-turns 20 --max-budget-usd 0.50`, `/run/secrets/gcp-sa.json` mounted read-only) completed in `3m 59s` (`$0.012239`), produced valid `pipeline.py`, `REPORT.md`, `HANDOFF.md` (`0` missing sections), `0` smells: composite V lift `+0.057286` (`Δinc +0.002816`; AirHitam `+0.021679`, Palong `+0.068732`, Serting `+0.081446`, verifier `6.768s`). *(Retry after one transient `downloads.claude.ai` DNS error.)* **[T]** | `jobs/s000-dry/`, `sessions/s000-dry/` |
+| Idempotent double collection | **Pass.** Re-collecting `s000-dry` twice leaves `state/events.jsonl` byte-identical, `daily_spend_usd` at `$0.012239`, and `t_attempts_used = 0` (dry flag). **[T]** | `state/events.jsonl`, `state/lineage.json`, `scripts/collect.py` |
+| Handoff injection & leak checks | **Pass.** `build_task --parent s000-dry` injects verified V score (`+0.057286`) with zero T numbers (`ZERO_T_NUMBERS_IN_HANDOFF_TASK`). `harbor lint` exits 0 on `tasks/s000-dry`; `002-CheckLeaks.py` passes on `tasks/` (83 files), `jobs/` (197 files), and `sessions/` (8 files). (`harbor check` waived on `-e podman`: upstream `check-task-template` lacks `/app` in `python:3.13-slim`, failing `crun` before agent start.) **[T]** | `tasks/s000-dry/`, `src/libbuilder/build_task.py` |
+
 ### Next actions
 
-**M3 (Builder, runner, collector) is next and has not started. It waits for your go-ahead.**
+**M4 (Dashboard) is next and has not started. It waits for your go-ahead.**
 
 **Parked items for upcoming milestones**
-- **M3:** `build_task` allowlist copier (`L_labelled.csv`, `unlabelled.csv`, all `data/SAR-scenes/*.tif`, `prior/` docs) + `002-CheckLeaks.py` gate; `run_session.py` (`BASE_URL` per agent, inline `# ...` comment stripping from `.env`, `PODMAN_COMPOSE_WARNING_LOGS=false`); `collect.py` (URL/network-call grep, secret scan, T-attempt counter, spend ledger, `lineage.json`, `events.jsonl`, `certification.json` — reading `v_report.json` + `certification.json` + flat `reward.json`).
-- **M4:** `scripts/dashboard.py` generating offline `dashboard/index.html` from `reward.json` / `v_report.json`, `certification.json`, `events.jsonl`, and `lineage.json`.
+- **M4:** `scripts/dashboard.py` generating self-contained offline `dashboard/index.html` from `reward.json` / `v_report.json`, `certification.json`, `events.jsonl`, and `lineage.json` (using fixtures + `s000-dry`, scripted numeric diff, zero T leakage into `tasks/`).
 - **Deferred:** Yamaguchi SAR in the base table (dB-like values; deferred until a conversion rule is chosen, raw scenes already exposed to agents in `rasters/`).
 
 ---
@@ -401,7 +410,9 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 5. **`cpus` is a CFS quota, not a cpuset:** `os.cpu_count()` still reports 12 inside `--cpus=1`, so pass worker counts via `ctx` and env.
 6. **Put `.tools/bin` first on `PATH`** so `podman compose` invokes Linux `docker-compose`.
 7. **Runner env:** set `PATH`, `XDG_RUNTIME_DIR`, `CONTAINER_HOST`, `DOCKER_HOST`, and `PODMAN_COMPOSE_WARNING_LOGS=false` (without the last, `podman compose` prints a banner to stdout that breaks Harbor's package-manager probe during Codex install).
-8. **Keep install errors visible** in job records (one transient TLS error occurred during an M0 Claude Code install and succeeded on rerun; also guard memory on large downloads after an M0 WSL memory-pressure reboot).
+8. **Keep install errors visible** in job records (transient `downloads.claude.ai` TLS/DNS errors occurred once in M0 and once in M3 and succeeded on rerun; also guard memory on large downloads after an M0 WSL memory-pressure reboot).
+9. **`harbor check` fails under `-e podman` (tested on `0.25.0` and `0.27.0`)** **[T]**: its internal `check-task-template/task.toml` hardcodes `docker_image = "python:3.13-slim"` with `workdir = "/app"`. In `0.27.0`, `docker.py` moved `_upload_environment_dir_after_start()` ahead of `ensure_dirs()` (fixing Docker), but for Podman (`supports_compose_wait=False`) `_wait_until_compose_exec_ready()` still runs one line earlier and executes `exec -w /app main bash -c true` before `/app` is created, so `crun` rejects it (`chdir to /app: No such file or directory`). Always create `/app` in our own task Dockerfiles and rely on `harbor lint` + `002-CheckLeaks.py`.
+10. **Harbor agent `--ak` flags differ by agent** **[V]/[T]**: `claude-code` supports `max_turns` and `max_budget_usd`, whereas `codex` rejects both (`CodexOptions` supports `reasoning_effort`, `reasoning_summary`, `web_search`). `run_session.py` gates them accordingly.
 
 ---
 
@@ -424,7 +435,7 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 | Package install runs untrusted code / PyPI drift | Unprivileged user with unreadable labels; exact pins required and `pip freeze` recorded. |
 | Rootful engine containment | No privileged mode, no extra caps, no host mounts except read-only secret, `harbor lint`. |
 | Cost runaway on third-party gateway | `max_budget_usd`, `max_turns`, spend-capped key, daily cap ledger + kill switch (enforced in M3). |
-| Podman/Harbor instability (harbor#398) | Pinned `harbor==0.25.0`, `docker-compose` provider, Docker Desktop fallback (only `-e` changes). |
+| Podman/Harbor instability (harbor#398) | Pinned `harbor==0.27.0`, `docker-compose` provider, Docker Desktop fallback (only `-e` changes). |
 | Resource contention on 12-core / 15 GiB WSL box | One session at a time, enforced rootful limits, schedule only after M6. |
 
 ---
@@ -433,6 +444,8 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 
 | Version | Date | Change |
 |---|---|---|
+| 2.4 | 23 Nov 2026 | Upgraded pinned Harbor `0.25.0 -> 0.27.0` and refreshed `uv.lock` (147 packages). Re-verified 16/16 unit tests, `harbor lint`, `run_session.py --dry-run`, M2 `oracle` separate-verifier trial (score `0.054469`), and leak checks. Empirically confirmed upstream `harbor check -e podman` `crun: chdir to /app` failure persists in `0.27.0` (`_wait_until_compose_exec_ready()` still precedes `_upload_environment_dir_after_start()`). |
+| 2.3 | 23 Nov 2026 | M3 closed (Builder, runner, collector): `localhost/agentrsi-agent-base:latest`, `agentrsi` CLI, `config/session.yaml`, `templates/`, `src/libbuilder/`, `scripts/`, 16/16 unit tests, live `s000-dry` session (`claude-haiku-5-5`, V `+0.057286`, `$0.0122`), idempotent double collect, handoff & leak checks. Documented Harbor `0.25.0` `harbor check` Podman/`crun` bug and per-agent `--ak` support. |
 | 2.2 | 23 Nov 2026 | M2 closed (Verifier v1): `config/verifier.yaml`, `starter/`, `verifier/` library, `scripts/build_verifier_base.py` (`localhost/agentrsi-sealed:epoch1`), 11 unit tests, `spike/m2-verifier` Harbor Oracle/Nop trials, and 5 container adversarial/pip checks. Recorded Harbor `_parse_reward_json` flat-dict rule (`reward.json` + sibling `v_report.json`/`certification.json`). |
 | 2.1 | 23 Nov 2026 | Verified new GEE-only SA (`Keys_SAEarthEngine.json`: GEE OK, GCS `sar-oilpalm` & IAM HTTP 403) and updated `common.py`. Designed M8 optional Colab GPU offload via host-side WSL MCP broker + Harbor `[[environment.mcp_servers]]` (keeping `cloud-platform`-scoped user tokens strictly off containers). |
 | 2.0 | 23 Nov 2026 | M1 hardened after audit: `config/split.yaml` wired as single source of truth in `common.py`; multi-date ALOS-2 SAR (`260610` + `261014`, auto-discovered) and renamed `HAlpha_H/A/alpha` in base table; V + T merged into single `unlabelled.csv` (no V/T exposure); `002-CheckLeaks.py` fixed for `prior/` docs and binary rasters + 4 seeded controls; `003-Calibration.py` fixed to resample 80 m splits (never touching frozen T) and pooled OOF leakage; stale `tree_id` and single-estate starter references cleaned up. |
