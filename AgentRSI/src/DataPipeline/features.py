@@ -1,24 +1,26 @@
-"""Per-tree features from the raw sources only: SAR window means and Sentinel-2 NDVI.
+"""Per-tree features from the raw sources only: multi-date SAR window means and Sentinel-2 NDVI.
 
-Sources of truth (decided 19 Nov 2026):
+Sources of truth (decided 19 Nov 2026; multi-date SAR added 23 Nov 2026):
   - data/Labels/*.csv        coordinates and classes, all three estates
-  - data/SAR-scenes/*.tif    ALOS-2 scenes for the 260610 date, one set per estate
+  - data/SAR-scenes/*.tif    ALOS-2 scenes across all complete dates (auto-discovered: 260610, 261014, ...)
 
 No file under data/Processed or misc/ is read here. NDVI comes from Google Earth Engine
 (Sentinel-2 SR, the POC's window and cloud mask), not from any CSV.
 
-Conventions follow the POC so numbers stay comparable:
+Conventions follow the POC and main.py so numbers stay comparable:
   - NDVI: S2_SR_HARMONIZED, 2026-05-15..2026-07-15, SCL classes 4-7 kept, per-pixel median,
     normalizedDifference(B8, B4), reduceRegions(mean) at 10 m.
-  - SAR: 3x3 window mean of linear power per band. Non-finite and <= 0 pixels are masked,
-    the full window must fit, at least 5 valid pixels are needed.
+  - SAR: 3x3 window mean per band across every complete scene date (date-suffixed columns).
+    Non-finite and <= 0 pixels are masked, the full window must fit, at least 5 valid pixels
+    are needed.
 
-SAR band meaning, unverified (file metadata has no band names):
-  - Spk (4 bands): HH, HV, VH, VV. Inferred from the statistics: cross-pol ratio ~1,
-    co-pol HH/VV ~1.3-1.45. The POC used the same order.
-  - HAlpha (3 bands, linear fractions): HAlpha_1..3. Band meaning unverified.
-  - Yamaguchi is excluded: dB-like values (median -9 to -18), so the mask <= 0 rule empties
-    every tree. No POC used it and no conversion is specified, so it is deferred.
+SAR band order (authoritative per main.py / SNAP pipeline; GeoTIFFs carry no band names):
+  - Spk (4 bands, linear power): HH, HV, VH, VV.
+  - HAlpha (3 bands, linear): HAlpha_H (entropy, 0..1), HAlpha_A (anisotropy, 0..1),
+    HAlpha_alpha (alpha angle, degrees).
+  - Yamaguchi is excluded from the base table: dB-like values (median -9 to -18), so the
+    mask <= 0 rule empties every tree. Deferred until a conversion rule is chosen; the raw
+    GeoTIFFs remain exposed to agents in environment/rasters/.
 """
 from __future__ import annotations
 
@@ -29,17 +31,21 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from common import ESTATES, KEY_FILE, LABEL_DIR, LABEL_FILES, REPO_ROOT
+from common import (
+    ESTATES,
+    KEY_FILE,
+    LABEL_DIR,
+    LABEL_FILES,
+    NDVI_COLS,
+    SAR_DIR,
+    SAR_PRODUCTS,
+    discover_sar_dates,
+    feature_cols,
+    sar_feature_cols,
+)
 
-SAR_DATE = "260610"
-# product -> (file suffix after estate and date, output column names)
-SAR_PRODUCTS = {
-    "Spk": ("Cal_Spk_TC.tif", ["HH", "HV", "VH", "VV"]),
-    "HAlpha": ("Cal_mat_HAlpha_Spk_TC.tif", ["HAlpha_1", "HAlpha_2", "HAlpha_3"]),
-}
 S2_START, S2_END = "2026-05-15", "2026-07-15"
 SCL_KEEP = (4, 5, 6, 7)
-NDVI_COLS = ["B4", "B8", "NDVI", "clear_count"]
 
 
 @dataclass(frozen=True)
@@ -61,16 +67,16 @@ def load_labels() -> list[Tree]:
     return trees
 
 
-def scene_path(estate: str, product: str):
+def scene_path(estate: str, date: str, product: str):
     suffix = SAR_PRODUCTS[product][0]
-    p = REPO_ROOT / "data" / "SAR-scenes" / f"ALOS2-Subset_{estate}_{SAR_DATE}_{suffix}"
+    p = SAR_DIR / f"ALOS2-Subset_{estate}_{date}_{suffix}"
     if not p.exists():
         raise FileNotFoundError(p)
     return p
 
 
 def sample_window_means(tif, lon: np.ndarray, lat: np.ndarray, nbands: int) -> np.ndarray:
-    """3x3 linear-power mean per tree, per band. Returns (n_trees, nbands), NaN where unusable."""
+    """3x3 window mean per tree, per band. Returns (n_trees, nbands), NaN where unusable."""
     import rasterio
     from rasterio.warp import transform
     from rasterio.windows import Window
@@ -97,6 +103,29 @@ def sample_window_means(tif, lon: np.ndarray, lat: np.ndarray, nbands: int) -> n
                 if v.size >= 5:
                     out[i, b] = float(v.mean())
     return out
+
+
+def extract_sar_table(trees: list[Tree] | None = None, dates: list[str] | None = None) -> pd.DataFrame:
+    """Extract multi-date SAR features locally for every tree. No labels."""
+    trees = load_labels() if trees is None else trees
+    use_dates = discover_sar_dates() if dates is None else dates
+    if not use_dates:
+        raise FileNotFoundError(f"No complete SAR scene date sets found in {SAR_DIR}")
+
+    rows = {(t.estate, t.id): {"estate": t.estate, "id": t.id} for t in trees}
+    for estate in ESTATES:
+        sub = [t for t in trees if t.estate == estate]
+        lon = np.array([t.lon for t in sub])
+        lat = np.array([t.lat for t in sub])
+        for dt in use_dates:
+            for product, (_, cols) in SAR_PRODUCTS.items():
+                arr = sample_window_means(scene_path(estate, dt, product), lon, lat, len(cols))
+                for t, vals in zip(sub, arr):
+                    for c, v in zip(cols, vals):
+                        rows[(t.estate, t.id)][f"{c}_{dt}"] = float(v) if np.isfinite(v) else np.nan
+
+    df = pd.DataFrame(list(rows.values()))
+    return df[["estate", "id"] + sar_feature_cols(use_dates)]
 
 
 def sample_ndvi_earth_engine(trees: list[Tree], project: str) -> dict[tuple[str, int], dict]:
@@ -149,25 +178,16 @@ def sample_ndvi_earth_engine(trees: list[Tree], project: str) -> dict[tuple[str,
     return result
 
 
-def build_feature_table(project: str) -> pd.DataFrame:
+def build_feature_table(project: str, dates: list[str] | None = None) -> pd.DataFrame:
     """One row per tree (all three estates, Middle included). Feature columns only, no labels."""
     trees = load_labels()
-    sar_cols = [c for _, cols in SAR_PRODUCTS.values() for c in cols]
-    rows = {(t.estate, t.id): {"estate": t.estate, "id": t.id} for t in trees}
-
-    for estate in ESTATES:
-        sub = [t for t in trees if t.estate == estate]
-        lon = np.array([t.lon for t in sub])
-        lat = np.array([t.lat for t in sub])
-        for product, (_, cols) in SAR_PRODUCTS.items():
-            arr = sample_window_means(scene_path(estate, product), lon, lat, len(cols))
-            for t, vals in zip(sub, arr):
-                for c, v in zip(cols, vals):
-                    rows[(t.estate, t.id)][c] = float(v) if np.isfinite(v) else np.nan
-
+    use_dates = discover_sar_dates() if dates is None else dates
+    sar_df = extract_sar_table(trees, use_dates)
     ndvi = sample_ndvi_earth_engine(trees, project)
-    for key, rec in rows.items():
-        rec.update(ndvi.get(key, {k: np.nan for k in NDVI_COLS}))
-
-    df = pd.DataFrame(list(rows.values()))
-    return df[["estate", "id"] + sar_cols + NDVI_COLS]
+    ndvi_rows = [
+        {"estate": e, "id": tid, **vals}
+        for (e, tid), vals in ndvi.items()
+    ]
+    ndvi_df = pd.DataFrame(ndvi_rows)
+    df = sar_df.merge(ndvi_df, on=["estate", "id"], how="left", validate="one_to_one")
+    return df[["estate", "id"] + feature_cols(use_dates)]

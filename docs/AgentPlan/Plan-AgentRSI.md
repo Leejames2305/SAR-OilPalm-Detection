@@ -1,12 +1,12 @@
 # AgentRSI Plan
 
-**Version:** 1.9 (20 Nov 2026) | **Phase:** M0 and M1 closed (20 Nov) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
+**Version:** 2.0 (23 Nov 2026) | **Phase:** M0 and M1 closed (M1 hardened 23 Nov) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
 
 **Goal.** Turn this project into an RSI4EO-style loop. A coding agent builds the oil-palm triage model in a sandbox, a sealed verifier scores it, and each day's session starts from what the last one found. Humans design the harness and verifier. Agents build the models.
 
-**Where we are.** M0 is closed: every exit check passes, including the Codex and Claude Code trials through your gateway (see Progress). The design decisions are made. The M1 data work is done: features come from the raw sources only, the split is frozen at 80 m, and the composite gate is calibrated in simulation. M1 is closed. Later milestones and the GCP placeholders are parked.
+**Where we are.** M0 and M1 are closed. All M0 gateway and Podman checks pass. M1's data pipeline (`src/DataPipeline/`) reads the frozen 80 m split from `config/split.yaml` (single source of truth), extracts multi-date ALOS-2 SAR (`260610` and `261014`, auto-discovered) plus Sentinel-2 NDVI from raw sources, emits a combined `L_labelled.csv` and merged `unlabelled.csv` (V + T, no IDs, no V/T exposure), passes hardened leak checks (including `prior/` docs and GeoTIFF rasters), and validates the composite gate over 120 resampled 80 m splits. **M2 is next and waits for go-ahead.**
 
-Evidence tags: **[V]** read in Harbor docs or source | **[T]** tested on this machine | **[S]** simulation on the real AirHitam tables | **[?]** unverified.
+Evidence tags: **[V]** read in Harbor docs or source | **[T]** tested on this machine | **[S]** simulation on the real estate tables | **[?]** unverified.
 
 ---
 
@@ -14,11 +14,11 @@ Evidence tags: **[V]** read in Harbor docs or source | **[T]** tested on this ma
 
 | RSI4EO concept | Here |
 |---|---|
-| Harness H (data, libs, budget) | Per-tree SAR tables and ROI-masked ALOS-2 rasters for 3 estates, prior POC reports, the incumbent pipeline, GEE/GCS access, a Python geo/ML stack. **CPU only.** |
+| Harness H (data, libs, budget) | Combined multi-date SAR + S2 NDVI tables and all ROI-masked ALOS-2 rasters for 3 estates, prior POC reports, the incumbent pipeline, GEE/GCS access, a Python geo/ML stack. **CPU only.** |
 | Verifier V (sealed, scores only) | Sealed held-out blocks for all three estates, each with a validation part (V) and a certification part (T). Returns scores, never labels. |
 | Pipeline pi | `submission/`: `fit_predict(labeled, unlabeled, ctx) -> risk scores`, a **training recipe** (the product trains on about 1000 labels in a new field and predicts the rest). |
-| Few-label task | Same shape: a labelled slice per estate, the rest is the "unlabeled pool". |
-| Recursion inside a task | Agent-driven within the 8 h session. Pseudo-labelling on the unlabeled pool is allowed, nothing is prescribed. |
+| Few-label task | Same shape: a labelled slice (L) per estate, the rest (V + T) merged into one unlabeled pool. |
+| Recursion inside a task | Agent-driven within the 8 h session. Pseudo-labelling on the unlabeled pool is allowed; nothing is prescribed. |
 | **Not in the paper:** recursion across tasks | Our addition. Session N+1 is generated from session N's handoff and the incumbent. |
 | 12 h, 4 x GB200, offline | 8 h, CPU-only, **public internet**, GEE/GCS access. |
 
@@ -34,30 +34,31 @@ CPU-only is fine: earlier POCs show nonlinear and deep models lose to linear one
 |---|---|---|
 | **Label trust** | All three estates are treated identically: same split rule, same reward weight, same certification. No provenance field. | Your call (17 Nov): same screening methodology and tools at every site. |
 | **Reward** | Mean over the three estates of `lift = pr_auc - prevalence` on V. Equal weights, kept in `verifier.yaml`. The agent sees the per-estate breakdown. | Follows from label trust: no estate is discounted. |
-| **Promotion** | One **composite T test** on the same equal weights, plus a per-estate non-degradation check. One nominee per session. Effect floor `d >= 0.03`, T-attempt budget 20. | Your call (17 Nov), confirmed 20 Nov. Floor and budget came from the AirHitam-only simulation. M1 re-checked the floor on all three estates (Observations › Gate calibration, M1). |
-| **Non-degradation** | An estate fails if its T dPR-AUC against the incumbent is below `-0.03` (pre-registered 19 Nov). The rule only blocks adoption. Tested at -0.02 and -0.04 on the same harness (20 Nov): adoption is identical on the synthetic arms, so the pre-registered value stays. | Your call (20 Nov), confirmed at -0.03. Open: real-candidate cost. |
-| **Dashboard** | A static HTML page inside `AgentRSI/`: `AgentRSI/scripts/dashboard.py` writes `AgentRSI/dashboard/index.html`. Numbers come from verifier and collector files only. The report supplies event context only. | Your call (17 Nov). Design in Design › Dashboard. |
+| **Promotion** | One **composite T test** on the same equal weights, plus a per-estate non-degradation check. One nominee per session. Effect floor `d >= 0.03`, T-attempt budget 20. | Confirmed 20 Nov; re-verified over 120 resampled 80 m splits (23 Nov). |
+| **Non-degradation** | An estate fails if its T ΔPR-AUC against the incumbent is below `-0.03` (pre-registered 19 Nov, confirmed 20 Nov). Blocks adoption only. Tested at `-0.02`, `-0.03`, `-0.04` on resampled splits: adoption is identical on synthetic arms. | Confirmed at `-0.03`. Open: real-candidate cost. |
+| **Dashboard** | Static self-contained HTML inside `AgentRSI/`: `AgentRSI/scripts/dashboard.py` writes `AgentRSI/dashboard/index.html`. Numbers come from verifier and collector files only; agent reports supply event context only. | Your call (17 Nov). Design in Design › Dashboard. |
 | **Verifier phases** | v1 grades once at session end. v2 adds an in-run sealed query tool with a query budget. | |
 | **Agents** | Claude Code and Codex through a third-party gateway. Agent, model, base URL and key name are run-time parameters. Current default: Codex, `gpt-6.1-terra`, OpenAI Responses. | |
-| **Budget and network** | 8 h agent timeout. Agent has public internet, with one blocked site: this research repo, `https://github.com/Leejames2305/SAR-OilPalm-Detection`. The agent has full access to everything else. **Verifier network is fully public** (throwaway container). Label protection is the unprivileged subprocess plus root-only label files, not the network. | Your call (11 Nov). Repo block added 20 Nov. The block covers the agent only; the verifier stays unblocked (your call, 20 Nov). |
+| **Budget and network** | 8 h agent timeout. Agent has public internet, with one blocked site: this research repo, `https://github.com/Leejames2305/SAR-OilPalm-Detection`. **Verifier network is fully public** (throwaway container). Label protection is the unprivileged subprocess plus root-only label files, not the network. | Your calls (11 Nov, 20 Nov). Block covers the agent only; verifier stays unblocked. |
 | **Packages** | The agent ships a pinned `requirements.txt` and the verifier installs it from PyPI. No allowlist, no approval flow. | Your call (11 Nov). |
-| **Runtime** | Rootful Podman from WSL, Docker Desktop as fallback. Harbor pinned at 0.25.0. | Rootless cannot enforce CPU or memory limits. |
+| **Runtime** | Rootful Podman from WSL, Docker Desktop as fallback. Harbor pinned at `0.25.0`. | Rootless cannot enforce CPU or memory limits. |
 | **Focus** | Open-ended research, explicitly including data expansion. Optional lenses (`literature`, `data-expansion`, `ablation`) bias the instruction. | |
-| **Data egress** | ROI-masked ALOS-2, tree coordinates and labels go to your inference provider. The GCS/GEE service-account key is passed to the agent. | Your call (11 Nov). |
-| **Layout** | Everything AgentRSI builds, runs or generates lives under `AgentRSI/`, the dashboard included. Generated tasks are in `AgentRSI/tasks/<id>/`. Harbor's file is `instruction.md` (singular) **[V]**. | |
-| **Split sizes** | Proportional: each estate's scored trees go to L / V / T at about 40 / 30 / 30 %, so L is about 1004 / 868 / 667 trees (AirHitam / Palong / Serting). It scales to any estate size. | Your call (17 Nov). Accepts an L below the "about 1000 labels" product shape for the two smaller estates. |
-| **Block size** | 80 m spatial blocks, frozen in `split.yaml` (epoch 1). | Your call in M1. 220 m is infeasible for Serting. 165 m was the coarsest size under the positives-only cap (at most 10 expected redraws), but it failed the ±10-point tree-share rule for Serting (about 13 expected redraws). The cap was set after seeing the feasibility table. Leakage evidence is noisy and did not pick the size (Observations). |
-| **Middle class** | **Visible but unscored.** Middle trees go through the same block split as every other tree. In L the agent sees them labelled `Middle`. In V and T they sit unmarked in the unlabeled pool, as they would in a new field. They are never in the positive class and never in any metric. The starter pipeline and the baselines train without them (the POC convention). | Your call (17 Nov): "exclude first", then "visible but unscored". Whether Middle helps is still open (below). Evidence in Observations. |
-| **Gateway URL** | The path suffix depends on the API format: `BASE_URL` ends in `/v1` for OpenAI Responses (Codex) and has no `/v1` for Anthropic Messages (Claude Code). `run_session.py` must therefore pick the URL by agent. | Your gateway (17 Nov). The Codex trial confirms Harbor passes it through correctly. |
-| **Sealed labels** | The master labels live in `AgentRSI/.sealed/` (git-ignored, directory 700, files 600). The agent view has no tree id, and V and T have no label. Estate and coordinates identify a tree, and the agent already sees them as features, so there are no keys or salts. The verifier copy is staged in `.sealed/verifier_context/`. The root-owned copy inside the verifier image is an M2 build step. | Your call (20 Nov): no pseudonymous keys. The literal "no sealed ID in `tasks/` or `jobs/`" check is the rule. The split CSV with raw ids and parts (no labels) is accepted too. |
+| **Data egress** | ROI-masked ALOS-2, tree coordinates and labels go to the inference provider. The GCS/GEE service-account key is passed to the agent. | Your call (11 Nov). |
+| **Layout** | Everything AgentRSI builds, runs or generates lives under `AgentRSI/`, the dashboard included. Generated tasks live in `AgentRSI/tasks/<id>/`. Harbor's file is `instruction.md` (singular) **[V]**. | |
+| **Split sizes** | Proportional: each estate's trees go to L / V / T at about 40 / 30 / 30 % (±10 pt tolerance, minimums 50 L / 35 V / 35 T Unhealthy). Scales to any estate size. | Your call (17 Nov). Accepts L < 1000 for the two smaller estates so Serting clears 35 V / 35 T positives. |
+| **Block size** | **80 m** spatial blocks, frozen in `config/split.yaml` (epoch 1, single source of truth read by `common.py`). | 220 m is infeasible for Serting; 165 m fails Serting's ±10 pt tree-share cap (~13 expected redraws). 80 m gives 70 / 47 / 29 blocks (2.0 / 2.0 / 6.2 expected draws). |
+| **Middle class** | **Visible but unscored.** Middle trees travel with their block. In L the agent sees them labelled `Middle`; in `unlabelled.csv` (V + T) they sit unmarked, as in a new field. Never in the positive class and never in any metric. Starter pipeline trains without them. | Your call (17 Nov). Whether Middle helps as context stays open (below). |
+| **Gateway URL** | Path suffix depends on API format: `BASE_URL` ends in `/v1` for OpenAI Responses (Codex) and has no `/v1` for Anthropic Messages (Claude Code). `run_session.py` picks the URL by agent. | Confirmed on gateway (17–19 Nov). |
+| **Sealed labels & agent view** | Master labels live in `AgentRSI/.sealed/` (git-ignored, dir `700`, files `600`). Agent view is **two combined CSVs** with an `estate` column (`L_labelled.csv` and merged `unlabelled.csv` = V + T), no `id`, no `block`, and no V/T split exposure. `(estate, Long, Lat)` identifies every tree uniquely (7,220/7,220). `config/split_assignment.csv` stays host-only. | Your calls (20 Nov, 23 Nov): no pseudonymous keys, merged unlabelled pool, combined tables with `estate` column. |
+| **Base table features** | Multi-date ALOS-2 SAR (`Spk`: `HH, HV, VH, VV`; `HAlpha`: `HAlpha_H, HAlpha_A, HAlpha_alpha`) across all complete dates auto-discovered in `data/SAR-scenes/` (currently `260610`, `261014`, date-suffixed) plus Sentinel-2 optical (`B4, B8, NDVI, clear_count`). All raw rasters (including Yamaguchi and AirHitam T3) are also exposed in `environment/rasters/`. | Your call (23 Nov): keep the base table expanding automatically as new dates arrive, and expose all raw rasters to agents. |
 
 ### Open
 
 | Item | Current default | Resolved by |
 |---|---|---|
-| **Non-degradation cost on real candidates** | Value -0.03 (Made, 20 Nov). The synthetic arms adopt identically at -0.02, -0.03 and -0.04, and the rule never fires on a synthetic gain. A rough estimate (not simulated) puts the chance that some estate falls below the threshold for a neutral real candidate at about 0.53, 0.33 and 0.18. Real per-estate noise is unmeasured. | Measure per-estate noise on real candidates before M5. The -0.03 value is confirmed (20 Nov). | 
-| **Keep or drop `Middle`** (does it help a model at all?) | Unverified, mirrored from `MainChecklist.md` §D. Agents may use the `Middle` rows in L however they like. Their reports show whether it helped. | Session evidence (M5 onward) |
-| **`GCP_PROJECT` and service-account key path** | Placeholders in `.env.example`. Real values go only in the gitignored `.env` and `.secrets/`. | You, before the first session |
+| **Non-degradation cost on real candidates** | Value `-0.03` (confirmed 20 Nov). Synthetic arms adopt identically at `-0.02`, `-0.03` and `-0.04` and never fire on synthetic gains. A rough unsimulated estimate (independent per-estate ΔPR-AUC, SD `0.026`, null effect) puts the chance of some estate falling below `-0.02 / -0.03 / -0.04` at ~`0.53 / 0.33 / 0.18`. Real per-estate noise is unmeasured. | Measure per-estate noise on real candidates before M5. |
+| **Keep or drop `Middle`** (does it help a model at all?) | Unverified, mirrored from `MainChecklist.md` §D. Agents may use `Middle` rows in L however they like; reports will show whether it helps. | Session evidence (M5 onward) |
+| **`GCP_PROJECT` and service-account key path** | Placeholders in `.env.example`. Real values live only in gitignored `.env` and `.secrets/`. | You, before the first real session |
 
 ---
 
@@ -69,7 +70,7 @@ Paths in this section and the next are relative to `AgentRSI/`.
 
 ```
 state/lineage.json + sessions/s(N-1)/HANDOFF.md
-        |  build_task.py   (templates + split + prior knowledge)
+        |  build_task.py   (templates + agent_view + rasters + prior knowledge)
         v
 tasks/sNNN/  --run_session.py-->  stage secrets -> harbor run -p ... -a <agent> -m <model> --base-url ... -e podman
         |                          agent (8 h, public internet, GEE) writes /app/{submission,report,datasets}
@@ -90,30 +91,36 @@ scripts/dashboard.py --> dashboard/index.html   (the page you open; regenerated 
 ```
 AgentRSI/
   README.md                  how to run a session, how to customise
-  pyproject.toml             uv project, harbor==0.25.0
+  pyproject.toml             uv project, pinned deps (harbor==0.25.0, pyyaml==6.0.3, ...)
   .env.example               AGENT, MODEL, BASE_URL, API_FORMAT, API_KEY_NAME, API_KEY, ENV,
                              CONTAINER_HOST, GCP_PROJECT, GCP_SA_KEY_PATH, DAILY_SPEND_CAP_USD
-  .secrets/                  GITIGNORED. gcp-sa.json lives here.
+  .secrets/                  GITIGNORED. Service-account JSON lives here.
+  .sealed/                   GITIGNORED (mode 700, files 600). labels_master.csv, split_report.json,
+                             verifier_context/. Never copied into tasks/ or jobs/.
+  .work/                     GITIGNORED. features.csv, agent_view/{L_labelled.csv,unlabelled.csv},
+                             gate_results.json, gate_run.log.
   config/
-    session.yaml             focus lens, agent, model, budget, cpus/mem, effort, max_budget_usd
-    split.yaml               FROZEN: seeds, block size, L/V/T fractions (change = new epoch)
-    verifier.yaml            reward weights, gate thresholds, T-attempt budget, bootstrap B, caps
+    split.yaml               FROZEN single source of truth: epoch, block size, seed, fractions,
+                             minimums, counts, sha256 (change = new epoch)
+    split_assignment.csv     frozen split with raw ids, block and part, no labels (host-only)
+    session.yaml             focus lens, agent, model, budget, cpus/mem, effort, max_budget_usd (M3)
+    verifier.yaml            reward weights, gate thresholds, T-attempt budget, bootstrap B, caps (M2)
   templates/                 instruction (base + focus lenses), task.toml, Dockerfile.agent / .verifier
-  src/DataPipeline/          M1 data steps: build, leak check, calibration
-  src/libbuilder/            builder library (build_task, build_data, stage_secrets, render_handoff,
-                             collect, lineage, events)
-  verifier/                  scoring + gate library baked into every tests/ image (unit-tested)
-  starter/                   session-0 pipeline (NDVI-LogReg incumbent from the POCs)
+  src/DataPipeline/          M1 data steps: 001-BuildData, 002-CheckLeaks, 003-Calibration, common, features
+  src/libbuilder/            builder library (build_task, stage_secrets, render_handoff, collect,
+                             lineage, events, dashboard) (M3–M4)
+  verifier/                  scoring + gate library baked into every tests/ image (unit-tested) (M2)
+  starter/                   session-0 pipeline (NDVI-only balanced LogReg incumbent) (M2)
   scripts/                   thin CLIs: build_task  run_session  collect  regrade  dashboard  daily
-  state/lineage.json         incumbent, scores, epochs, spend ledger, T-attempt counter  (committed)
-  state/events.jsonl         append-only event log  (committed)
+  state/lineage.json         incumbent, scores, epochs, spend ledger, T-attempt counter (committed)
+  state/events.jsonl         append-only event log (committed)
   sessions/sNNN/             COLLECTED: REPORT.md HANDOFF.md submission/ datasets/ reward.json
                              certification.json meta.json
   dashboard/index.html       GENERATED by scripts/dashboard.py (gitignored). Open it in a browser.
   tasks/  jobs/              GENERATED (gitignored)
 ```
 
-The builder uses an **allowlist copy**. Nothing reaches `environment/` unless a rule names it, because `data/Labels/*.csv`, the SHPs and the KMLs contain *all* labels.
+The builder uses an **allowlist copy**. Nothing reaches `environment/` unless a rule names it, because `data/Labels/*.csv`, `data/SHPs/*`, `config/split_assignment.csv`, and `.sealed/*` contain raw labels or the V/T partition.
 
 ### Task anatomy
 
@@ -133,109 +140,98 @@ artifacts = ["/app/submission", "/app/report", "/app/datasets"]
 
 - **Base image:** `python:3.12-slim-bookworm` (needs bash). `tests/Dockerfile` must `COPY test.sh /tests/` (Observations › Harbor on this machine).
 - **Agent-visible `environment/`:**
-  - `data/`: per estate, the **L** trees with labels (Healthy, Unhealthy or Middle), and the **V and T trees without labels** (coordinates and features, since a deployed model knows where every tree is). V and T Middle trees are in that pool, unmarked.
-  - `rasters/`: the ROI-masked ALOS-2 scenes.
-  - `prior/`: `docs/POCReport/*`, MainChecklist (settled facts and dead ends), `GEECatalogSurvey.md`, the last `HANDOFF.md`, the incumbent `submission/`, earlier derived datasets (size-capped).
-  - Python geo/ML stack (numpy, scipy, pandas, sklearn, xgboost, lightgbm, torch CPU, rasterio, geopandas, `earthengine-api`, `google-cloud-storage`) plus a helper CLI `agentrsi`: `cv` (spatial-block CV on L), `selfcheck` (runs the verifier contract offline on L only), `gcp-init`.
+  - `data/`: two combined CSVs covering all three estates (with an `estate` column, no `id`, no V/T partition):
+    - `L_labelled.csv`: `estate, Long, Lat`, multi-date SAR (`HH_<date>`, `HV_<date>`, `VH_<date>`, `VV_<date>`, `HAlpha_H_<date>`, `HAlpha_A_<date>`, `HAlpha_alpha_<date>`), S2 (`B4, B8, NDVI, clear_count`), and `label` (`Healthy`, `Unhealthy`, `Middle`).
+    - `unlabelled.csv`: merged V + T trees with the same feature columns and no `label`. V and T `Middle` trees sit unmarked in this pool, as they would in a new field.
+  - `rasters/`: all ROI-masked ALOS-2 scenes from `data/SAR-scenes/` (both `260610` and `261014`, including `Spk`, `HAlpha`, `Yamaguchi`, and AirHitam `Cal_mat_Spk_TC`).
+  - `prior/`: `docs/POCReport/*`, `MainChecklist.md` (settled facts and dead ends), `Plan-GEECatalogSurvey.md`, the last `HANDOFF.md`, the incumbent `submission/`, earlier derived datasets (size-capped).
+  - Python geo/ML stack (`numpy`, `scipy`, `pandas`, `scikit-learn`, `xgboost`, `lightgbm`, `torch` CPU, `rasterio`, `geopandas`, `earthengine-api`, `google-cloud-storage`) plus a helper CLI `agentrsi`: `cv` (spatial-block CV on L), `selfcheck` (runs the verifier contract offline on L only), `gcp-init`.
 - **Google credentials.** The key is never baked into an image layer.
-  - Preferred: `stage_secrets.py` copies `.secrets/gcp-sa.json` to a mode-0600 file under `/mnt/wsl/agentrsi/` (tmpfs the engine can see, wiped on WSL restart, restaged each run). The task mounts it **read-only** at `/run/secrets/gcp-sa.json` and sets `GOOGLE_APPLICATION_CREDENTIALS`. **[T]**
+  - Preferred: `stage_secrets.py` copies the service-account JSON to a mode-0600 file under `/mnt/wsl/agentrsi/` (tmpfs visible to the engine, wiped on WSL restart, restaged each run). The task mounts it **read-only** at `/run/secrets/gcp-sa.json` and sets `GOOGLE_APPLICATION_CREDENTIALS`. **[T]**
   - Fallback: an agent-phase env var (`--ae`). **[T]**
-  - Only the placeholders `GCP_PROJECT` and `GCP_SA_KEY_PATH` live in `.env`. The instruction says where the key is, to initialise `ee` with it, and never to print or copy it.
+  - Only the placeholders `GCP_PROJECT` and `GCP_SA_KEY_PATH` live in `.env.example`. The instruction says where the key is, to initialise `ee` with it, and never to print or copy it.
 - **`instruction.md` sections:** Mission | Harness map | Pipeline contract | Deliverables with absolute paths | Freedom (internet, papers, GEE/GCS, pseudo-labelling, data expansion) | Constraints (CPU only, 28800 s, never touch `/tests`, never try to recover sealed labels, never print credentials) | Checkpoint rule | Nominee (name the one pipeline to certify) | Handoff from the previous session (auto-injected). The paper's "do not use online solutions" line is dropped on purpose.
 - **Checkpoint rule:** refresh `HANDOFF.md` at least hourly, because a hard timeout can kill the agent mid-write.
-- **`HANDOFF.md` schema** (the builder validates it): State of play | What I tried (idea / result / verdict / evidence path) | Dead ends | Open leads, ranked | How to resume | Artifact index. `REPORT.md` is the long report with literature notes.
+- **`HANDOFF.md` schema** (validated by the builder): State of play | What I tried (idea / result / verdict / evidence path) | Dead ends | Open leads, ranked | How to resume | Artifact index. `REPORT.md` is the long report with literature notes.
 
 ### Data and splits
 
-One rule for all three estates, frozen in `split.yaml`:
+One rule for all three estates, frozen in `config/split.yaml` (epoch 1):
 
-- The **scored set** is Healthy + Unhealthy. The positive class is Unhealthy.
-- Whole **spatial blocks** are assigned to **L / V / T at about 40 / 30 / 30 %** (seeded), over all trees including Middle. The draw is repeated until every part clears the simulation's minimums on scored trees: at least 35 positives in V, 35 in T and 50 in L **[S]**.
-- **Middle** trees travel with their block. They are visible (labelled in L, unmarked in the V/T pool) and **unscored**: the verifier removes them before every metric, and the counts below leave them out. Keeping them in the V/T pool matters because a deployed model sees the whole field, and neighbour-based features, the one repeatable POC lever, include them.
+- The **scored set** is `Healthy` + `Unhealthy`. The positive class is `Unhealthy`.
+- Whole **80 m spatial blocks** are assigned to **L / V / T at 40 / 30 / 30 %** (seed `20261119`), over all trees including `Middle`. The draw is repeated until every part clears the minimums on scored trees (`>= 50` Unhealthy in L, `>= 35` in V, `>= 35` in T) and stays within ±10 percentage points of target tree share (all trees).
+- **`Middle` trees** travel with their block. They are visible (`label=Middle` in `L_labelled.csv`, unmarked in `unlabelled.csv`) and **unscored**: the verifier removes them before every metric. Keeping them in the unlabeled pool matters because a deployed model sees the whole field, and neighbour-based features include them.
+- **V** is the agent's search signal (`reward.json` at session end in v1, in-run queries in v2). It is **expected to become optimistic**.
+- **T** is never reported to the agent and never exposed separately in `environment/data/`. It is spent only on certification: one evaluation per session for the declared nominee (one **T attempt** in the ledger).
 
-Expected sizes of the scored trees before block clustering (proportional, so actual draws vary; L also carries about 40% of each estate's Middle trees, roughly 197 for Palong and 151 for Serting):
+Frozen Epoch-1 split counts (`config/split.yaml`, sha256 `26f34d4d...`):
 
-| Estate | Scored trees | Unhealthy | L (trees / pos) | V (trees / pos) | T (trees / pos) |
+| Estate | L: trees · U (M) | V: trees · U (M) | T: trees · U (M) | Blocks | Tree share L / V / T (%) |
 |---|---|---|---|---|---|
-| AirHitam | 2511 | 160 | ~1004 / ~64 | ~753 / ~48 | ~753 / ~48 |
-| Palong | 2171 | 200 | ~868 / ~80 | ~651 / ~60 | ~651 / ~60 |
-| Serting | 1667 | 154 | ~667 / ~62 | ~500 / ~46 | ~500 / ~46 |
+| AirHitam | 964 · 56 (0) | 730 · 38 (0) | 817 · 66 (0) | 70 | 38.4 / 29.1 / 32.5 |
+| Palong | 968 · 66 (198) | 841 · 54 (130) | 855 · 80 (165) | 47 | 36.3 / 31.6 / 32.1 |
+| Serting | 815 · 67 (151) | 552 · 40 (103) | 678 · 47 (124) | 29 | 39.9 / 27.0 / 33.2 |
 
-AirHitam's L of about 1000 matches the finding that NDVI-LogReg saturates by about 1000 labels. Palong and Serting get less than that. The alternative, a fixed L of about 1000, would leave Serting about 31 positives each in V and T, under the 35 minimum.
+U = Unhealthy, M = Middle (unscored, unmarked in `unlabelled.csv`). Total: 7,220 trees (6,349 scored, 871 Middle); agent view: `L_labelled.csv` 2,747 rows, `unlabelled.csv` 4,473 rows.
 
-- **V** is the agent's search signal. Its score is returned to the agent (session-end `reward.json` in v1, in-run queries in v2). It is **expected to become optimistic**.
-- **T** is never reported to the agent. It is spent only on certification: one evaluation per session, for the single declared nominee. Each is one **T attempt** in the ledger.
-- **Block size is 80 m** (Decisions › Made). The block counts in Observations use scored trees only. The split counts in Progress include Middle, as the split does.
-
-**Data expansion.** New covariates ship as `datasets/<name>/features.parquet` keyed by `(estate, tree_id)` for **all** trees, plus `MANIFEST.md` (source, date, resolution, licence) and the extraction script. The agent has no V or T labels, so features at those coordinates cannot leak labels. The script exists for the product, since a new field needs the same features for its own coordinates. The verifier checks id coverage, schema and a size cap.
+**Data expansion.** New covariates ship as `datasets/<name>/features.parquet` keyed by **`(estate, Long, Lat)`** for **all** trees, plus `MANIFEST.md` (source, date, resolution, licence) and the extraction script. The agent has no V or T labels, so features at those coordinates cannot leak labels. The script exists for the product, since a new field needs the same features for its own coordinates. The verifier checks coordinate-key coverage, schema and a size cap.
 
 ### Verifier
 
-**Contract.** Per estate the verifier calls `fit_predict(labeled=L, unlabeled=V+T, ctx)`. `labeled` includes the `Middle` rows, and `unlabeled` includes unmarked Middle trees. The verifier drops every Middle tree before scoring. `ctx` holds the estate name, the agent's `datasets/` path, the other estates' L data, a scratch dir and the CPU count (Observations: `cpus` is a quota). The pipeline runs in an **unprivileged subprocess that cannot read the labels** (label files root-owned, mode 0700). A separate trusted process scores afterwards. The verifier also runs the **incumbent** and a **coordinates-only** baseline in the same run, so every result is a **paired delta**. A paired delta of lift equals a paired delta of PR-AUC, because both models are scored on the same trees.
+**Contract.** Per estate the verifier calls `fit_predict(labeled=L, unlabeled=V+T, ctx)` returning risk scores aligned to `unlabeled` (verified by row order / `(estate, Long, Lat)`). `labeled` includes the `Middle` rows, and `unlabeled` includes unmarked `Middle` trees; the verifier drops every `Middle` tree before scoring. `ctx` holds the estate name, the agent's `datasets/` path, the other estates' L data, a scratch dir and the CPU count (Observations: `cpus` is a quota). The pipeline runs in an **unprivileged subprocess that cannot read the labels** (label files root-owned, mode `0700`). A separate trusted process scores afterwards. The verifier also runs the **incumbent** and a **coordinates-only** baseline in the same run, so every result is a **paired delta** (a paired delta of lift equals a paired delta of PR-AUC because both models are scored on the same trees).
 
-**Packages.** The verifier runs `pip install` of the agent's pinned `requirements.txt` into an isolated venv, as the unprivileged user, before any label is readable by that user. Same base image and Python in both sandboxes. Exact pins and a recorded `pip freeze` keep reruns comparable. Residual risk: pip can run sdist build code, which the unprivileged user and unreadable labels contain.
+**Packages.** The verifier runs `pip install` of the agent's pinned `requirements.txt` into an isolated venv, as the unprivileged user, before any label is readable by that user. Same base image and Python in both sandboxes. Exact pins and a recorded `pip freeze` keep reruns comparable.
 
 **Network at grading (fully public).**
-- Label protection has no network layer. A pipeline could send labels out only after breaking the isolation above (privilege escalation or a container escape, which matters more on a rootful engine).
-- Self-containment is not enforced. A pipeline could download weights or data at grading time and score well while being unreproducible. Mitigations: the instruction requires shipping everything, `selfcheck` runs the contract in the agent sandbox, and `collect.py` greps the pipeline for URLs and network calls and lists them in the session report. This is a smell test, not a guarantee.
-- If it ever matters: set `verifier.environment.network_mode` to `allowlist` or `no-network` (one line, needs the nftables sidecar). A nominee about to be promoted could also be re-graded that way with `regrade`.
+- Label protection relies on the unprivileged subprocess + root-only label files, not a network wall.
+- Self-containment is encouraged by the instruction, checked locally by `selfcheck`, and audited by a URL/network-call grep in `collect.py`. If ever needed, `verifier.environment.network_mode` can be switched to `no-network` (or used selectively via `regrade` on a nominee about to be promoted).
 
 **Outputs.**
 - `reward.json` (V, visible to the agent at session end): composite `score`; per estate `pr_auc_lift`, `pr_auc`, `prevalence`, `recall_at_25`, `enrichment_top10`, `roc_auc`, V CI bounds; paired delta vs the incumbent; delta vs coordinates-only; runtime; `pip freeze`.
 - `certification.json` (T, host-only, never injected into any instruction or `tasks/` directory): composite T result with its CI, per-estate T deltas, the non-degradation values, the outcome and the T-attempt count.
 
-**Checks before trusting it.** The oracle (starter) reproduces a known score exactly. `nop` scores neutral on all three estates. Adversarial pipelines (read `/tests`, write the reward, import the labels, run forever, malicious package build code) fail safely. A pipeline that fetches data at grading time is flagged. Gate calibration is re-run on the real verifier, on all three estates, at the chosen block size.
+**Checks before trusting it (M2 exit).** The starter incumbent reproduces a fixed composite and per-estate score; `nop` scores neutral on all three estates; adversarial pipelines (read `/tests`, write the reward, import labels, run forever, malicious package build code) fail safely; a pipeline that fetches data at grading time is flagged.
 
 ### Certification gate
 
 Promotion is host-side, in `collect.py`. The nominee is promoted only if, on T:
-1. the **composite** paired block-bootstrap 5th percentile of dPR-AUC against the incumbent is **> 0**,
-2. the composite dPR-AUC is **>= 0.03**, and
-3. **no estate is worse than the non-degradation criterion** (set in M1; it can only block adoptions, so it cannot add false adopts).
+1. the **composite** paired block-bootstrap 5th percentile of ΔPR-AUC against the incumbent is **> 0**,
+2. the composite ΔPR-AUC is **>= 0.03**, and
+3. **no estate's T ΔPR-AUC is below `-0.03`** (non-degradation; blocks adoption only, so it cannot add false adopts).
 
-Thresholds live in `verifier.yaml`. The composite uses the reward's equal weights, so the gate certifies what the agent optimises, and one composite test per nominee keeps one T attempt per session.
+Thresholds live in `config/verifier.yaml`. Equal estate weights match the reward, and one composite test per nominee keeps one T attempt per session.
 
 **What it cannot do.**
-- It reliably certifies gains of roughly **+0.04 PR-AUC or more** (Observations › Simulation). A real +0.012 gain, like NDVI + red-edge (0.133 to 0.145), would almost never pass on its own. The verifier detects big wins, not increments. Small plausible gains accumulate in `REPORT.md` and are **certified in batches** (stack them, nominate the combination).
-- A false adopt costs little when it happens. An adopted null idea has a true effect around -0.005 to +0.005. The real cost is a T score that is optimistic for the incumbent and a spent T. Incumbent T scores are never headline numbers, only paired deltas.
-- At about 5% false-adopt per attempt, 20 attempts give about a 64% chance of at least one false adopt. When the budget is exhausted, or new labels arrive, the split is refreshed as a new epoch.
-- Branching (several agents or models from one parent) speeds up T consumption, because each branch's certification spends an attempt.
+- It reliably certifies gains of roughly **+0.04 PR-AUC or more** (`96.7%` synthetic power at `+0.04`, `0%` at `+0.02`; Observations › Gate calibration). Small plausible gains (e.g., `+0.012`) accumulate in `REPORT.md` and are **certified in batches** (stack them, nominate the combination).
+- A false adopt costs little in immediate quality (null ideas cluster near 0), but makes the incumbent's T score optimistic and spends a T attempt. Incumbent T scores are never headline numbers—only paired deltas.
+- At a 20-attempt budget, when exhausted (or when new labels arrive), the split is refreshed as a new epoch. Branching spends one T attempt per certified branch.
 
 ### Dashboard
 
-A simple, interactive timeline of RSI progress. It is part of the `AgentRSI/` project like everything else here, not a doc and not a repo-root script.
+A simple, interactive timeline of RSI progress inside `AgentRSI/`.
 
 | | Path |
 |---|---|
 | Generator | `AgentRSI/scripts/dashboard.py` (thin CLI, logic in `AgentRSI/src/libbuilder/`) |
-| Output | `AgentRSI/dashboard/index.html` (gitignored, regenerated) |
-| Inputs, read-only | `AgentRSI/sessions/*/reward.json`, `AgentRSI/sessions/*/certification.json`, `AgentRSI/state/events.jsonl`, and `AgentRSI/state/lineage.json` (header only) |
-| Context text, read-only | `AgentRSI/sessions/*/REPORT.md` and `HANDOFF.md`, for event context only |
+| Output | `AgentRSI/dashboard/index.html` (gitignored, regenerated after every `collect`) |
+| Numeric inputs (read-only) | `sessions/*/reward.json`, `sessions/*/certification.json`, `state/events.jsonl`, `state/lineage.json` (header only) |
+| Context text (read-only) | `sessions/*/REPORT.md` and `HANDOFF.md` (event context only, never numbers) |
 
-- The output is one self-contained file (no server, no CDN) that opens in a browser with the network off. `collect` and `daily.sh` regenerate it. It is never edited by hand and never written into a `tasks/` directory.
-- **Numbers** come from verifier and collector files only (the table above). The agent's report supplies event context only, because handoff numbers must come from the verifier.
-- **Series:**
-  - Composite V and per-estate V per session, labelled "search signal, optimistic".
-  - Certified T deltas per nominee with CI bands and the **+0.03 line**, labelled "certified". V and T are never merged.
-  - Epoch shading. Series are not joined across epoch boundaries.
-  - A header with the incumbent, T attempts used out of 20 and the current epoch (from `lineage.json`).
-- **Events** (`state/events.jsonl`, one JSON object per line, append-only, written once per run so re-collecting never duplicates): `ts`, `session`, `epoch`, `type`, `summary`, `ref`, optional `values`.
-  - `type` is one of `session_start`, `session_end`, `nominee_declared`, `certification_pass`, `certification_fail`, `promoted`, `review_flag`, `split_refresh`, `budget_alert`, `spend_cap`, `run_error`.
-  - Hover shows `summary`. Click opens a panel with the full record and a link to the `REPORT.md` or `HANDOFF.md` section in `ref`.
+- One self-contained HTML file (no server, no CDN, works offline), never edited by hand and never written into `tasks/`.
+- **Series:** composite V and per-estate V per session (labelled "search signal, optimistic"); certified T deltas per nominee with CI bands and the **+0.03 line** (labelled "certified", never merged with V); epoch shading with series broken across epoch boundaries; header with incumbent, T attempts used out of 20, and current epoch.
+- **Events** (`state/events.jsonl`, append-only, idempotent per run): `ts`, `session`, `epoch`, `type`, `summary`, `ref`, optional `values`. Types: `session_start`, `session_end`, `nominee_declared`, `certification_pass`, `certification_fail`, `promoted`, `review_flag`, `split_refresh`, `budget_alert`, `spend_cap`, `run_error`. Hover shows `summary`; click opens details + link to `REPORT.md`/`HANDOFF.md`.
 
 ### Iteration, epochs and resume
 
-- State is **files, not conversation**. Each session starts fresh with curated context: ledger, HANDOFF, incumbent code, dead-end list. No trajectory replay, because it restores no sandbox files and bloats context **[V]**.
-- Dead ends from `MainChecklist.md` section B go into every `prior/`.
-- Several agents or models can attempt from the same parent. They are branches in `lineage.json`, and the gate picks.
-- A verifier, split or reward-weight change starts a new **epoch**. The incumbent is re-scored with `regrade` or a rerun. Scores are never compared across epochs. Before S1 runs, changes are free.
+- State is **files, not conversation**. Each session starts fresh with curated context: ledger, HANDOFF, incumbent code, dead-end list (`MainChecklist.md` §B). No trajectory replay **[V]**.
+- Several agents or models can attempt from the same parent as branches in `lineage.json`; the gate picks.
+- Any verifier, split, or reward-weight change starts a new **epoch** (incumbent re-scored with `regrade` or rerun; scores are never compared across epochs). Before S1 runs, changes are free.
 
 ### Runtime and cost
 
-- **Sizing.** The engine has 15.2 GiB and 12 CPUs, shared with WSL and Windows. A session uses 6 + 4 GiB (agent, verifier), one session at a time. Limits are enforced only on the **rootful** engine.
-- **Runner environment.** `run_session.py` sets `PATH` (Linux binaries first), `XDG_RUNTIME_DIR` (a writable dir), `CONTAINER_HOST` and `DOCKER_HOST`, and exports `API_KEY` into the process environment under the name in `API_KEY_NAME`.
-- **Gateway.** `--base-url`, `--api-format`, and `--api-key-name` (the host variable that holds the key). Harbor injects the key into the container under the agent's own variable name (Observations › Harbor design).
-- **Spend guards.** `max_budget_usd`, `max_turns`, a dedicated spend-capped key, and a ledger with a hard daily cap and kill switch. `DAILY_SPEND_CAP_USD=1` is **not enforced until the ledger exists (M3)**.
+- **Sizing.** The engine has 15.2 GiB and 12 CPUs, shared with WSL and Windows. One session at a time (`6 + 4 GiB` agent + verifier). Limits are enforced only on the **rootful** engine.
+- **Runner environment.** `run_session.py` sets `PATH` (Linux binaries first), `XDG_RUNTIME_DIR`, `CONTAINER_HOST`, `DOCKER_HOST`, `PODMAN_COMPOSE_WARNING_LOGS=false`, picks `BASE_URL` by agent, strips inline `# ...` comments from `.env`, and exports `API_KEY` under `API_KEY_NAME`.
+- **Spend guards.** `max_budget_usd`, `max_turns`, a dedicated spend-capped key, and a ledger with a hard daily cap and kill switch (`DAILY_SPEND_CAP_USD=1` enforced once the ledger lands in M3).
 
 ---
 
@@ -243,70 +239,59 @@ A simple, interactive timeline of RSI progress. It is part of the `AgentRSI/` pr
 
 Each has an exit test.
 
-- **M0 — Harbor + Podman spike** · *closed 19 Nov 2026.* *Exit:* the full list in Progress.
-- **M1 — Data and sealed split** · *closed 20 Nov 2026 (see Progress).* The `src/DataPipeline/` pipeline (see its README), frozen `split.yaml` with L/V/T for all three estates (proportional, Middle visible but unscored). **Calibrate the block size** (try 220 m, 110 m and finer) on all three estates, then calibrate the **composite gate**, the non-degradation criterion, and re-check the 0.03 floor and the 20-attempt budget. *Exit:* canary leak test green for all three estates; stable split hash; every part clears 35 V / 35 T / 50 L positives; block size chosen; composite gate calibrated.
-- **M2 — Verifier v1.** `fit_predict` contract; per-estate and composite scoring; T scoring; gate library with unit tests; pip-install at grading; starter pipeline (NDVI-LogReg from `misc/POC/RVI_NDVI/Results/airhitam_ndvi.csv` plus SAR); coordinates-only baseline per estate. *Exit:* oracle reproduces a fixed composite and per-estate score; `nop` neutral on all three; adversarial pipelines fail safely; runtime inside caps.
-- **M3 — Builder, runner, collector.** `build_task` with the allowlist copier into `environment/`, `run_session`, `collect`, `lineage.json`, the T-attempt counter per nominee, the spend ledger, `events.jsonl` and `certification.json`. *Exit:* a 20-minute dry session on a cheap model flows end to end; `harbor lint` and `harbor check` pass; re-collecting the same job does not duplicate events.
-- **M4 — Dashboard.** `AgentRSI/scripts/dashboard.py` writes `AgentRSI/dashboard/index.html`, as specified in Design. Built on fixtures and the M3 dry session. *Exit:* page numbers match `reward.json`, `certification.json` and `lineage.json` exactly (scripted diff); every event shows context on hover and on click; epoch boundaries are not joined; CI bands and the +0.03 line are shown; the page works with the network off; no T number appears in any `tasks/` directory (canary).
-- **M5 — First real session (S1, 8 h, spend-capped).** *Exit:* you review the report and the dashboard; we tune the templates.
-- **M6 — Iteration and schedule.** S2 is generated from S1, the gate works, resume is frictionless. Then Windows Task Scheduler or cron runs `daily.sh` (collect, dashboard, ledger, kill switch).
-- **M7 — In-run verifier (v2).** Multi-container sidecar, MCP score tool, a query budget covering all three estates, noise added to returned V scores. The gate is already in place.
+- **M0 — Harbor + Podman spike** · *closed 19 Nov 2026.* *Exit:* full list in Progress.
+- **M1 — Data and sealed split** · *closed 20 Nov 2026, hardened 23 Nov 2026.* `src/DataPipeline/` reading `config/split.yaml` (single source of truth), frozen 80 m split with proportional L/V/T (Middle visible but unscored), multi-date SAR (`260610`, `261014`, auto-discovered, `HAlpha_H/A/alpha`) + S2 NDVI, combined `L_labelled.csv` + merged `unlabelled.csv`, hardened leak checker (verified clean on `prior/` docs and GeoTIFF rasters), and resampled-split composite gate calibration. *Exit:* all checks green in Progress.
+- **M2 — Verifier v1.** `fit_predict` contract (`(estate, Long, Lat)` aligned); `config/verifier.yaml`; root-owned sealed master baked into verifier image (via prebuilt local image + `FROM`, verified); per-estate and composite V scoring; T scoring + gate library with unit tests; pip-install at grading; starter pipeline (NDVI-only balanced LogReg trained on L from the M1 three-estate view, matching the POC baseline); coordinates-only baseline per estate. *Exit:* starter incumbent reproduces a fixed composite and per-estate score; `nop` neutral on all three; adversarial pipelines fail safely; runtime inside caps.
+- **M3 — Builder, runner, collector.** `build_task` with the allowlist copier into `environment/` (data, all rasters, prior docs), `run_session`, `collect`, `lineage.json`, T-attempt counter per nominee, spend ledger, `events.jsonl` and `certification.json`. *Exit:* a 20-minute dry session on a cheap model flows end to end; `harbor lint` and `harbor check` pass; `002-CheckLeaks.py` passes on the generated `tasks/` and `jobs/`; re-collecting the same job does not duplicate events.
+- **M4 — Dashboard.** `AgentRSI/scripts/dashboard.py` writes `AgentRSI/dashboard/index.html`, built on fixtures and the M3 dry session. *Exit:* page numbers match `reward.json`, `certification.json` and `lineage.json` exactly (scripted diff); events show context on hover/click; epoch boundaries not joined; CI bands and `+0.03` line shown; works offline; no T number in any `tasks/` dir.
+- **M5 — First real session (S1, 8 h, spend-capped).** *Exit:* you review the report and dashboard; we tune the templates.
+- **M6 — Iteration and schedule.** S2 generated from S1, gate works, resume is frictionless. Then Windows Task Scheduler or cron runs `daily.sh` (collect, dashboard, ledger, kill switch).
+- **M7 — In-run verifier (v2).** Multi-container sidecar, MCP score tool, query budget covering all three estates, noise added to returned V scores.
 - **Later:** more focus lenses, split-refresh epochs, extra estates as folds, remote sandboxes.
 
 ---
 
 ## Progress
 
-### M0 exit checks (11 Nov 2026)
+### M0 exit checks (11–19 Nov 2026)
 
-Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`). Nothing was installed globally, because the Claude session's sandbox blocked writes to `~/.local/bin`.
-
-| Exit check | Result | Evidence |
-|---|---|---|
-| Pinned Harbor installs | **Pass.** `harbor==0.25.0` (published 25 Oct 2026, Python 3.12) | `pyproject.toml`, `uv.lock` |
-| Linux `podman` and `docker-compose` | **Pass.** podman remote v6.1.4 (matches the engine), docker-compose v5.7.0, both SHA-256 verified | `.tools/bin/` |
-| Harbor Podman preflight | **Pass** with the Linux binaries first on `PATH` | `PodmanEnvironment.preflight()` |
-| Oracle hello-world on `-e podman` | **Pass.** reward 1.0 | `jobs/m0-oracle3/` |
-| Artifacts and verifier after agent timeout | **Pass.** `AgentTimeoutError` recorded, artifact collected, verifier reward 1 | `jobs/m0-timeout/` |
-| No egress sidecar for all-`public` | **Pass.** No sidecar text in any job output; source gates it on non-public policies | `docker.py:307` |
-| Secret via `--ae` env | **Pass** (marker, not a real key). Reached the container; 0 of 14 job files and the run log contain it | `jobs/m0-secret2/` |
-| Secret via read-only `--mounts` | **Pass** (marker). Readable in the container, write fails, marker in 0 job files and the run log | `jobs/m0-mount/` |
-| `regrade` after editing `tests/` | **Pass.** Same output, edited verifier, reward 1.0 to 0.5; source job unchanged | `jobs/m0-regrade/` |
-| Resource limits bite (rootful) | **Pass.** 256 MB limit killed an 800 MB allocation (exit 137); `--cpus=1` held 4 workers to 0.98 CPU-per-wall (unlimited 3.25) | direct `podman run` |
-| Claude Code trial through the gateway | **Pass.** reward 1.0. `claude-haiku-5-5` via `anthropic_messages` at the gateway root (no `/v1`). 3 steps, about $0.0025 | `jobs/m0-claude-ok/` (first attempt `jobs/m0-claude/` failed at install, see Observations) |
-| Codex trial through the gateway | **Pass.** reward 1.0. `gpt-6.1-terra` via `openai_responses` at `…/v1`. 8 steps, about $0.015 | `jobs/m0-codex-ok/` (first attempt `jobs/m0-codex/` failed at install, see Observations) |
-
-### M1 exit checks (20 Nov 2026)
+Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 
 | Exit check | Result | Evidence |
 |---|---|---|
-| Canary leak test green for all three estates | **Pass.** The leak check in `src/DataPipeline/` passes on the agent view (L 2747, V 2123, T 2350 trees, all three estates) and on `jobs/` (143 files). `tasks/` does not exist yet. Its seeded-leak control plants a leaky V file in a view and in a task folder, and the check catches it. | `.work/agent_view/`, `src/DataPipeline/` |
-| Stable split hash | **Pass.** `26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed`, the same on two runs and in the M1 rebuild (the M1 build, which writes nothing unless the hash matches; `config/split_assignment.csv` byte-identical). | `config/split.yaml`, `config/split_assignment.csv` |
-| Every part clears 35 V / 35 T / 50 L positives | **Pass.** Lowest Unhealthy counts: L 56 and V 38 (AirHitam), T 47 (Serting). | Table below |
-| Tree shares near target | **Pass.** Largest deviation 3.7 points (Palong L), tolerance 10. | Table below |
-| Block size chosen | **Pass.** 80 m (Decisions › Made). | |
-| Sealed master and verifier staging | **Partly.** The master is in `AgentRSI/.sealed/` (git-ignored, directory 700, files 600). The M1 build rebuilds it from the raw labels with the same sha256 (`ea434957…`) and stages a copy in `.sealed/verifier_context/`. The root-owned copy inside the verifier image is an M2 task. The image route is unverified **[?]**: Harbor's `tests/` build context cannot reach `.sealed/`, so a prebuilt local image with `FROM` is the likely route. | `.sealed/`, `.sealed/verifier_context/manifest.json` |
-| Composite gate calibrated | **Pass for the synthetic arms.** Non-degradation value confirmed at -0.03 (Decisions › Made, 20 Nov) after the -0.02 and -0.04 runs. Real candidates are still open. | Observations › Gate calibration, M1, and Non-degradation threshold, M1 |
-| Features reproduce from raw sources | **Pass.** A fresh Earth Engine and SAR extraction matches the frozen table exactly: 7,220 trees, 11 features, zero differences (20 Nov). The frozen table was not replaced. | `.work/features.csv` |
-| SAR band order | **Pass, on your word.** The POC's positional order is used: Spk HH, HV, VH, VV and HAlpha H, A, alpha. You confirmed the SNAP pipeline is the same. The GeoTIFFs carry no band names, so the files themselves were not checked (20 Nov). | POC `main.py` (positional order) |
+| Pinned Harbor installs | **Pass.** `harbor==0.25.0` (Python 3.12) | `pyproject.toml`, `uv.lock` |
+| Linux `podman` and `docker-compose` | **Pass.** podman remote v6.1.4, docker-compose v5.7.0, SHA-256 verified | `.tools/bin/` |
+| Harbor Podman preflight | **Pass** with `.tools/bin` first on `PATH` | `PodmanEnvironment.preflight()` |
+| Oracle hello-world on `-e podman` | **Pass.** reward `1.0` | `jobs/m0-oracle3/` |
+| Artifacts and verifier after agent timeout | **Pass.** `AgentTimeoutError` recorded, artifact collected, reward `1.0` | `jobs/m0-timeout/` |
+| No egress sidecar for all-`public` | **Pass.** source gates sidecar on non-public policies | `docker.py:307` |
+| Secret via `--ae` env | **Pass** (marker). Reached container; 0 of 14 job files and run log contain it | `jobs/m0-secret2/` |
+| Secret via read-only `--mounts` | **Pass** (marker). Readable, write fails, 0 job files/logs contain it | `jobs/m0-mount/` |
+| `regrade` after editing `tests/` | **Pass.** reward `1.0` to `0.5`; source job unchanged | `jobs/m0-regrade/` |
+| Resource limits bite (rootful) | **Pass.** 256 MB killed 800 MB alloc (exit 137); `--cpus=1` held 4 workers to 0.98 CPU/wall | direct `podman run` |
+| Claude Code trial through gateway | **Pass.** reward `1.0`, `claude-haiku-5-5`, `anthropic_messages` (no `/v1`), 3 steps, ~\$0.0025 | `jobs/m0-claude-ok/` |
+| Codex trial through gateway | **Pass.** reward `1.0`, `gpt-6.1-terra`, `openai_responses` (`…/v1`), 8 steps, ~\$0.015 | `jobs/m0-codex-ok/` |
 
-| Estate | L: trees · U | V: trees · U | T: trees · U | Blocks | Tree share L / T / V (%) |
-|---|---|---|---|---|---|
-| AirHitam | 964 · 56 | 730 · 38 | 817 · 66 | 70 | 38.4 / 32.5 / 29.1 |
-| Palong | 968 · 66 (198 M) | 841 · 54 (130 M) | 855 · 80 (165 M) | 47 | 36.3 / 32.1 / 31.6 |
-| Serting | 815 · 67 (151 M) | 552 · 40 (103 M) | 678 · 47 (124 M) | 29 | 39.9 / 33.2 / 27.0 |
+### M1 exit checks (closed 20 Nov 2026, hardened 23 Nov 2026)
 
-U = Unhealthy, M = Middle (unscored, unmarked in V and T). Trees include Middle. Shares are of all trees. Per-estate totals match the Data table. Source: `config/split.yaml`.
+| Exit check | Result | Evidence |
+|---|---|---|
+| Canary leak test green (view, jobs, prior docs, rasters) | **Pass.** `002-CheckLeaks.py` passes on `.work/agent_view/` (`L_labelled.csv` 2,747 rows, merged `unlabelled.csv` 4,473 rows), `jobs/` (143 files), `docs/POCReport` + `docs/AgentPlan` (12 files, 0 false positives), and `data/SAR-scenes` (19 GeoTIFFs). `--control` catches all 4 seeded leaks (view CSV, task CSV, lowercase-class JSON, split-assignment line). | `.work/agent_view/`, `src/DataPipeline/002-CheckLeaks.py` |
+| Stable split hash & single source of truth | **Pass.** `common.py` loads `config/split.yaml`; `001-BuildData.py` reproduces `26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed` byte-identically and verifies counts against `split.yaml`. | `config/split.yaml`, `config/split_assignment.csv` |
+| Every part clears 50 L / 35 V / 35 T positives & ±10 pt share | **Pass.** Lowest Unhealthy: L 56 and V 38 (AirHitam), T 47 (Serting). Max share deviation: 3.7 pts (Palong L). | Split table in Design › Data and splits |
+| Block size chosen | **Pass.** 80 m (70 / 47 / 29 blocks). | `config/split.yaml` |
+| Sealed master and verifier staging | **Pass (host side).** `.sealed/` mode `700`, files `600`, git-ignored. `labels_master.csv` (`ea434957…`, 7,220 rows) staged in `.sealed/verifier_context/`. Root-owned image copy is M2 (`[?]`: likely prebuilt local image + `FROM` since Harbor `tests/` context cannot reach `.sealed/`). | `.sealed/`, `.sealed/verifier_context/manifest.json` |
+| Multi-date features from raw sources | **Pass.** 7,220 trees × 18 features, **0 NaNs**: auto-discovered ALOS-2 `260610` + `261014` (`HH, HV, VH, VV, HAlpha_H, HAlpha_A, HAlpha_alpha` per date) + S2 `B4, B8, NDVI, clear_count`. AirHitam NDVI matches POC (`0.0` diff); local SAR re-extraction matches (`0.0` diff). | `.work/features.csv`, `src/DataPipeline/features.py` |
+| Composite gate calibrated (resampled splits) | **Pass on synthetic arms.** `003-Calibration.py gate` over 120 **resampled** 80 m splits (never touching frozen T, 17 candidate features): 0.000 false adopts, 0.967 power at +0.04, 1.000 at +0.06; `comp_only` recorded. Non-degradation confirmed at `-0.03`. Real candidates stay open. | `.work/gate_results.json`, Observations › Gate calibration |
 
 ### Next actions
 
 **M2 is next and has not started. It waits for your go-ahead.**
 
-**Parked until M2 starts**
-
-- **Root-owned verifier copy and M2 (verifier v1).** The master copy is staged in `.sealed/verifier_context/`. Harbor's `tests/` build context cannot reach `.sealed/`, so a prebuilt local image with `FROM` is the likely route **[?]**.
-- **Before M3:** `run_session.py` picks `BASE_URL` per agent and strips inline `# ...` comments from `.env` values.
-- **Yamaguchi SAR** (dB-like bands): deferred until a conversion rule is chosen.
+**Parked items for upcoming milestones**
+- **M2:** Root-owned sealed master copy inside the verifier image (test prebuilt local image + `FROM` **[?]**); `config/verifier.yaml`; starter pipeline (NDVI-only balanced LogReg on M1 three-estate view) and coordinates-only baseline.
+- **M3:** `run_session.py` picks `BASE_URL` per agent, strips inline `# ...` comments from `.env`, sets `PODMAN_COMPOSE_WARNING_LOGS=false`; allowlist copier bundles `L_labelled.csv`, `unlabelled.csv`, all `data/SAR-scenes/*.tif`, and `prior/` docs; `002-CheckLeaks.py` runs on every built task.
+- **Deferred:** Yamaguchi SAR in the base table (dB-like values; deferred until a conversion rule is chosen, raw scenes already exposed to agents in `rasters/`).
 
 ---
 
@@ -314,123 +299,80 @@ U = Unhealthy, M = Middle (unscored, unmarked in V and T). Trees include Middle.
 
 ### Data
 
-| Estate | Healthy | Unhealthy | Middle | Prevalence (H+U) | 220 m blocks | 110 m blocks |
+| Estate | Healthy | Unhealthy | Middle | Prevalence (H+U) | 80 m blocks | NDVI Cohen's d (H vs U) |
 |---|---|---|---|---|---|---|
-| AirHitam | 2351 | 160 | none | 6.4% | 15 | 42 |
-| Palong | 1971 | 200 | 493 | 9.2% | 6 | 24 |
-| Serting | 1513 | 154 | 378 | 9.2% | 4 | 15 |
+| AirHitam | 2351 | 160 | 0 | 6.4% | 70 | `-0.511` |
+| Palong | 1971 | 200 | 493 | 9.2% | 47 | `-0.301` |
+| Serting | 1513 | 154 | 378 | 9.2% | 29 | `-0.428` |
 
-Block counts use the simulation's grid on the scored trees (the AirHitam counts match the simulation's 15 and 42). **[S]**
+- **Split feasibility (`003-Calibration.py feasibility`, Middle travels with its block).** Expected redraws to satisfy both Unhealthy minimums (`50 L / 35 V / 35 T`) and ±10 pt tree-share tolerance (50,000 draws/size):
 
-- **Block counts.** T holds about 30% of the blocks. At 220 m that is 4 to 5 blocks for AirHitam and 1 to 2 for the other two, so a block bootstrap there is not credible. At 110 m it is roughly 13, 7 and 4 to 5, and Serting is still thin. Even AirHitam at 220 m (15 blocks) gave a nominal-5% test (CI > 0 alone) that passed 7 to 16% of null ideas. M1 therefore has to find a block size that still respects spatial correlation but leaves enough blocks in T for all three estates. Going finer than 110 m for Serting is likely.
-- **M1 split feasibility (19 Nov, raw labels, Middle travels with its block).** Expected redraws until every part meets 50 L / 35 V / 35 T positives, from 200,000 draws per size:
-
-  | Block size | AirHitam | Palong | Serting |
+  | Block size | AirHitam (blocks · draws) | Palong (blocks · draws) | Serting (blocks · draws) |
   |---|---|---|---|
-  | 220 m | 5.7 (15 blocks) | 21 (6) | **none** (4) |
-  | 165 m | 3.7 (19) | 2.9 (12) | 6.9 (9) |
-  | 110 m | 2.3 (42) | 2.0 (24) | 6.1 (15) |
-  | 80 m | 1.7 (70) | 1.5 (47) | 4.2 (29) |
-  | 55 m | 1.3 (129) | 1.2 (86) | 2.3 (54) |
+  | 220 m | 15 · 9.1 | 6 · 85.2 | 4 · **infeasible** |
+  | 165 m | 19 · 6.1 | 12 · 7.1 | 9 · 12.9 |
+  | 110 m | 42 · 3.1 | 24 · 3.5 | 15 · 9.9 |
+  | **80 m (chosen)** | **70 · 2.0** | **47 · 2.0** | **29 · 6.2** |
+  | 55 m | 129 · 1.4 | 86 · 1.3 | 54 · 2.6 |
 
-  Serting's 154 Unhealthy trees sit in few clusters, so its split is the binding constraint at every size.
-- **Leakage check (19 Nov, NDVI-only balanced LogReg, 5-fold, 5 seeds; PR-AUC, spatial minus random).** AirHitam -0.013 / -0.012 / -0.012 at 220 / 165 / 110 m. Palong +0.042 / +0.026 / +0.008. Serting not testable at 220 m (4 blocks); +0.055 / +0.011 at 165 / 110 m. The gap moves with block size and changes sign on AirHitam, so it is noise at these sample sizes, not a clean leakage measure. It does not by itself pick a size. Per-estate NDVI from Earth Engine reproduces the POC table exactly on AirHitam (2511/2511 trees). Palong and Serting have about 10 clear S2 observations per tree against about 26 on AirHitam, so their composites are noisier.
-- **Spatial clustering.** The chance that an Unhealthy tree's ten nearest neighbours are Unhealthy is 0.119 / 0.336 / 0.255 (AirHitam / Palong / Serting), against 0.060 / 0.060 / 0.070 for Healthy trees (`PathForwardTrials.md`). A coordinates-only model is therefore strong, which is why the baseline is reported per estate. Location is a property of the data. It is not a label-quality problem.
-- **POC lift** (best SAR + spatial fusion, broad holdout): +0.062 / +0.150 / +0.071 over prevalence; PR-AUC 0.125 / 0.242 / 0.164. Adding SAR to coordinates gave only +0.016 to +0.053 PR-AUC, with several confidence intervals crossing zero.
-- **Middle** (`MeanSampling.md` §7b): it is the disease front. Its nearest Unhealthy tree is 14.6 m away, against 26.5 m (Palong) and 20.7 m (Serting) for Healthy trees. Folding Middle into the positive class dilutes the signal, and training with Middle as weak positives lowered ROC in the POCs (Palong HGB 0.606 to 0.562-0.590; Serting 0.500 to 0.462-0.492). Counting Middle as positive would also move prevalence to about 26%. That is why Middle stays out of the positive class and out of the metrics. Showing it to the agent in L is a bet that the label is still useful as context. Nothing here verifies that (Decisions › Open).
+  Serting's 154 Unhealthy trees sit in fewer clusters, so it is the binding constraint at every size.
+- **Leakage check (`003-Calibration.py leakage`, NDVI-only balanced LogReg, 5-fold × 5 seeds, pooled OOF PR-AUC minus random 5-fold):**
+  - AirHitam: `220m +0.0003`, `165m -0.0010`, `110m +0.0006`, **`80m +0.0000`** (baseline OOF PR `0.1289`, lift `+0.0652`).
+  - Palong: `220m -0.0219`, `165m -0.0047`, `110m -0.0011`, **`80m -0.0021`** (baseline OOF PR `0.1268`, lift `+0.0347`).
+  - Serting: `220m n/a` (<5 blocks), `165m -0.0047`, `110m -0.0015`, **`80m -0.0017`** (baseline OOF PR `0.1473`, lift `+0.0549`).
+  Univariate NDVI is a global level shift, so its spatial-vs-random gap is near zero (`<= 0.005`) at 80–165 m across all estates. Palong and Serting average ~10 clear S2 observations per tree vs ~26 on AirHitam, so their composites are noisier.
+- **Spatial clustering.** Chance that an Unhealthy tree's 10 nearest neighbours are Unhealthy: `0.119 / 0.336 / 0.255` (AirHitam / Palong / Serting) vs `0.060 / 0.060 / 0.070` for Healthy (`PathForwardTrials.md`). Coordinates-only is a strong baseline and is reported alongside every submission.
+- **POC reference lifts** (broad holdout, best SAR + spatial fusion): `+0.062 / +0.150 / +0.071` over prevalence (PR-AUC `0.125 / 0.242 / 0.164`). Adding SAR to coordinates gave `+0.016` to `+0.053`, with CIs crossing zero in several cases.
+- **Middle** (`MeanSampling.md` §7b): sits on the disease front (median 14.6 m from nearest Unhealthy vs 26.5 m / 20.7 m for Healthy on Palong / Serting). Folding it into positives dilutes signal and lowers ROC, so it stays visible in L (for optional agent use) and unmarked/unscored in `unlabelled.csv`.
 
-### Simulation [S]
+### Gate calibration **[S]**
 
-Source: `misc/temp/sim_winners_curse.py` and `sim_certification_gate.py` (scratch, gitignored). "Agent ideas" were LogReg on random subsets of the 26 NDVI/spectral/SAR features, split at 220 m blocks into about 40/30/30 L/V/T (about 47 positives in V and in T), compared with the NDVI-LogReg incumbent. This is a rough stand-in for agent behaviour, not a model of it. **The winner's-curse part covers AirHitam only. The three-estate composite gate is calibrated in the M1 run below.**
+**Why a T-only floor gate exists (AirHitam winner's-curse study, `misc/temp/sim_winners_curse.py`):** selecting the best of `k` random feature-subset LogReg candidates on V inflates apparent V gain while true T gain stays near 0 (`k=1: -0.008 / -0.006`; `k=10: +0.023 / +0.002`; `k=30: +0.033 / +0.005`; `k=60: +0.038 / +0.007`). The naive V-CI + T-non-degrading gate falsely adopted **21–25%** of null ideas at `k=10..30`, whereas adding a T composite floor `d >= 0.03` dropped single-estate AirHitam false adopts to 4–6%.
 
-- A typical idea is slightly **worse** than the incumbent (mean dPR-AUC -0.005, matching the POCs). The spread between candidates (SD about 0.026) is as large as any real gain.
-- **Selecting on V inflates V.** Best-of-k apparent gain on V versus the same candidate on fresh T: k=1 -0.008 / -0.006; k=3 +0.009 / 0.000; k=10 +0.023 / +0.002; k=30 +0.033 / +0.005; k=60 +0.038 / +0.007. 110 m blocks gave the same pattern.
-- In v1 the agent touches V once per session, so selection pressure is roughly the number of sessions (best-of-3 optimism about +0.01, best-of-10 about +0.02). In v2, k reaches 30 to 60 inside one session (+0.03 to +0.04). The gate is cheap, so it is in place from day one rather than added with v2.
-- The old gate (V CI-separated from zero and T non-degrading) passed a null idea **21 to 25%** of the time at k=10 to 30.
+**Three-estate composite gate calibration (`src/DataPipeline/003-Calibration.py gate`, 23 Nov):**
+6,349 scored trees, **120 resampled 80 m splits** (never touching frozen T), 200 paired block-bootstrap draws per test, 17 candidate features (multi-date SAR `260610` + `261014` + `B4, B8, clear_count`, NDVI forced in 50% of draws). Gain arms add `gamma * y` to standardized incumbent T scores, with `gamma` calibrated over 80 resampled splits (`+0.02 → 0.128`, `+0.04 → 0.248`, `+0.06 → 0.359`).
 
-Gate calibration, AirHitam only (superseded by the M1 composite run below; T-only, one nominee, paired block bootstrap, 220 m blocks, 15 blocks, 120 repetitions):
+| Arm | `comp_only` | Adopt (`-0.03 / -0.02 / -0.04`) | Mean comp ΔPR-AUC (SD) | Mean worst-estate Δ | P(degrade `< -0.03 / -0.02 / -0.04`) |
+|---|---:|---:|---:|---:|---:|
+| Null, V-winner `k=1` | 0.000 | 0.000 / 0.000 / 0.000 | `-0.0316` (`0.0260`) | `-0.0628` | `0.775 / 0.817 / 0.658` |
+| Null, V-winner `k=10` | 0.000 | 0.000 / 0.000 / 0.000 | `-0.0165` (`0.0199`) | `-0.0381` | `0.492 / 0.633 / 0.392` |
+| Null, V-winner `k=30` | 0.000 | 0.000 / 0.000 / 0.000 | `-0.0166` (`0.0218`) | `-0.0372` | `0.458 / 0.592 / 0.350` |
+| Gain `+0.02` | 0.000 | 0.000 / 0.000 / 0.000 | `+0.0200` (`0.0032`) | `+0.0144` | `0.000 / 0.000 / 0.000` |
+| Gain `+0.04` | 0.967 | 0.967 / 0.967 / 0.967 | `+0.0402` (`0.0059`) | `+0.0304` | `0.000 / 0.000 / 0.000` |
+| Gain `+0.06` | 1.000 | 1.000 / 1.000 / 1.000 | `+0.0605` (`0.0081`) | `+0.0467` | `0.000 / 0.000 / 0.000` |
 
-| Gate | Null, V-winner of k=10 | Null, k=30 | Real +0.02 | Real +0.04 | Real +0.06 |
-|---|---|---|---|---|---|
-| CI > 0 | 15.8% | 14.2% | 100% | 100% | 99% |
-| CI > 0 and d >= 0.02 | 7.5% | 7.5% | 51% | 100% | 99% |
-| **CI > 0 and d >= 0.03 (chosen)** | **5.8%** | **4.2%** | **12%** | **77%** | **99%** |
-| CI > 0 and d >= 0.04 | 1.7% | 2.5% | 0% | 50% | 93% |
-
-The "real gain" columns are a **ceiling**. The synthetic candidates carry no candidate-specific noise, while real candidates differ from the incumbent with SD about 0.026. Lowering the floor to 0.02 would roughly double false adopts.
-
-### Gate calibration, M1 (composite, all three estates, 80 m) **[S]**
-
-Source: scratch `gate.py` (not in the repo). 6,349 scored trees, 80 m blocks, 200 bootstrap draws per test, 120 repetitions. The composite is the equal-weight mean of per-estate ΔPR-AUC on T against the NDVI-LogReg incumbent (balanced LogReg on NDVI only, trained on L). Gain arms add `gamma · y` to the incumbent score, with gamma set to hit a target mean gain (+0.02 → 0.13, +0.04 → 0.244, +0.06 → 0.344). Null arms take the V-winner of k random feature subsets (2 to 10 features, NDVI forced in half the time). The incumbent scored against itself gives Δ = 0 and does not adopt.
-
-| Arm | P(adopt) | Mean composite ΔPR-AUC | Mean worst-estate ΔPR-AUC | P(any estate below −0.03) |
-|---|---|---|---|---|
-| Null, V-winner of k=1 | 0.000 | −0.029 | −0.070 | 0.82 |
-| Null, V-winner of k=10 | 0.000 | −0.014 | −0.031 | 0.42 |
-| Null, V-winner of k=30 | 0.000 | −0.010 | −0.023 | 0.39 |
-| Gain +0.02 | 0.000 | +0.020 | +0.019 | 0.00 |
-| Gain +0.04 | 1.000 | +0.041 | +0.039 | 0.00 |
-| Gain +0.06 | 1.000 | +0.060 | +0.058 | 0.00 |
-
-- **Power.** The floor passes +0.04 every time and +0.02 never. This matches the AirHitam-only result. The 0.03 floor reliably detects gains of about +0.04 and above.
-- **False adopts.** None of the 120 null draws adopted in any null arm, so the 95% upper bound is about 2.5% per attempt (rule of three). That is below the AirHitam-only figure of 4 to 6% at 220 m, but 120 repetitions is a coarse estimate.
-- **Non-degradation.** It fires on 39 to 82% of null ideas and on no synthetic gain. It only blocks adoption, so it adds no false adopts, but it also blocks some ideas the composite alone would have passed on. Its threshold is tested on the synthetic arms only (table below).
-
-Caveats:
-- The null and gain arms are synthetic. Real candidates differ from the incumbent with SD about 0.026 (AirHitam), and differ per estate. The power numbers are a ceiling.
-- Gain arms use an oracle shift, so they measure power only, not any agent's behaviour.
-- The block size was chosen under the tree-share rule, not by this run. The leakage check above did not pick a size.
-
-### Non-degradation threshold, M1 (20 Nov) **[S]**
-
-Same harness and seed as the composite run above (6,349 scored trees, 80 m blocks, 200 bootstrap draws, 120 repetitions). The earlier run at −0.03 was the reference. This run covers all three values in one pass, and its −0.03 column matches that reference to three decimals in every arm.
-
-| Arm | P(adopt) at −0.02 / −0.03 / −0.04 | Mean composite ΔPR-AUC | Mean worst-estate ΔPR-AUC | P(any estate below t) at −0.02 / −0.03 / −0.04 |
-|---|---|---|---|---|
-| Null, V-winner of k=1 | 0.000 / 0.000 / 0.000 | −0.029 | −0.070 | 0.892 / 0.817 / 0.742 |
-| Null, V-winner of k=10 | 0.000 / 0.000 / 0.000 | −0.014 | −0.031 | 0.608 / 0.417 / 0.175 |
-| Null, V-winner of k=30 | 0.000 / 0.000 / 0.000 | −0.010 | −0.023 | 0.633 / 0.392 / 0.025 |
-| Gain +0.02 | 0.000 / 0.000 / 0.000 | +0.020 | +0.019 | 0.000 / 0.000 / 0.000 |
-| Gain +0.04 | 1.000 / 1.000 / 1.000 | +0.041 | +0.039 | 0.000 / 0.000 / 0.000 |
-| Gain +0.06 | 1.000 / 1.000 / 1.000 | +0.060 | +0.058 | 0.000 / 0.000 / 0.000 |
-
-- **No difference in adoption.** The three thresholds adopt the same draws on every synthetic arm. They differ only in how often the rule fires on null ideas, and it never fires on a synthetic gain.
-- **Why −0.03 stays.** No run favours another value, and the pre-registered value should not move on synthetic evidence alone. It also matches the 0.03 floor's scale.
-- **What the synthetic arms cannot show.** They add no per-estate noise to gains, so they cannot measure how often the rule blocks a real gain. A rough estimate, not simulated, assumes independent per-estate ΔPR-AUC with SD 0.026 and no true effect. Then the chance that some estate falls below the threshold is about 0.53, 0.33 and 0.18 at −0.02, −0.03 and −0.04. That cost is open (Decisions › Open).
-- The run does not record the composite-alone adoption rate, so the table cannot say how many null draws the rule blocks that the composite would have passed.
+- **Power & false adopts:** The `0.03` composite floor reliably certifies `+0.04` gains (`96.7%`) and rejects `+0.02` (`0%`). Zero of 120 null draws passed even the composite-only gate (`comp_only = 0.000`, 95% upper bound ~`2.5%` by rule of three).
+- **Non-degradation (`-0.03`):** Adoption is identical across `-0.02`, `-0.03`, and `-0.04` on all synthetic arms; `-0.03` stays pre-registered and matches the floor scale.
+- **Caveats:** Synthetic gain arms use a uniform oracle shift without per-estate candidate noise, so power (`96.7%` at `+0.04`) is a ceiling and non-degradation cost on real noisy candidates remains open until M5.
 
 ### Harbor design **[V]**
 
 - A task is a directory: `instruction.md`, `task.toml`, `environment/`, `tests/`, optional `solution/`.
 - **Separate verifier:** grading runs in a fresh sandbox built from `tests/Dockerfile`. Data baked there never reaches the agent. Only declared `artifacts` cross over (sanitized: no setuid, no outward symlinks, no special files). Separate verifiers do not inherit runtime mounts, so the service-account key cannot reach grading.
-- **Reward** goes to `/logs/verifier/reward.txt` or `reward.json` (richer, and wins if both exist). terminal-bench-science mandates 0/1. We use graded metrics on purpose.
+- **Reward** goes to `/logs/verifier/reward.txt` or `reward.json` (richer, wins if both exist). We use graded metrics on purpose.
 - **Claude Code:** gateway via `ANTHROPIC_BASE_URL` plus bearer `ANTHROPIC_AUTH_TOKEN`; options `max_turns`, `max_budget_usd`, `reasoning_effort`, `append_system_prompt`, `disable_web_search`; defaults to `--permission-mode bypassPermissions`; Anthropic Messages only.
-- **Codex:** Responses API only. `codex.py` injects the key as `OPENAI_API_KEY` and the URL as `OPENAI_BASE_URL`. **[T]** The gateway returns 404 for the Responses WebSocket, so Codex retries five times (about 10 s) and then falls back to HTTPS, which works. Harmless, but each session pays the delay.
-- **`--api-key-name`** names the **host** environment variable that holds the key (`agent_auth_resolution.py` reads it, then maps it to the agent's own variable). Any valid variable name works, so `API_KEY_NAME=ANTHROPIC_AUTH_TOKEN` should also work for Codex and is only misleading. Both trials passed with their own names (**[T]**, 19 Nov): `OPENAI_API_KEY` for Codex and `ANTHROPIC_AUTH_TOKEN` for Claude Code.
-- **Network modes** per phase: `public`, `no-network`, `allowlist`. Restricted modes need an nftables egress sidecar. We use `public` everywhere.
-- **Flags:** `--base-url`, `--api-key-name`, `--api-format`, `--ae`/`--ak`, `--mounts`, `-e`, `--override-cpus`/`--override-memory-mb`, `--dry-run`, `--print-config`. `harbor lint` is a static check; `harbor check` is an LLM rubric (not yet run). `regrade` re-runs a newer verifier on recorded outputs.
-- **`-e podman`** exists upstream (merged Sep 2026), but harbor#398 is open. With `podman-compose` only, Harbor mis-detects the backend. A working setup in that thread used `docker-compose` as the compose provider, which is what we do.
+- **Codex:** Responses API only. `codex.py` injects `OPENAI_API_KEY` and `OPENAI_BASE_URL`. **[T]** The gateway returns 404 for the Responses WebSocket, so Codex retries 5× (~10 s) then falls back to HTTPS, which works.
+- **`--api-key-name`** names the **host** env var holding the key (`agent_auth_resolution.py` maps it to the agent's own variable). Both trials passed with their matching names (`OPENAI_API_KEY` for Codex, `ANTHROPIC_AUTH_TOKEN` for Claude Code).
+- **Network modes** per phase: `public`, `no-network`, `allowlist` (restricted modes need an nftables sidecar; we use `public` everywhere).
+- **Flags:** `--base-url`, `--api-key-name`, `--api-format`, `--ae`/`--ak`, `--mounts`, `-e`, `--override-cpus`/`--override-memory-mb`, `--dry-run`, `--print-config`. `harbor lint` is static; `harbor check` is an LLM rubric. `regrade` re-runs a newer verifier on recorded outputs.
+- **`-e podman` (harbor#398):** using `docker-compose` as the compose provider avoids backend mis-detection.
 
 ### Harbor and Podman on this machine **[T]** (11 Nov 2026)
 
-- **Engine.** Podman 6.1.4, API 1.44, crun, netavark, overlay, cgroups v2. Rootless socket `podman-user.sock`, rootful socket `/mnt/wsl/podman-sockets/podman-machine-default/podman-root.sock`. 15.2 GiB and 12 CPUs, shared with WSL and Windows (about 11.5 GiB free at test time). The "2 GiB / 6 CPU" in `podman machine list` is nominal.
-- **Containers have internet.** An alpine container on the rootful engine saw 12 CPUs and fetched `pypi.org`.
-- **Rootless has no cgroup controllers delegated**, so it cannot enforce CPU or memory limits. Rootful has `cpuset, cpu, io, memory, pids`. Mitigations for the weaker containment: no `privileged`, no extra capabilities, no host mounts except one read-only secret, `harbor lint`.
-- **The engine runs in a different WSL distro.** Bind-mounting `/home/lee/...` fails, but the shared `/mnt/wsl` tmpfs is visible. Data and code reach the sandbox through the build context. Secrets use `/mnt/wsl/...` or env injection.
-- **Kernel.** `CONFIG_NF_TABLES=y`, so a restricted verifier network stays possible later.
-- **The Claude session's Bash sandbox** blocks Unix sockets and Windows interop, so engine tests ran outside it. That is a property of that session, not of your setup.
+- **Engine.** Podman 6.1.4, API 1.44, crun, netavark, overlay, cgroups v2. Rootful socket `/mnt/wsl/podman-sockets/podman-machine-default/podman-root.sock`. 15.2 GiB / 12 CPUs shared with WSL and Windows (~11.5 GiB free at test time).
+- **Rootless vs rootful.** Rootless lacks delegated cgroup controllers (cannot enforce CPU/memory limits). Rootful has `cpuset, cpu, io, memory, pids`. Mitigations: no `privileged`, no extra capabilities, no host mounts except one read-only secret, `harbor lint`.
+- **WSL distro boundary.** Engine runs in a separate WSL distro: bind-mounting `/home/lee/...` fails, while `/mnt/wsl` tmpfs is shared. Data/code reach the sandbox via build context; secrets use `/mnt/wsl/...` or env injection.
+- **Kernel.** `CONFIG_NF_TABLES=y`, so restricted verifier networking stays possible later.
 
-**Findings that change how we build:**
-1. **Base image needs bash.** `alpine` fails because Harbor runs `bash -c`. Use `python:3.12-slim-bookworm`.
-2. **Separate verifiers need the tests baked in.** If `tests/` has its own `Dockerfile`, Harbor treats that image as owning `/tests` and does not upload `test.sh`. `tests/Dockerfile` must `COPY test.sh /tests/`.
-3. **Artifacts must be declared** in `task.toml`, or the verifier cannot see the agent's output.
-4. **Regrade needs `-e podman`** and task names that match the source job's trial names.
-5. **`cpus` is a CFS quota, not a cpuset.** `os.cpu_count()` still reports 12 inside a `--cpus=1` container, so worker counts must come from `ctx`, and the agent image must be told the real limit.
-6. **Harbor uses the Linux `docker-compose` only when `.tools/bin` is first on `PATH`.** Harbor shells out to `podman compose`, which hands off to whichever `docker-compose` it finds.
-7. **The WSL VM stalled and restarted** (15:44 to 15:50, 11 Nov). The kernel log shows repeated order-7 page allocation failures from a `vmbus` worker, then memory-pressure messages. You saw disk at 99% and memory very high. The stalled step was the Podman client download. **The cause is not confirmed**, and I only measured the engine and Harbor after the reboot. Keep a memory guard on long downloads.
-8. **The runner must set `PATH`, `XDG_RUNTIME_DIR`, `CONTAINER_HOST` and `DOCKER_HOST`.** Without them `podman` fails on `/run/user/1000/libpod` or on the socket.
-9. **`podman compose` prints a banner to stdout** ("Executing external compose provider…"). Harbor's package-manager probe reads that text as the manager name, so the Codex install fails (`jobs/m0-codex/`). Set `PODMAN_COMPOSE_WARNING_LOGS=false` (**[T]**, fixed in `jobs/m0-codex-ok/`).
-10. **One Claude Code install failed with `curl: (60) self-signed certificate in certificate chain`** on `downloads.claude.ai` (`jobs/m0-claude/`). The same host passed from a fresh container and the rerun passed (`jobs/m0-claude-ok/`). The cause is not confirmed. The runner should keep install errors visible in the job record.
+**Operational rules from M0:**
+1. **Base image needs bash:** use `python:3.12-slim-bookworm` (not `alpine`).
+2. **Separate verifiers need tests baked in:** `tests/Dockerfile` must `COPY test.sh /tests/`.
+3. **Artifacts must be declared** in `task.toml`, or the verifier cannot see agent outputs.
+4. **Regrade needs `-e podman`** and task names matching the source job's trial names.
+5. **`cpus` is a CFS quota, not a cpuset:** `os.cpu_count()` still reports 12 inside `--cpus=1`, so pass worker counts via `ctx` and env.
+6. **Put `.tools/bin` first on `PATH`** so `podman compose` invokes Linux `docker-compose`.
+7. **Runner env:** set `PATH`, `XDG_RUNTIME_DIR`, `CONTAINER_HOST`, `DOCKER_HOST`, and `PODMAN_COMPOSE_WARNING_LOGS=false` (without the last, `podman compose` prints a banner to stdout that breaks Harbor's package-manager probe during Codex install).
+8. **Keep install errors visible** in job records (one transient TLS error occurred during an M0 Claude Code install and succeeded on rerun; also guard memory on large downloads after an M0 WSL memory-pressure reboot).
 
 ---
 
@@ -438,25 +380,22 @@ Same harness and seed as the composite run above (6,349 scored trees, 80 m block
 
 | Risk | Mitigation |
 |---|---|
-| Label leakage into the agent image | Allowlist copy and an automated canary test: no sealed id has a label in the image or build context, for all three estates. Runs in M1 and on every build. |
-| Agent code reads sealed labels at grading | Separate sandbox, unprivileged subprocess, root-only label files, scoring in a trusted process. The network is open (decided), so an escaped pipeline could send labels out. Accepted for a throwaway container. |
-| Pipeline depends on the internet at grading | Instruction rule, URL/network-call grep in `collect.py`, optional offline re-grade of a nominee. |
-| **Holdout overuse and false adoption** | T-only certification of one nominee, effect floor, T-attempt budget, epoch refresh, paired deltas only. |
-| Gate cannot see small gains | Stated openly. Batch certification, and the report ledger preserves them. |
-| **Block bootstrap unreliable with few blocks** | Block size 80 m gives 70 / 47 / 29 blocks (AirHitam / Palong / Serting). Serting is the thinnest. The leakage check did not pick the size (Observations). |
-| **Spatial location mistaken for model skill** | Coordinates-only baseline reported per estate. Location is a real signal in the data. |
-| **Dashboard shows optimistic V as certified** | V labelled "search signal"; T shown separately with its CI and the +0.03 line; never merged. |
-| Dashboard numbers drift from the verifier | Reads only the verifier and collector files listed in Design › Dashboard. M4 diffs the page against them. |
-| **Credential theft:** an agent on the open web holds a service-account key | Least-privilege service account (Object Viewer plus Earth Engine read), read-only mount (not env, not image), instruction forbids printing it, rotate on a schedule and after any anomaly. |
-| Key leaks into artifacts, logs or git | Read-only mount outside the build context, a `collect.py` secret scan (`private_key`, `BEGIN PRIVATE KEY`, key id) that **fails collection**, and `jobs/`, `tasks/`, `dashboard/`, `.secrets/`, `.env` gitignored. M0 confirmed Harbor never records the value. |
-| GEE quota or cost from an unattended agent | Instruction asks for point sampling at tree coordinates. Check quota and billing, and the ledger logs usage. |
-| Package install runs untrusted code in the verifier | Unprivileged user, labels unreadable by it. |
-| PyPI drift makes a rerun differ | Exact pins required, `pip freeze` recorded. |
-| Rootful engine weakens containment | No privileged mode or extra capabilities, no host mounts but the secret, `harbor lint`. |
-| Cost runaway on a third-party provider | `max_budget_usd`, `max_turns`, a spend-capped key, a ledger with a daily cap and kill switch (the cap is unenforced until M3). |
-| Provider key exposure | Gitignored `.env`, passed with `--api-key-name` or `--ae`, never in `task.toml` or the task dir. |
-| Podman/Harbor instability (harbor#398) | M0 spike, pinned Harbor version, Docker Desktop fallback (only the `-e` flag changes). |
-| 8 h/day on a 12-core, 15 GiB WSL box shared with Windows | One session at a time, enforced limits, schedule only after M6, remote sandboxes remain a Harbor option. |
+| Label or V/T-split leakage into agent image | Allowlist copy, merged `unlabelled.csv` (no V/T split, no IDs), and `002-CheckLeaks.py` canary on every build (verified 0 false positives on `prior/` docs and GeoTIFF rasters). |
+| Agent code reads sealed labels at grading | Separate sandbox, unprivileged subprocess, root-only label files, trusted scoring process. Public verifier network is accepted for a throwaway container. |
+| Pipeline depends on the internet at grading | Instruction rule, URL/network-call grep in `collect.py`, optional offline `regrade` on nominees. |
+| **Holdout overuse and false adoption** | T-only certification of one nominee, `0.03` floor, 20-attempt budget, epoch refresh, paired deltas only. |
+| Gate cannot see small gains | Stated openly; accumulate small gains in `REPORT.md` and certify in batches. |
+| **Block bootstrap thin on Serting** | 80 m gives 70 / 47 / 29 blocks (10 T blocks on Serting, 9 with positives). |
+| **Spatial location mistaken for model skill** | Coordinates-only baseline reported per estate. |
+| **Dashboard shows optimistic V as certified** | V labelled "search signal"; T shown separately with CI and `+0.03` line; never merged. |
+| Dashboard numbers drift from verifier | Reads verifier/collector JSONs only; M4 diffs page against them. |
+| **Credential theft** (agent on open web holds SA key) | Least-privilege SA (Object Viewer + EE read), read-only mount outside build context, instruction forbids printing, `collect.py` secret scan fails collection, `.secrets/` and `.env` gitignored. |
+| GEE quota or cost from unattended agent | Instruction asks for point sampling at tree coordinates; monitor quota/billing. |
+| Package install runs untrusted code / PyPI drift | Unprivileged user with unreadable labels; exact pins required and `pip freeze` recorded. |
+| Rootful engine containment | No privileged mode, no extra caps, no host mounts except read-only secret, `harbor lint`. |
+| Cost runaway on third-party gateway | `max_budget_usd`, `max_turns`, spend-capped key, daily cap ledger + kill switch (enforced in M3). |
+| Podman/Harbor instability (harbor#398) | Pinned `harbor==0.25.0`, `docker-compose` provider, Docker Desktop fallback (only `-e` changes). |
+| Resource contention on 12-core / 15 GiB WSL box | One session at a time, enforced rootful limits, schedule only after M6. |
 
 ---
 
@@ -464,14 +403,13 @@ Same harness and seed as the composite run above (6,349 scored trees, 80 m block
 
 | Version | Date | Change |
 |---|---|---|
-| 1.9 | 20 Nov 2026 | M1 closed. SAR band order taken from the POC on your word (same SNAP pipeline). M2 not started. |
-| 1.8 | 20 Nov 2026 | Non-degradation -0.03 confirmed. Split CSV exposure accepted. Network decision records the one blocked site, this research repo (agent only). Re-extraction from raw sources matches the frozen features exactly. Items beyond M1 parked. |
-| 1.7 | 20 Nov 2026 | M1 pipeline consolidated into `src/DataPipeline/` (see its README). Pseudonymous row keys and the salt removed: agent view rows are identified by estate and coordinates, which are unique per tree. The copier moved from M1 to M3. Re-run: master and split hashes unchanged, leak check PASS, control CAUGHT, gate numbers identical to the earlier run. |
-| 1.6 | 20 Nov 2026 | M1 exit checks met in the repo: `src/M1/` pipeline (001 to 011 plus a seeded-leak control), pseudonymous row keys, sealed master in `.sealed/` with a verifier staging copy, canary PASS and control CAUGHT. Floor 0.03 and budget 20 confirmed. Non-degradation kept at -0.03 after the -0.02 and -0.04 runs (identical adoption on synthetic arms). Harbor image route marked unverified. |
-| 1.5 | 20 Nov 2026 | M1 data and split: features from raw sources only (Earth Engine NDVI, ALOS-2 Spk and HAlpha), split frozen at 80 m, composite gate calibrated in simulation. Block size moved to Made. |
-| 1.4 | 19 Nov 2026 | M0 closed: Codex and Claude Code trials pass through the gateway. Podman compose banner workaround. Dummy M0 marker deleted. |
-| 1.3 | 17 Nov 2026 | Middle is visible but unscored (was dropped). Dashboard paths pinned inside `AgentRSI/`, inputs listed. `MainChecklist.md` marks old POC label assumptions as outdated. |
-| 1.2 | 17 Nov 2026 | Restructured by topic. All three estates trusted equally (equal reward weights, composite T gate). Proportional splits, Middle dropped, `/v1` rule per API format. Dashboard added (M4). Fixed v1.1 errors: POC lifts, Serting split sizes, Palong/Serting block counts, `--api-key-name`. |
-| 1.1 | 16 Nov 2026 | Trusted-labels and dashboard findings added as proposals. |
-| 1.0 | 11 Nov 2026 | Verifier network fully public. Gate floor 0.03 and T-attempt budget 20 locked. M0 results added. |
-| 0.3 | 11 Nov 2026 | AirHitam-dominant weights, T-only gate, rootful engine. |
+| 2.0 | 23 Nov 2026 | M1 hardened after audit: `config/split.yaml` wired as single source of truth in `common.py`; multi-date ALOS-2 SAR (`260610` + `261014`, auto-discovered) and renamed `HAlpha_H/A/alpha` in base table; V + T merged into single `unlabelled.csv` (no V/T exposure); `002-CheckLeaks.py` fixed for `prior/` docs and binary rasters + 4 seeded controls; `003-Calibration.py` fixed to resample 80 m splits (never touching frozen T) and pooled OOF leakage; stale `tree_id` and single-estate starter references cleaned up. |
+| 1.9 | 20 Nov 2026 | M1 closed. SAR band order confirmed from POC/SNAP pipeline. M2 not started. |
+| 1.8 | 20 Nov 2026 | Non-degradation `-0.03` confirmed; split CSV host exposure accepted; research repo blocked for agent only; re-extraction matched frozen features. |
+| 1.7 | 20 Nov 2026 | M1 pipeline consolidated into `src/DataPipeline/`. Pseudonymous row keys removed in favour of `(estate, Long, Lat)`. |
+| 1.6 | 20 Nov 2026 | Initial M1 exit checks met; sealed master staged in `.sealed/verifier_context/`. |
+| 1.5 | 20 Nov 2026 | M1 features from raw sources only; split frozen at 80 m. |
+| 1.4 | 19 Nov 2026 | M0 closed: Codex and Claude Code gateway trials pass; `PODMAN_COMPOSE_WARNING_LOGS=false` workaround. |
+| 1.3 | 17 Nov 2026 | Middle visible in L but unscored; dashboard paths pinned inside `AgentRSI/`. |
+| 1.2 | 17 Nov 2026 | Equal estate trust & reward weights, composite T gate, proportional splits, `/v1` rule per API format. |
+| 1.0 | 11 Nov 2026 | Verifier network public; gate floor `0.03` and 20-attempt budget locked; M0 results added. |

@@ -1,14 +1,18 @@
 """Step 1: build the sealed master, the frozen split, the agent view and the verifier staging.
 
   master    .sealed/labels_master.csv from data/Labels (rewritten each run)
-  features  .work/features.csv is frozen. --extract rebuilds it from Earth Engine and the SAR scenes
-  split     config/split_assignment.csv: whole 80 m blocks to L/V/T, no labels. Writes nothing unless the sha256 is frozen
-  view      .work/agent_view/*.csv: allowlisted columns, rows identified by estate and coordinates (labels only on L)
-  verifier  .sealed/verifier_context/: master copy for the M2 image build
+  features  .work/features.csv (all discovered SAR dates + S2 NDVI).
+            --extract rebuilds SAR and Earth Engine NDVI from raw sources;
+            --extract-sar rebuilds local SAR columns while reusing existing S2 NDVI columns.
+  split     config/split_assignment.csv: whole blocks to L/V/T from config/split.yaml, no labels.
+            Writes nothing unless the sha256 matches split.yaml.
+  view      .work/agent_view/{L_labelled.csv,unlabelled.csv}: combined across estates,
+            identified by (estate, Long, Lat). V and T are merged into a single unlabelled pool.
+  verifier  .sealed/verifier_context/: master copy for the M2 image build.
 
 Nothing under .sealed/ may be copied into tasks/ or jobs/. Run 002-CheckLeaks.py after this.
 
-Usage: python 001-BuildData.py [--extract]
+Usage: python 001-BuildData.py [--extract | --extract-sar]
 """
 import argparse
 import hashlib
@@ -20,10 +24,32 @@ import time
 import numpy as np
 import pandas as pd
 
-from common import (AGENT_VIEW, BLOCK_M, CLASSES, ESTATES, FEATURE_COLS, FEATURES, KEY_FILE, LABEL_DIR,
-                    LABEL_FILES, MASTER, SEALED, SEALED_REPORT, SPLIT, SPLIT_FRAC, SPLIT_MIN, SPLIT_SEED,
-                    SPLIT_SHA256, SPLIT_TOL, VERIFIER_CONTEXT, block_keys)
-from features import build_feature_table
+from common import (
+    AGENT_VIEW,
+    BLOCK_M,
+    CLASSES,
+    ESTATES,
+    FEATURE_COLS,
+    FEATURES,
+    KEY_FILE,
+    LABEL_DIR,
+    LABEL_FILES,
+    MASTER,
+    NDVI_COLS,
+    SAR_DATES,
+    SEALED,
+    SEALED_REPORT,
+    SPLIT,
+    SPLIT_COUNTS,
+    SPLIT_FRAC,
+    SPLIT_MIN,
+    SPLIT_SEED,
+    SPLIT_SHA256,
+    SPLIT_TOL,
+    VERIFIER_CONTEXT,
+    block_keys,
+)
+from features import build_feature_table, extract_sar_table
 
 
 def sha256(path):
@@ -54,20 +80,48 @@ def build_master():
     print("master rows", len(master), "->", MASTER)
 
 
-def build_features(extract):
+def build_features(extract: bool, extract_sar: bool):
     if extract:
         with open(KEY_FILE) as fh:
             project = json.load(fh)["project_id"]
         t0 = time.time()
-        df = build_feature_table(project)
+        df = build_feature_table(project, SAR_DATES)
         FEATURES.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(FEATURES, index=False)
-        print("features rebuilt:", len(df), "rows,", len(df.columns), "cols,", f"{time.time() - t0:.0f}s ->", FEATURES)
+        print(f"features rebuilt (SAR dates {SAR_DATES} + GEE NDVI):", len(df), "rows,",
+              len(df.columns), "cols,", f"{time.time() - t0:.0f}s ->", FEATURES)
+        print("missing values:", int(df.isna().sum().sum()))
+    elif extract_sar:
+        if not FEATURES.exists():
+            raise SystemExit(f"{FEATURES} is missing: run with --extract (needs Earth Engine for NDVI)")
+        prev = pd.read_csv(FEATURES)
+        missing_ndvi = [c for c in NDVI_COLS if c not in prev.columns]
+        if missing_ndvi:
+            raise SystemExit(f"{FEATURES} missing optical columns {missing_ndvi}: run with --extract")
+        t0 = time.time()
+        sar_df = extract_sar_table(dates=SAR_DATES)
+        df = sar_df.merge(prev[["estate", "id", *NDVI_COLS]], on=["estate", "id"],
+                          how="inner", validate="one_to_one")
+        if len(df) != len(sar_df):
+            raise SystemExit("existing NDVI table does not match current label tree set; run with --extract")
+        df = df[["estate", "id", *FEATURE_COLS]]
+        df.to_csv(FEATURES, index=False)
+        print(f"SAR features rebuilt locally (dates {SAR_DATES}, NDVI preserved):", len(df), "rows,",
+              len(df.columns), "cols,", f"{time.time() - t0:.1f}s ->", FEATURES)
         print("missing values:", int(df.isna().sum().sum()))
     elif not FEATURES.exists():
         raise SystemExit(f"{FEATURES} is missing: run with --extract (calls Earth Engine)")
     else:
-        print("features: frozen table", FEATURES)
+        existing_cols = set(pd.read_csv(FEATURES, nrows=0).columns)
+        expected_cols = {"estate", "id", *FEATURE_COLS}
+        if existing_cols != expected_cols:
+            missing = sorted(expected_cols - existing_cols)
+            extra = sorted(existing_cols - expected_cols)
+            raise SystemExit(
+                f"{FEATURES} columns do not match discovered SAR dates {SAR_DATES} "
+                f"(missing={missing}, extra={extra}); run with --extract-sar or --extract"
+            )
+        print(f"features: frozen table ({len(FEATURE_COLS)} cols, SAR dates {SAR_DATES})", FEATURES)
 
 
 def build_split():
@@ -102,6 +156,8 @@ def build_split():
         per = {}
         for p, g in sub.groupby("part"):
             per[p] = {"trees": int(len(g)), **{c: int((g["class"] == c).sum()) for c in CLASSES}}
+        if SPLIT_COUNTS and SPLIT_COUNTS.get(e) != per:
+            raise SystemExit(f"split counts for {e} differ from config/split.yaml")
         report[e] = {"blocks": int(len(ub)), "redraws": draws, "counts": per}
         print(e, "blocks", len(ub), "redraws", draws, json.dumps(per))
 
@@ -109,7 +165,7 @@ def build_split():
     digest = hashlib.sha256(df[["estate", "id", "part"]].to_csv(index=False).encode()).hexdigest()
     print("sha256", digest, "| frozen", SPLIT_SHA256)
     if digest != SPLIT_SHA256:
-        raise SystemExit("split does not reproduce the frozen sha256; nothing written")
+        raise SystemExit("split does not reproduce the frozen sha256 in config/split.yaml; nothing written")
 
     df.to_csv(SPLIT, index=False)
     SEALED_REPORT.write_text(json.dumps({"block_m": BLOCK_M, "seed": SPLIT_SEED, "sha256": digest,
@@ -133,12 +189,20 @@ def build_agent_view():
     view["label"] = view["class"].where(view["part"] == "L")
 
     AGENT_VIEW.mkdir(parents=True, exist_ok=True)
+    # Remove any legacy split-exposing V/T files so V vs T partition is never visible to agents
+    for stale in ("V_unlabelled.csv", "T_unlabelled.csv"):
+        p = AGENT_VIEW / stale
+        if p.exists():
+            p.unlink()
+
     cols = ["estate", "Long", "Lat", *FEATURE_COLS]
-    for part, name in (("L", "L_labelled.csv"), ("V", "V_unlabelled.csv"), ("T", "T_unlabelled.csv")):
-        sub = view[view["part"] == part].sort_values(["estate", "Long", "Lat"])
-        keep = cols + (["label"] if part == "L" else [])
-        sub[keep].to_csv(AGENT_VIEW / name, index=False)
-        print(name, len(sub), "rows")
+    labelled = view[view["part"] == "L"].sort_values(["estate", "Long", "Lat"])
+    unlabelled = view[view["part"].isin(("V", "T"))].sort_values(["estate", "Long", "Lat"])
+
+    labelled[cols + ["label"]].to_csv(AGENT_VIEW / "L_labelled.csv", index=False)
+    unlabelled[cols].to_csv(AGENT_VIEW / "unlabelled.csv", index=False)
+    print("L_labelled.csv", len(labelled), "rows")
+    print("unlabelled.csv", len(unlabelled), "rows (V + T merged)")
     print("wrote", AGENT_VIEW)
 
 
@@ -164,12 +228,15 @@ def stage_verifier():
 
 def main():
     ap = argparse.ArgumentParser(description="Build the sealed master, split, agent view and verifier staging.")
-    ap.add_argument("--extract", action="store_true",
-                    help="rebuild .work/features.csv from Earth Engine and SAR scenes (replaces the frozen table)")
+    grp = ap.add_mutually_exclusive_group()
+    grp.add_argument("--extract", action="store_true",
+                     help="rebuild .work/features.csv from all SAR scenes and Earth Engine NDVI")
+    grp.add_argument("--extract-sar", action="store_true",
+                     help="rebuild multi-date SAR columns locally while preserving existing NDVI columns")
     args = ap.parse_args()
 
     build_master()
-    build_features(args.extract)
+    build_features(args.extract, args.extract_sar)
     build_split()
     build_agent_view()
     stage_verifier()
