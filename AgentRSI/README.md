@@ -90,9 +90,12 @@ AgentRSI/.venv/bin/python AgentRSI/scripts/collect.py \
   --parent starter
 ```
 
-### Regrading & Verification Utilities
+### Dashboard, Regrading & Verification Utilities
 
 ```bash
+# Regenerate and exact-diff verify the offline dashboard (also auto-run by collect.py)
+AgentRSI/.venv/bin/python AgentRSI/scripts/dashboard.py --verify
+
 # Re-score a recorded Harbor job against a (possibly updated) verifier task
 AgentRSI/.venv/bin/python AgentRSI/scripts/regrade.py \
   AgentRSI/jobs/<session_id>/<timestamp> \
@@ -134,14 +137,15 @@ AgentRSI/
 │   ├── lineage.json            #   Current incumbent, epoch, T attempts used, daily spend, kill_switch
 │   └── events.jsonl            #   Append-only audit log of starts, ends, promotions, cap blocks
 │
-├── scripts/                    # CLI entry points (build_*, run_session, collect, regrade)
+├── dashboard/index.html        # ★ OFFLINE DASHBOARD (gitignored, auto-refreshed by collect.py)
+├── scripts/                    # CLI entry points (build_*, run_session, collect, dashboard, regrade)
 ├── src/
 │   ├── DataPipeline/           # Sealed split, feature extraction, leak checker, gate calibration
-│   └── libbuilder/             # Task builder, Harbor runner, secret stager, host collector
+│   └── libbuilder/             # Task builder, Harbor runner, secret stager, collector, dashboard
 ├── verifier/                   # Sealed grading library baked into localhost/agentrsi-sealed:epoch1
 ├── starter/                    # Baseline incumbent pipeline.py & requirements.txt
 ├── templates/                  # Instruction base, lenses/, task.toml/Dockerfiles, in-container CLI
-├── tests/                      # Unit tests for verifier, builder, and collector
+├── tests/                      # Unit tests for verifier, builder, collector, and dashboard
 │
 ├── tasks/<session_id>/         # (gitignored) Generated Harbor task directories
 ├── jobs/<session_id>/          # (gitignored) Raw Harbor job outputs, logs, and trajectories

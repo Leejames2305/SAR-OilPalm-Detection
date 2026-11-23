@@ -11,6 +11,7 @@ from typing import Any
 
 import yaml
 
+from libbuilder.dashboard import generate_dashboard
 from libbuilder.env_utils import AGENT_ROOT, load_dotenv
 from libbuilder.events import append_event
 from libbuilder.lineage import load_lineage, record_session_result, save_lineage
@@ -150,6 +151,8 @@ def collect_session(
     lineage_path: Path | None = None,
     events_path: Path | None = None,
     env_path: Path | None = None,
+    dashboard_path: Path | None = None,
+    update_dashboard: bool = True,
 ) -> dict[str, Any]:
     """Collect a finished Harbor job strictly on host: secret scan, copy, lineage & events update."""
     cfg_dir = agent_root / "config"
@@ -347,4 +350,21 @@ def collect_session(
     if res.returncode != 0:
         raise RuntimeError(f"Leak check failed on collected session {session_dir}:\n{res.stdout}\n{res.stderr}")
 
-    return {"session_dir": str(session_dir), "meta": meta, "lineage_update": rec}
+    out: dict[str, Any] = {"session_dir": str(session_dir), "meta": meta, "lineage_update": rec}
+    if update_dashboard:
+        sr = sessions_root or (agent_root / "sessions")
+        dash_out = dashboard_path or (
+            (sessions_root.parent / "dashboard" / "index.html")
+            if sessions_root is not None
+            else (agent_root / "dashboard" / "index.html")
+        )
+        generate_dashboard(
+            agent_root,
+            output_path=dash_out,
+            sessions_root=sr,
+            lineage_path=lp,
+            events_path=ep,
+        )
+        out["dashboard_path"] = str(dash_out)
+
+    return out
