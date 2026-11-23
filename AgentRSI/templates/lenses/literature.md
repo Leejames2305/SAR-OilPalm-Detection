@@ -1,0 +1,2 @@
+## Focus Lens: Literature-Guided Exploration
+Prioritize searching remote-sensing and agricultural plant-pathology literature (ganoderma / basal stem rot in oil palm, L-band ALOS-2 polarimetric signatures, optical red-edge/SWIR/moisture stress indices, and small-sample spatial/PU learning). Document concrete literature findings in `/app/report/REPORT.md` and test the highest-signal hypotheses under `agentrsi cv`.

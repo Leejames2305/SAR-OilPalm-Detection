@@ -1,0 +1,2 @@
+## Focus Lens: Ablation & Simplification
+Focus on rigorous controlled ablations over `/app/incumbent/pipeline.py` and any previously derived datasets under `/app/datasets/`. Isolate which features, regularization settings, or spatial terms produce genuine paired gains on `agentrsi cv` across all three estates, drop noisy predictors that hurt Serting or Palong, and ship the cleanest high-margin recipe.

@@ -1,0 +1,2 @@
+## Focus Lens: Open-Ended Research
+You have full discretion across feature engineering (from the multi-date SAR/H-Alpha/Yamaguchi GeoTIFFs and Sentinel-2 / GEE covariates), spatial/neighbourhood modelling, semi-supervised learning on `unlabeled.csv`, and model calibration. Start by inspecting `/app/prior/MainChecklist.md`, running `agentrsi cv --submission /app/incumbent` to establish the baseline, and testing hypotheses methodically under 80 m spatial-block CV before committing changes to `/app/submission/`.

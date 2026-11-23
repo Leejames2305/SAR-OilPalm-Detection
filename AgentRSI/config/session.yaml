@@ -1,0 +1,15 @@
+focus_lens: open
+agent: codex
+model: gpt-6.1-terra
+agent_timeout_sec: 28800
+verifier_timeout_sec: 3600
+agent_cpus: 6
+agent_memory_mb: 6144
+agent_storage_mb: 20480
+verifier_cpus: 4
+verifier_memory_mb: 4096
+reasoning_effort: medium
+max_budget_usd: 4.0
+max_turns: 120
+agent_base_image: "localhost/agentrsi-agent-base:latest"
+prior_datasets_max_mb: 128

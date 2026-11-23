@@ -1,0 +1,4 @@
+FROM {{SEALED_BASE_IMAGE}}
+COPY test.sh /tests/test.sh
+RUN chmod +x /tests/test.sh
+WORKDIR /tests

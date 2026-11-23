@@ -1,0 +1,9 @@
+FROM {{AGENT_BASE_IMAGE}}
+
+COPY data/ /app/data/
+COPY rasters/ /app/rasters/
+COPY prior/ /app/prior/
+COPY incumbent/ /app/incumbent/
+{{EXTRA_COPY_LINES}}
+
+WORKDIR /app

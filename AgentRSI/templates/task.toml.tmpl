@@ -1,0 +1,23 @@
+schema_version = "1.4"
+artifacts = ["/app/submission", "/app/report", "/app/datasets"]
+
+[task]
+name = "agentrsi/{{TASK_NAME}}"
+
+[agent]
+timeout_sec = {{AGENT_TIMEOUT_SEC}}
+
+[environment]
+network_mode = "public"
+cpus = {{AGENT_CPUS}}
+memory_mb = {{AGENT_MEMORY_MB}}
+storage_mb = {{AGENT_STORAGE_MB}}
+
+[verifier]
+environment_mode = "separate"
+timeout_sec = {{VERIFIER_TIMEOUT_SEC}}
+
+[verifier.environment]
+cpus = {{VERIFIER_CPUS}}
+memory_mb = {{VERIFIER_MEMORY_MB}}
+network_mode = "public"
