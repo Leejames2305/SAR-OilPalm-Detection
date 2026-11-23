@@ -158,6 +158,15 @@ class DashboardTests(unittest.TestCase):
             self.assertIn("s000-dry", html_txt)
             self.assertIn("search signal", html_txt.lower())
             self.assertIn("+0.03", html_txt)
+            self.assertIn('id="toggle-baseline"', html_txt)
+            self.assertIn('id="baseline-preset"', html_txt)
+            self.assertIn('id="baseline-value"', html_txt)
+            self.assertIn('data-ref="comparison-baseline"', html_txt)
+            self.assertIn('data-metric="v_delta_vs_baseline"', html_txt)
+            self.assertIn("NDVI Starter", html_txt)
+            self.assertIn("renderMarkdown", html_txt)
+            self.assertIn('data-mode="rendered"', html_txt)
+            self.assertIn('data-mode="raw"', html_txt)
 
     def test_multi_epoch_fixture_charts_events_and_no_drift(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -256,6 +265,11 @@ class DashboardTests(unittest.TestCase):
             # Direct relative links to REPORT.md / HANDOFF.md present
             self.assertIn("../sessions/s002/REPORT.md", html_txt)
             self.assertIn("../sessions/s002/HANDOFF.md", html_txt)
+
+            # Customisable baseline presets present
+            self.assertIn("NDVI Starter", html_txt)
+            self.assertIn("Coords-only", html_txt)
+            self.assertIn("POC Best (SAR+Spatial)", html_txt)
 
             # Explicit check on epoch boundary separation across polylines
             insp = _DashboardHTMLInspector()
@@ -371,6 +385,42 @@ class DashboardTests(unittest.TestCase):
             self.assertTrue(dash_path.exists())
             errs = verify_dashboard(dash_path, sessions_root=sessions_root, lineage_path=lp, events_path=ep)
             self.assertEqual(errs, [], f"Auto-regenerated dashboard verification failed: {errs}")
+
+    def test_yymmdd_long_session_ids_and_compact_ticks(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            sessions_root = root / "sessions"
+            lp = root / "state" / "lineage.json"
+            ep = root / "state" / "events.jsonl"
+            out = root / "dashboard" / "index.html"
+
+            ids = [
+                ("261123-s001-data-expansion", 0.060, "2026-11-23T01:00:00Z"),
+                ("261123-s002-literature", 0.068, "2026-11-23T02:00:00Z"),
+                ("261124-s003-ablation", 0.075, "2026-11-24T01:00:00Z"),
+            ]
+            lin = default_lineage(self.split_cfg, self.verifier_cfg)
+            for sid, v_sc, ts in ids:
+                _write_session_fixture(
+                    sessions_root, sid, epoch=1, parent_id="starter",
+                    v_score=v_sc, v_estates=(v_sc, v_sc, v_sc), v_delta_inc=v_sc - 0.054469,
+                    t_delta=0.01, t_ci_low=-0.01, t_ci_high=0.03,
+                    worst_estate="AirHitam", worst_delta=0.0, gate_passed=False,
+                    started_at=ts,
+                )
+                lin["sessions"][sid] = {"epoch": 1, "parent_id": "starter", "promoted": False, "collected_at": ts}
+            save_lineage(lp, lin)
+            ep.parent.mkdir(parents=True, exist_ok=True)
+            ep.write_text("")
+
+            generate_dashboard(AGENT_ROOT, output_path=out, sessions_root=sessions_root, lineage_path=lp, events_path=ep)
+            errs = verify_dashboard(out, sessions_root=sessions_root, lineage_path=lp, events_path=ep)
+            self.assertEqual(errs, [], f"Verification mismatches: {errs}")
+
+            html_txt = out.read_text(encoding="utf-8")
+            self.assertIn("<title>261123-s001-data-expansion</title>261123-s001</text>", html_txt)
+            self.assertIn("<title>261124-s003-ablation</title>261124-s003</text>", html_txt)
+            self.assertIn("<strong>261123-s001-data-expansion</strong>", html_txt)
 
 
 if __name__ == "__main__":

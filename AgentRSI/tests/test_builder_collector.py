@@ -14,7 +14,12 @@ SRC_DIR = AGENT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from libbuilder.build_task import build_task  # noqa: E402
+from libbuilder.build_task import (  # noqa: E402
+    build_task,
+    infer_lens_from_session_id,
+    make_session_id,
+    next_session_seq,
+)
 from libbuilder.collect import collect_session  # noqa: E402
 from libbuilder.env_utils import load_dotenv, resolve_gateway  # noqa: E402
 from libbuilder.events import load_events  # noqa: E402
@@ -171,6 +176,31 @@ class BuilderCollectorTests(unittest.TestCase):
             instr = (tdir / "instruction.md").read_text().lower()
             self.assertNotIn("gate_passed", instr)
             self.assertNotIn("certification", instr)
+
+    def test_yymmdd_session_naming_lens_inference_and_seq(self) -> None:
+        lenses_dir = AGENT_ROOT / "templates" / "lenses"
+        self.assertEqual(infer_lens_from_session_id("261123-s001-data-expansion", lenses_dir), "data-expansion")
+        self.assertEqual(infer_lens_from_session_id("261123-s002-ablation", lenses_dir), "ablation")
+        self.assertIsNone(infer_lens_from_session_id("s000-dry", lenses_dir))
+
+        lin = default_lineage(self.split_cfg, self.verifier_cfg)
+        lin["sessions"]["s000-dry"] = {"epoch": 1}
+        self.assertEqual(next_session_seq(lin), 1)
+        sid1 = make_session_id(next_session_seq(lin), "open", date_str="261123")
+        self.assertEqual(sid1, "261123-s001-open")
+
+        lin["sessions"][sid1] = {"epoch": 1}
+        self.assertEqual(next_session_seq(lin), 2)
+        sid2 = make_session_id(next_session_seq(lin), "ablation", date_str="261123")
+        self.assertEqual(sid2, "261123-s002-ablation")
+
+        with tempfile.TemporaryDirectory() as td:
+            out_root = Path(td) / "tasks"
+            tdir = build_task("261123-s001-data-expansion", timeout_override=600, output_root=out_root)
+            toml_txt = (tdir / "task.toml").read_text()
+            self.assertIn('name = "agentrsi/261123-s001-data-expansion"', toml_txt)
+            self.assertNotIn("data-expansion-data-expansion", toml_txt)
+            self.assertIn("Focus Lens: Data Expansion", (tdir / "instruction.md").read_text())
 
     def test_render_handoff_flags_disagreement_and_omits_t(self) -> None:
         with tempfile.TemporaryDirectory() as td:

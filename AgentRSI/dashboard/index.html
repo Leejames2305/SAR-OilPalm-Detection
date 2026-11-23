@@ -82,8 +82,17 @@ code, pre, .mono, .num { font-family: ui-monospace, SFMono-Regular, Menlo, Conso
 }
 .tag-v { font-size: 11px; background: #dbeafe; color: #1e40af; padding: 1px 6px; font-weight: 600; }
 .tag-t { font-size: 11px; background: #dcfce7; color: #166534; padding: 1px 6px; font-weight: 600; }
-.controls { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.controls { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .controls label { cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+.controls select, .controls input[type="number"] {
+  font-size: 12px;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+}
+.controls input[type="number"] { width: 88px; font-family: ui-monospace, monospace; }
+.ctrl-sep { color: var(--border); }
 svg { width: 100%; height: auto; display: block; }
 .epoch-even { fill: #f8fafc; }
 .epoch-odd { fill: #f1f5f9; }
@@ -94,9 +103,11 @@ svg { width: 100%; height: auto; display: block; }
 .axis-text { font-size: 10px; fill: #475569; font-family: ui-monospace, monospace; }
 .ref-zero { stroke: #94a3b8; stroke-width: 1.1; }
 .ref-incumbent { stroke: #1d4ed8; stroke-width: 1.2; stroke-dasharray: 5 3; }
+.ref-baseline { stroke: #b45309; stroke-width: 1.4; stroke-dasharray: 2 3; }
 .ref-floor { stroke: #15803d; stroke-width: 1.4; stroke-dasharray: 5 3; }
 .ref-nondeg { stroke: #b91c1c; stroke-width: 1.1; stroke-dasharray: 3 3; }
 .ref-label-blue { font-size: 10px; fill: #1d4ed8; }
+.ref-label-amber { font-size: 10px; fill: #b45309; font-weight: 600; }
 .ref-label-green { font-size: 10px; fill: #15803d; font-weight: 600; }
 .ref-label-red { font-size: 10px; fill: #b91c1c; }
 .empty-msg { font-size: 12px; fill: #64748b; }
@@ -131,8 +142,8 @@ tr.selected { background: #dbeafe !important; }
 @media (max-width: 980px) { .bottom-grid { grid-template-columns: 1fr; } }
 .events-wrap { max-height: 460px; overflow: auto; }
 .events-wrap td:last-child { white-space: normal; min-width: 220px; }
-.tab-bar { display: flex; gap: 6px; margin: 8px 0; }
-.tab-btn {
+.tab-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; align-items: center; }
+.tab-btn, .mode-btn {
   border: 1px solid var(--border);
   background: #f1f5f9;
   padding: 4px 10px;
@@ -140,11 +151,37 @@ tr.selected { background: #dbeafe !important; }
   font-size: 12px;
 }
 .tab-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.mode-btn.active { background: #334155; color: #fff; border-color: #334155; }
+.mode-group { margin-left: auto; display: inline-flex; gap: 4px; }
+.md-rendered {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 10px 12px;
+  max-height: 380px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.md-rendered h1, .md-rendered h2, .md-rendered h3, .md-rendered h4 {
+  margin: 10px 0 6px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 2px;
+}
+.md-rendered h1:first-child, .md-rendered h2:first-child { margin-top: 0; }
+.md-rendered p { margin: 0 0 8px; }
+.md-rendered ul, .md-rendered ol { margin: 0 0 8px; padding-left: 20px; }
+.md-rendered li { margin: 2px 0; }
+.md-rendered code { background: #e2e8f0; padding: 1px 4px; font-size: 11px; }
+.md-rendered pre { background: #0f172a; color: #f8fafc; padding: 8px 10px; overflow: auto; margin: 0 0 8px; }
+.md-rendered pre code { background: none; padding: 0; color: inherit; }
+.md-rendered blockquote { border-left: 3px solid var(--border); margin: 0 0 8px; padding: 2px 10px; color: var(--muted); }
+.md-rendered table { width: auto; min-width: 60%; margin: 6px 0 10px; background: #fff; border: 1px solid var(--border); }
+.md-rendered th, .md-rendered td { border: 1px solid #e2e8f0; padding: 4px 8px; white-space: normal; }
 pre.md-view {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   padding: 10px;
-  max-height: 360px;
+  max-height: 380px;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
@@ -180,7 +217,7 @@ pre.md-view {
     <h1>AgentRSI Dashboard</h1>
     <div class="sub">Oil-palm SAR triage · 80 m spatial split · Epoch 1 (<code>26f34d4d8e01</code>)</div>
   </div>
-  <div class="sub">Generated <span class="mono">2026-11-23T06:13:56+00:00</span> · Offline HTML (verifier &amp; collector JSONs only)</div>
+  <div class="sub">Generated <span class="mono">2026-11-23T08:43:23+00:00</span> · Offline HTML (verifier &amp; collector JSONs only)</div>
 </header>
 
 <section class="summary-grid" id="header-summary">
@@ -227,9 +264,13 @@ pre.md-view {
         <label><input type="checkbox" checked data-toggle-series="v_lift_AirHitam"><span style="color:#0f766e">AirHitam</span></label>
         <label><input type="checkbox" checked data-toggle-series="v_lift_Palong"><span style="color:#b45309">Palong</span></label>
         <label><input type="checkbox" checked data-toggle-series="v_lift_Serting"><span style="color:#7c3aed">Serting</span></label>
+        <span class="ctrl-sep">|</span>
+        <label><input type="checkbox" id="toggle-baseline" checked><span style="color:#b45309">Baseline</span></label>
+        <select id="baseline-preset" aria-label="Comparison baseline preset"><option value="ndvi_starter" selected>NDVI Starter (+0.0545)</option><option value="coords_only">Coords-only (+0.0665)</option><option value="poc_ref">POC Best (SAR+Spatial) (+0.0943)</option><option value="custom">Custom</option></select>
+        <input type="number" id="baseline-value" step="0.001" value="0.054469" aria-label="Custom baseline V lift">
       </div>
     </div>
-    <svg id="chart-v" viewBox="0 0 760 260" role="img" aria-label="Validation V search signal optimistic"><rect class="epoch-band epoch-even" data-epoch="1" x="62.00" y="28" width="680.00" height="190" /><text class="epoch-label" x="402.00" y="20" text-anchor="middle">Epoch 1</text><line class="grid-line" x1="62" y1="218.00" x2="742" y2="218.00" /><text class="axis-text" x="54" y="221.00" text-anchor="end">-0.011</text><line class="grid-line" x1="62" y1="170.50" x2="742" y2="170.50" /><text class="axis-text" x="54" y="173.50" text-anchor="end">+0.015</text><line class="grid-line" x1="62" y1="123.00" x2="742" y2="123.00" /><text class="axis-text" x="54" y="126.00" text-anchor="end">+0.041</text><line class="grid-line" x1="62" y1="75.50" x2="742" y2="75.50" /><text class="axis-text" x="54" y="78.50" text-anchor="end">+0.067</text><line class="grid-line" x1="62" y1="28.00" x2="742" y2="28.00" /><text class="axis-text" x="54" y="31.00" text-anchor="end">+0.093</text><line class="ref-zero" data-ref="zero" x1="62" y1="197.22" x2="742" y2="197.22" /><text class="axis-text x-tick" x="402.00" y="234" text-anchor="middle">s000-dry</text><rect class="plot-border" x="62" y="28" width="680" height="190" fill="none" /><line class="ref-incumbent" data-ref="incumbent-v" x1="62" y1="97.95" x2="742" y2="97.95" /><text class="ref-label-blue" x="738" y="92.95" text-anchor="end">Incumbent (starter): +0.0545</text><circle class="pt pt-v estate-series" data-series="v_lift_AirHitam" data-session="s000-dry" data-epoch="1" cx="402.00" cy="157.71" r="3" fill="#0f766e" fill-opacity="0.85"><title>s000-dry · AirHitam V lift: +0.021679</title></circle><circle class="pt pt-v estate-series" data-series="v_lift_Palong" data-session="s000-dry" data-epoch="1" cx="402.00" cy="71.95" r="3" fill="#b45309" fill-opacity="0.85"><title>s000-dry · Palong V lift: +0.068732</title></circle><circle class="pt pt-v estate-series" data-series="v_lift_Serting" data-session="s000-dry" data-epoch="1" cx="402.00" cy="48.78" r="3" fill="#7c3aed" fill-opacity="0.85"><title>s000-dry · Serting V lift: +0.081446</title></circle><circle class="pt pt-v clickable" data-chart="v" data-series="v_score" data-session="s000-dry" data-epoch="1" cx="402.00" cy="92.81" r="5" fill="#ffffff" stroke="#1d4ed8" stroke-width="2"><title>s000-dry (Epoch 1, dry): V composite = +0.057286</title></circle></svg>
+    <svg id="chart-v" viewBox="0 0 760 260" data-y-min="-0.01140250" data-y-max="0.09284894" data-pl="62" data-pt="28" data-pw="680" data-ph="190" role="img" aria-label="Validation V search signal optimistic"><rect class="epoch-band epoch-even" data-epoch="1" x="62.00" y="28" width="680.00" height="190" /><text class="epoch-label" x="402.00" y="20" text-anchor="middle">Epoch 1</text><line class="grid-line" x1="62" y1="218.00" x2="742" y2="218.00" /><text class="axis-text" x="54" y="221.00" text-anchor="end">-0.011</text><line class="grid-line" x1="62" y1="170.50" x2="742" y2="170.50" /><text class="axis-text" x="54" y="173.50" text-anchor="end">+0.015</text><line class="grid-line" x1="62" y1="123.00" x2="742" y2="123.00" /><text class="axis-text" x="54" y="126.00" text-anchor="end">+0.041</text><line class="grid-line" x1="62" y1="75.50" x2="742" y2="75.50" /><text class="axis-text" x="54" y="78.50" text-anchor="end">+0.067</text><line class="grid-line" x1="62" y1="28.00" x2="742" y2="28.00" /><text class="axis-text" x="54" y="31.00" text-anchor="end">+0.093</text><line class="ref-zero" data-ref="zero" x1="62" y1="197.22" x2="742" y2="197.22" /><text class="axis-text x-tick" data-session="s000-dry" x="402.00" y="234" text-anchor="middle"><title>s000-dry</title>s000-dry</text><rect class="plot-border" x="62" y="28" width="680" height="190" fill="none" /><line class="ref-incumbent" data-ref="incumbent-v" x1="62" y1="97.95" x2="742" y2="97.95" /><text class="ref-label-blue" x="738" y="92.95" text-anchor="end">Incumbent (starter): +0.0545</text><line id="ref-baseline-line" class="ref-baseline" data-ref="comparison-baseline" x1="62" y1="97.95" x2="742" y2="97.95" /><text id="ref-baseline-label" class="ref-label-amber" x="68" y="92.95" text-anchor="start">Baseline: NDVI Starter (+0.0545)</text><circle class="pt pt-v estate-series" data-series="v_lift_AirHitam" data-session="s000-dry" data-epoch="1" data-val="0.021678713629651687" cx="402.00" cy="157.71" r="3" fill="#0f766e" fill-opacity="0.85"><title>s000-dry · AirHitam V lift: +0.021679</title></circle><circle class="pt pt-v estate-series" data-series="v_lift_Palong" data-session="s000-dry" data-epoch="1" data-val="0.0687316451531468" cx="402.00" cy="71.95" r="3" fill="#b45309" fill-opacity="0.85"><title>s000-dry · Palong V lift: +0.068732</title></circle><circle class="pt pt-v estate-series" data-series="v_lift_Serting" data-session="s000-dry" data-epoch="1" data-val="0.08144643562552023" cx="402.00" cy="48.78" r="3" fill="#7c3aed" fill-opacity="0.85"><title>s000-dry · Serting V lift: +0.081446</title></circle><circle class="pt pt-v clickable" data-chart="v" data-series="v_score" data-session="s000-dry" data-epoch="1" data-val="0.05728559813610624" cx="402.00" cy="92.81" r="5" fill="#ffffff" stroke="#1d4ed8" stroke-width="2"><title>s000-dry (Epoch 1, dry): V composite = +0.057286</title></circle></svg>
   </div>
 
   <div class="card">
@@ -240,7 +281,7 @@ pre.md-view {
       </div>
       <div class="sub">Hollow circle = dry session</div>
     </div>
-    <svg id="chart-t" viewBox="0 0 760 260" role="img" aria-label="Certified T delta PR-AUC vs incumbent host-only gate"><rect class="epoch-band epoch-even" data-epoch="1" x="62.00" y="28" width="680.00" height="190" /><text class="epoch-label" x="402.00" y="20" text-anchor="middle">Epoch 1</text><line class="grid-line" x1="62" y1="218.00" x2="742" y2="218.00" /><text class="axis-text" x="54" y="221.00" text-anchor="end">-0.055</text><line class="grid-line" x1="62" y1="170.50" x2="742" y2="170.50" /><text class="axis-text" x="54" y="173.50" text-anchor="end">-0.020</text><line class="grid-line" x1="62" y1="123.00" x2="742" y2="123.00" /><text class="axis-text" x="54" y="126.00" text-anchor="end">+0.014</text><line class="grid-line" x1="62" y1="75.50" x2="742" y2="75.50" /><text class="axis-text" x="54" y="78.50" text-anchor="end">+0.049</text><line class="grid-line" x1="62" y1="28.00" x2="742" y2="28.00" /><text class="axis-text" x="54" y="31.00" text-anchor="end">+0.084</text><line class="ref-zero" data-ref="zero" x1="62" y1="142.45" x2="742" y2="142.45" /><text class="axis-text x-tick" x="402.00" y="234" text-anchor="middle">s000-dry</text><rect class="plot-border" x="62" y="28" width="680" height="190" fill="none" /><line class="ref-floor" data-ref="effect-floor" x1="62" y1="101.38" x2="742" y2="101.38" /><text class="ref-label-green" x="738" y="96.38" text-anchor="end">+0.03 effect floor (certify)</text><line class="ref-nondeg" data-ref="non-degradation" x1="62" y1="183.53" x2="742" y2="183.53" /><text class="ref-label-red" x="738" y="195.53" text-anchor="end">-0.03 estate floor</text><line class="ci-bar" data-session="s000-dry" data-epoch="1" x1="402.00" y1="48.78" x2="402.00" y2="174.24" stroke="#64748b" stroke-width="2" /><line class="ci-cap" data-session="s000-dry" x1="397.00" y1="48.78" x2="407.00" y2="48.78" stroke="#64748b" stroke-width="1.5" /><line class="ci-cap" data-session="s000-dry" x1="397.00" y1="174.24" x2="407.00" y2="174.24" stroke="#64748b" stroke-width="1.5" /><circle class="pt pt-t clickable" data-chart="t" data-series="t_comp_delta" data-session="s000-dry" data-epoch="1" cx="402.00" cy="118.75" r="5" fill="#ffffff" stroke="#64748b" stroke-width="2"><title>s000-dry (DRY): T dPR-AUC = +0.017314 [-0.023219, +0.068415]</title></circle></svg>
+    <svg id="chart-t" viewBox="0 0 760 260" role="img" aria-label="Certified T delta PR-AUC vs incumbent host-only gate"><rect class="epoch-band epoch-even" data-epoch="1" x="62.00" y="28" width="680.00" height="190" /><text class="epoch-label" x="402.00" y="20" text-anchor="middle">Epoch 1</text><line class="grid-line" x1="62" y1="218.00" x2="742" y2="218.00" /><text class="axis-text" x="54" y="221.00" text-anchor="end">-0.055</text><line class="grid-line" x1="62" y1="170.50" x2="742" y2="170.50" /><text class="axis-text" x="54" y="173.50" text-anchor="end">-0.020</text><line class="grid-line" x1="62" y1="123.00" x2="742" y2="123.00" /><text class="axis-text" x="54" y="126.00" text-anchor="end">+0.014</text><line class="grid-line" x1="62" y1="75.50" x2="742" y2="75.50" /><text class="axis-text" x="54" y="78.50" text-anchor="end">+0.049</text><line class="grid-line" x1="62" y1="28.00" x2="742" y2="28.00" /><text class="axis-text" x="54" y="31.00" text-anchor="end">+0.084</text><line class="ref-zero" data-ref="zero" x1="62" y1="142.45" x2="742" y2="142.45" /><text class="axis-text x-tick" data-session="s000-dry" x="402.00" y="234" text-anchor="middle"><title>s000-dry</title>s000-dry</text><rect class="plot-border" x="62" y="28" width="680" height="190" fill="none" /><line class="ref-floor" data-ref="effect-floor" x1="62" y1="101.38" x2="742" y2="101.38" /><text class="ref-label-green" x="738" y="96.38" text-anchor="end">+0.03 effect floor (certify)</text><line class="ref-nondeg" data-ref="non-degradation" x1="62" y1="183.53" x2="742" y2="183.53" /><text class="ref-label-red" x="738" y="195.53" text-anchor="end">-0.03 estate floor</text><line class="ci-bar" data-session="s000-dry" data-epoch="1" x1="402.00" y1="48.78" x2="402.00" y2="174.24" stroke="#64748b" stroke-width="2" /><line class="ci-cap" data-session="s000-dry" x1="397.00" y1="48.78" x2="407.00" y2="48.78" stroke="#64748b" stroke-width="1.5" /><line class="ci-cap" data-session="s000-dry" x1="397.00" y1="174.24" x2="407.00" y2="174.24" stroke="#64748b" stroke-width="1.5" /><circle class="pt pt-t clickable" data-chart="t" data-series="t_comp_delta" data-session="s000-dry" data-epoch="1" cx="402.00" cy="118.75" r="5" fill="#ffffff" stroke="#64748b" stroke-width="2"><title>s000-dry (DRY): T dPR-AUC = +0.017314 [-0.023219, +0.068415]</title></circle></svg>
   </div>
 </section>
 
@@ -263,6 +304,7 @@ pre.md-view {
           <th>V Palong</th>
           <th>V Serting</th>
           <th>V &Delta; Inc</th>
+          <th>V &Delta; Base</th>
           <th>T &Delta;PR-AUC</th>
           <th>T CI</th>
           <th>Worst Estate T &Delta;</th>
@@ -273,7 +315,7 @@ pre.md-view {
         </tr>
       </thead>
       <tbody>
-        <tr class="session-row" data-session="s000-dry" data-epoch="1"><td><strong>s000-dry</strong></td><td class="num">1</td><td>starter</td><td>claude-code / claude-haiku-5-5</td><td><span class="badge badge-dry">DRY</span></td><td class="num" data-metric="v_score">+0.057286</td><td class="num" data-metric="v_lift_AirHitam">+0.021679</td><td class="num" data-metric="v_lift_Palong">+0.068732</td><td class="num" data-metric="v_lift_Serting">+0.081446</td><td class="num" data-metric="v_delta_vs_incumbent">+0.002816</td><td class="num" data-metric="t_comp_delta">+0.017314</td><td class="num" data-metric="t_ci">[-0.023219, +0.068415]</td><td class="num" data-metric="worst_estate">AirHitam: -0.031817</td><td class="num">$0.0122</td><td class="num" data-metric="runtime_sec">6.768s</td><td>ok</td><td><a href="../sessions/s000-dry/REPORT.md">REPORT</a> · <a href="../sessions/s000-dry/HANDOFF.md">HANDOFF</a></td></tr>
+        <tr class="session-row" data-session="s000-dry" data-epoch="1"><td><strong>s000-dry</strong></td><td class="num">1</td><td>starter</td><td>claude-code / claude-haiku-5-5</td><td><span class="badge badge-dry">DRY</span></td><td class="num" data-metric="v_score">+0.057286</td><td class="num" data-metric="v_lift_AirHitam">+0.021679</td><td class="num" data-metric="v_lift_Palong">+0.068732</td><td class="num" data-metric="v_lift_Serting">+0.081446</td><td class="num" data-metric="v_delta_vs_incumbent">+0.002816</td><td class="num" data-metric="v_delta_vs_baseline">+0.002816</td><td class="num" data-metric="t_comp_delta">+0.017314</td><td class="num" data-metric="t_ci">[-0.023219, +0.068415]</td><td class="num" data-metric="worst_estate">AirHitam: -0.031817</td><td class="num">$0.0122</td><td class="num" data-metric="runtime_sec">6.768s</td><td>ok</td><td><a href="../sessions/s000-dry/REPORT.md">REPORT</a> · <a href="../sessions/s000-dry/HANDOFF.md">HANDOFF</a></td></tr>
       </tbody>
     </table>
   </div>
@@ -306,7 +348,7 @@ pre.md-view {
   </div>
 </section>
 
-<script id="dashboard-data" type="application/json">{"header":{"epoch":1,"split_sha256":"26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed","t_attempts_used":0,"t_attempt_budget":20,"kill_switch":false,"incumbent":{"id":"starter","source_dir":"starter","epoch":1,"v_score":0.05446945305942965,"per_estate_v_lift":{"AirHitam":0.046744654198282894,"Palong":0.04264048377897063,"Serting":0.07402322120103541}},"daily_spend_usd":{"2026-11-23":0.012239},"latest_spend_day":"2026-11-23","latest_spend_usd":0.012239,"total_spend_usd":0.012239,"session_count":1,"epochs":[1],"generated_at":"2026-11-23T06:13:56+00:00"},"sessions":[{"session_id":"s000-dry","epoch":1,"sort_ts":"2026-11-23T05:24:09.769665Z","job_id":"2026-11-23__13-24-03","parent_id":"starter","agent":"claude-code","model":"claude-haiku-5-5","started_at":"2026-11-23T05:24:09.769665Z","finished_at":"2026-11-23T05:28:09.273132Z","dry_session":true,"submission_valid":true,"status":"ok","error":null,"gate_passed":false,"promoted":false,"verdict":"DRY","v_score":0.05728559813610624,"v_lift_AirHitam":0.021678713629651687,"v_lift_Palong":0.0687316451531468,"v_lift_Serting":0.08144643562552023,"v_delta_vs_incumbent":0.0028161450766765925,"v_delta_vs_coords":-0.00917624783873415,"runtime_sec":6.768,"t_comp_delta":0.017314013672476158,"t_ci_low":-0.023218813951312835,"t_ci_high":0.06841532785817948,"effect_floor":0.03,"non_degradation_floor":-0.03,"worst_estate":"AirHitam","worst_estate_delta":-0.03181731415220232,"failed_reasons":["composite CI lower bound -0.023219 <= 0.0","composite delta +0.017314 < effect floor +0.0300","AirHitam delta -0.031817 < non-degradation floor -0.0300"],"cost_usd":0.012238754999999999,"n_input_tokens":325317,"n_cache_tokens":281208,"n_output_tokens":7827,"smells":[],"handoff_missing_sections":[],"per_estate_v":{"AirHitam":{"v_lift":0.021678713629651687,"pr_auc":0.07373350815019963,"prevalence":0.052054794520547946,"recall_at_25":0.3684210526315789,"enrichment_top10":1.8421052631578945,"delta_vs_incumbent":-0.025065940568631206,"ci_low":-0.055573248039541334,"ci_high":0.004571656045553894},"Palong":{"v_lift":0.0687316451531468,"pr_auc":0.1446810122417544,"prevalence":0.0759493670886076,"recall_at_25":0.4074074074074074,"enrichment_top10":2.222222222222222,"delta_vs_incumbent":0.026091161374176164,"ci_low":-0.03823013637844661,"ci_high":0.11595387805821145},"Serting":{"v_lift":0.08144643562552023,"pr_auc":0.17053329531371622,"prevalence":0.08908685968819599,"recall_at_25":0.425,"enrichment_top10":1.25,"delta_vs_incumbent":0.00742321442448482,"ci_low":-0.013816108218085266,"ci_high":0.07898065125098508}},"per_estate_t":{"AirHitam":{"pr_auc_lift":0.09096890128446003,"delta_vs_incumbent":-0.03181731415220232,"ci_low":-0.061057633966439324,"ci_high":0.013598978637625414,"recall_at_25":0.42424242424242425},"Palong":{"pr_auc_lift":0.0661753238500624,"delta_vs_incumbent":0.024168689956356543,"ci_low":-0.03132464414989437,"ci_high":0.09312786975839397,"recall_at_25":0.35},"Serting":{"pr_auc_lift":0.09077395165327516,"delta_vs_incumbent":0.059590665213274246,"ci_low":-0.03092426680493211,"ci_high":0.1793271211584327,"recall_at_25":0.3829787234042553}},"links":{"report":"../sessions/s000-dry/REPORT.md","handoff":"../sessions/s000-dry/HANDOFF.md","v_report":"../sessions/s000-dry/v_report.json","certification":"../sessions/s000-dry/certification.json","pipeline":"../sessions/s000-dry/submission/pipeline.py"},"report_md":"# Oil-palm Unhealthy triage \u2014 session s000-dry report\n\n## Hypothesis\nPer-estate spatial label prior (distance-weighted mean label of the K nearest labelled trees, from the training fold only) added to the NDVI logistic baseline will lift PR-AUC, because Unhealthy trees are spatially clustered (MainChecklist \u00a7A: 10-NN Unhealthy probability 0.12/0.34/0.26 vs 0.06\u20130.07 for Healthy).\n\n## Method\n- Candidate: `/app/submission/pipeline.py`. Features = [NDVI, log(kNN prior + 0.5\u00b7prevalence)], standardised, balanced LogisticRegression.\n- Training rows get a leave-one-out kNN prior (self excluded) so the logistic fit does not see its own label. Validation rows use all training-fold labels.\n- Evaluated with `agentrsi cv` (5-fold, 80 m spatial blocks, `GroupKFold`) on `L_labelled.csv`. Baseline = NDVI-only logistic (incumbent).\n\n## Results (agentrsi cv, composite L-CV lift)\n| Variant | AirHitam | Palong | Serting | Composite |\n|---|---|---|---|---|\n| Incumbent NDVI-LogReg | +0.0146 | +0.0328 | +0.0887 | +0.0454 |\n| kNN prior K=5 | +0.0178 | +0.1389 | +0.1020 | +0.0863 |\n| **kNN prior K=10 (submitted)** | +0.0138 | +0.1859 | +0.0791 | **+0.0929** |\n| kNN prior K=20 | +0.0219 | +0.1566 | +0.0648 | +0.0811 |\n\nValues are PR-AUC minus prevalence. Prevalence (L-set, scored rows): 0.0581 / 0.0857 / 0.1009.\n\n## Feature and error analysis\n- The gain is concentrated in Palong (+0.15 PR), where Unhealthy trees are the most clustered. It is absent or negative for AirHitam (\u22120.001) and Serting (\u22120.010 at K=10).\n- Across K the composite stays above the baseline (+0.036 to +0.048), so the gain is not a single-K artefact. Serting is the weak estate and its sign depends on K.\n\n## Caveats (important)\n- The prior is an **in-estate spatial-neighbour signal**, not a disease signature. The checklist records that unseen, far-from-label pockets are near chance (pocket-holdout recall 0.26 vs 0.25 coin-flip). Its value depends on unlabelled trees lying near labelled ones, as in the product's sparse-label-over-a-field setting, but CV only partly tests that (80 m block edges leak neighbours).\n- The 80 m block CV does not isolate far-field generalisation. A corner-holdout test (labels in one quadrant, score the rest) has not been run and is the next check.\n- The handoff reported incumbent V-lift +0.054469 on a different protocol. The numbers here come only from `agentrsi cv`; I did not recompute on V/T.\n- Requirements: no pins (numpy/scipy/pandas/scikit-learn only). selfcheck passes on all three estates.\n\n## Literature\nNot searched in this session (budget-limited). Spatial-label propagation / kNN smoothing for spatially clustered labels is standard in remote-sensing point classification.\n\n## Artifacts\n- Submission: `/app/submission/pipeline.py`, `/app/submission/requirements.txt`\n- Scratch variants: `/tmp/exp/knn` (K=10), `/tmp/exp/k5`, `/tmp/exp/k20` (not deliverables)\n","handoff_md":"## State of play\nNominee in `/app/submission/`: NDVI + leave-one-out kNN spatial label prior (K=10), balanced logistic. `agentrsi cv` composite L-lift +0.0929 (incumbent +0.0454). `agentrsi selfcheck` passes. Gain is mostly Palong; Serting and AirHitam are flat or slightly negative.\n\n## What I tried\n- **Baseline NDVI-LogReg (incumbent)**: CV composite +0.0454. Verdict: reference. Evidence: `agentrsi cv --submission /app/incumbent`.\n- **kNN label prior + NDVI, K=10 (nominee)**: CV composite +0.0929 (Palong +0.186, Serting +0.079, AirHitam +0.014). Verdict: keep, pending a far-field test. Evidence: `/tmp/exp/knn/pipeline.py`, `/app/report/REPORT.md`.\n- **kNN prior, K=5**: composite +0.0863. Verdict: consistent gain. Evidence: `/tmp/exp/k5`.\n- **kNN prior, K=20**: composite +0.0811. Verdict: consistent gain. Evidence: `/tmp/exp/k20`.\n\n## Dead ends\nCarried over from `/app/prior/MainChecklist.md` \u00a7B (not re-run here): class-imbalance methods, G-SMOTE tuning, RF feature selection, PCA/QDA, healthy-only anomaly detection, RVI features, temporal S1/S2 on top of NDVI, Middle-as-positive, cross-estate pooling, threshold tuning. Deep/MLP models at n\u2248160 positives.\n\n## Open leads, ranked\n1. **Far-field test of the kNN prior**: corner holdout (labels in one quadrant, score the rest). If the gain vanishes, the prior only works near labels; decide whether the product's deployment setting is near-labels.\n2. **Distance-aware prior**: add a distance-to-nearest-labelled feature, or use a Gaussian kernel with a bandwidth tuned per estate. Could fix Serting's sign flip.\n3. **Serting stability**: K sensitivity (Serting negative at K=10, positive at K=5). Check with repeated block seeds before trusting.\n4. **Combine with spatial SAR fusion** from the checklist (coords + SAR), once the prior is verified in the far-field test.\n5. Literature search on spatial label propagation for point-level disease mapping (not done).\n\n## How to resume\n```\ncd /tmp && agentrsi cv --submission /app/submission\nagentrsi selfcheck --submission /app/submission\n```\nCandidate source: `/app/submission/pipeline.py` (K is the module constant `K`). Scratch variants live in `/tmp/exp/`, which may not persist.\n\n## Artifact index\n- `/app/submission/pipeline.py`: nominee (kNN prior + NDVI logistic).\n- `/app/submission/requirements.txt`: no pins.\n- `/app/report/REPORT.md`: technical report with results table and caveats.\n- `/app/report/HANDOFF.md`: this file.\n- `/tmp/exp/knn`, `/tmp/exp/k5`, `/tmp/exp/k20`: K-sensitivity variants (scratch).\n"}],"events":[{"ts":"2026-11-23T05:29:04+00:00","session":"s000-dry","epoch":1,"type":"nominee_declared","summary":"Nominee graded for s000-dry: V lift +0.057286","ref":"sessions/s000-dry/v_report.json","values":{"v_score":0.05728559813610624,"v_delta_vs_incumbent":0.0028161450766765925},"dedup_id":"2026-11-23__13-24-03:nominee","event_idx":0}]}</script>
+<script id="dashboard-data" type="application/json">{"header":{"epoch":1,"split_sha256":"26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed","t_attempts_used":0,"t_attempt_budget":20,"kill_switch":false,"incumbent":{"id":"starter","source_dir":"starter","epoch":1,"v_score":0.05446945305942965,"per_estate_v_lift":{"AirHitam":0.046744654198282894,"Palong":0.04264048377897063,"Serting":0.07402322120103541}},"daily_spend_usd":{"2026-11-23":0.012239},"latest_spend_day":"2026-11-23","latest_spend_usd":0.012239,"total_spend_usd":0.012239,"session_count":1,"epochs":[1],"generated_at":"2026-11-23T08:43:23+00:00"},"baselines":{"default_id":"ndvi_starter","default_value":0.05446945305942965,"presets":[{"id":"ndvi_starter","label":"NDVI Starter","value":0.05446945305942965,"raw_pr_auc_mean":0.126833},{"id":"coords_only","label":"Coords-only","value":0.0664618459748404},{"id":"poc_ref","label":"POC Best (SAR+Spatial)","value":0.094333}]},"sessions":[{"session_id":"s000-dry","epoch":1,"sort_ts":"2026-11-23T05:24:09.769665Z","job_id":"2026-11-23__13-24-03","parent_id":"starter","agent":"claude-code","model":"claude-haiku-5-5","started_at":"2026-11-23T05:24:09.769665Z","finished_at":"2026-11-23T05:28:09.273132Z","dry_session":true,"submission_valid":true,"status":"ok","error":null,"gate_passed":false,"promoted":false,"verdict":"DRY","v_score":0.05728559813610624,"v_lift_AirHitam":0.021678713629651687,"v_lift_Palong":0.0687316451531468,"v_lift_Serting":0.08144643562552023,"v_delta_vs_incumbent":0.0028161450766765925,"v_delta_vs_coords":-0.00917624783873415,"runtime_sec":6.768,"t_comp_delta":0.017314013672476158,"t_ci_low":-0.023218813951312835,"t_ci_high":0.06841532785817948,"effect_floor":0.03,"non_degradation_floor":-0.03,"worst_estate":"AirHitam","worst_estate_delta":-0.03181731415220232,"failed_reasons":["composite CI lower bound -0.023219 <= 0.0","composite delta +0.017314 < effect floor +0.0300","AirHitam delta -0.031817 < non-degradation floor -0.0300"],"cost_usd":0.012238754999999999,"n_input_tokens":325317,"n_cache_tokens":281208,"n_output_tokens":7827,"smells":[],"handoff_missing_sections":[],"per_estate_v":{"AirHitam":{"v_lift":0.021678713629651687,"pr_auc":0.07373350815019963,"prevalence":0.052054794520547946,"recall_at_25":0.3684210526315789,"enrichment_top10":1.8421052631578945,"delta_vs_incumbent":-0.025065940568631206,"ci_low":-0.055573248039541334,"ci_high":0.004571656045553894},"Palong":{"v_lift":0.0687316451531468,"pr_auc":0.1446810122417544,"prevalence":0.0759493670886076,"recall_at_25":0.4074074074074074,"enrichment_top10":2.222222222222222,"delta_vs_incumbent":0.026091161374176164,"ci_low":-0.03823013637844661,"ci_high":0.11595387805821145},"Serting":{"v_lift":0.08144643562552023,"pr_auc":0.17053329531371622,"prevalence":0.08908685968819599,"recall_at_25":0.425,"enrichment_top10":1.25,"delta_vs_incumbent":0.00742321442448482,"ci_low":-0.013816108218085266,"ci_high":0.07898065125098508}},"per_estate_t":{"AirHitam":{"pr_auc_lift":0.09096890128446003,"delta_vs_incumbent":-0.03181731415220232,"ci_low":-0.061057633966439324,"ci_high":0.013598978637625414,"recall_at_25":0.42424242424242425},"Palong":{"pr_auc_lift":0.0661753238500624,"delta_vs_incumbent":0.024168689956356543,"ci_low":-0.03132464414989437,"ci_high":0.09312786975839397,"recall_at_25":0.35},"Serting":{"pr_auc_lift":0.09077395165327516,"delta_vs_incumbent":0.059590665213274246,"ci_low":-0.03092426680493211,"ci_high":0.1793271211584327,"recall_at_25":0.3829787234042553}},"links":{"report":"../sessions/s000-dry/REPORT.md","handoff":"../sessions/s000-dry/HANDOFF.md","v_report":"../sessions/s000-dry/v_report.json","certification":"../sessions/s000-dry/certification.json","pipeline":"../sessions/s000-dry/submission/pipeline.py"},"report_md":"# Oil-palm Unhealthy triage \u2014 session s000-dry report\n\n## Hypothesis\nPer-estate spatial label prior (distance-weighted mean label of the K nearest labelled trees, from the training fold only) added to the NDVI logistic baseline will lift PR-AUC, because Unhealthy trees are spatially clustered (MainChecklist \u00a7A: 10-NN Unhealthy probability 0.12/0.34/0.26 vs 0.06\u20130.07 for Healthy).\n\n## Method\n- Candidate: `/app/submission/pipeline.py`. Features = [NDVI, log(kNN prior + 0.5\u00b7prevalence)], standardised, balanced LogisticRegression.\n- Training rows get a leave-one-out kNN prior (self excluded) so the logistic fit does not see its own label. Validation rows use all training-fold labels.\n- Evaluated with `agentrsi cv` (5-fold, 80 m spatial blocks, `GroupKFold`) on `L_labelled.csv`. Baseline = NDVI-only logistic (incumbent).\n\n## Results (agentrsi cv, composite L-CV lift)\n| Variant | AirHitam | Palong | Serting | Composite |\n|---|---|---|---|---|\n| Incumbent NDVI-LogReg | +0.0146 | +0.0328 | +0.0887 | +0.0454 |\n| kNN prior K=5 | +0.0178 | +0.1389 | +0.1020 | +0.0863 |\n| **kNN prior K=10 (submitted)** | +0.0138 | +0.1859 | +0.0791 | **+0.0929** |\n| kNN prior K=20 | +0.0219 | +0.1566 | +0.0648 | +0.0811 |\n\nValues are PR-AUC minus prevalence. Prevalence (L-set, scored rows): 0.0581 / 0.0857 / 0.1009.\n\n## Feature and error analysis\n- The gain is concentrated in Palong (+0.15 PR), where Unhealthy trees are the most clustered. It is absent or negative for AirHitam (\u22120.001) and Serting (\u22120.010 at K=10).\n- Across K the composite stays above the baseline (+0.036 to +0.048), so the gain is not a single-K artefact. Serting is the weak estate and its sign depends on K.\n\n## Caveats (important)\n- The prior is an **in-estate spatial-neighbour signal**, not a disease signature. The checklist records that unseen, far-from-label pockets are near chance (pocket-holdout recall 0.26 vs 0.25 coin-flip). Its value depends on unlabelled trees lying near labelled ones, as in the product's sparse-label-over-a-field setting, but CV only partly tests that (80 m block edges leak neighbours).\n- The 80 m block CV does not isolate far-field generalisation. A corner-holdout test (labels in one quadrant, score the rest) has not been run and is the next check.\n- The handoff reported incumbent V-lift +0.054469 on a different protocol. The numbers here come only from `agentrsi cv`; I did not recompute on V/T.\n- Requirements: no pins (numpy/scipy/pandas/scikit-learn only). selfcheck passes on all three estates.\n\n## Literature\nNot searched in this session (budget-limited). Spatial-label propagation / kNN smoothing for spatially clustered labels is standard in remote-sensing point classification.\n\n## Artifacts\n- Submission: `/app/submission/pipeline.py`, `/app/submission/requirements.txt`\n- Scratch variants: `/tmp/exp/knn` (K=10), `/tmp/exp/k5`, `/tmp/exp/k20` (not deliverables)\n","handoff_md":"## State of play\nNominee in `/app/submission/`: NDVI + leave-one-out kNN spatial label prior (K=10), balanced logistic. `agentrsi cv` composite L-lift +0.0929 (incumbent +0.0454). `agentrsi selfcheck` passes. Gain is mostly Palong; Serting and AirHitam are flat or slightly negative.\n\n## What I tried\n- **Baseline NDVI-LogReg (incumbent)**: CV composite +0.0454. Verdict: reference. Evidence: `agentrsi cv --submission /app/incumbent`.\n- **kNN label prior + NDVI, K=10 (nominee)**: CV composite +0.0929 (Palong +0.186, Serting +0.079, AirHitam +0.014). Verdict: keep, pending a far-field test. Evidence: `/tmp/exp/knn/pipeline.py`, `/app/report/REPORT.md`.\n- **kNN prior, K=5**: composite +0.0863. Verdict: consistent gain. Evidence: `/tmp/exp/k5`.\n- **kNN prior, K=20**: composite +0.0811. Verdict: consistent gain. Evidence: `/tmp/exp/k20`.\n\n## Dead ends\nCarried over from `/app/prior/MainChecklist.md` \u00a7B (not re-run here): class-imbalance methods, G-SMOTE tuning, RF feature selection, PCA/QDA, healthy-only anomaly detection, RVI features, temporal S1/S2 on top of NDVI, Middle-as-positive, cross-estate pooling, threshold tuning. Deep/MLP models at n\u2248160 positives.\n\n## Open leads, ranked\n1. **Far-field test of the kNN prior**: corner holdout (labels in one quadrant, score the rest). If the gain vanishes, the prior only works near labels; decide whether the product's deployment setting is near-labels.\n2. **Distance-aware prior**: add a distance-to-nearest-labelled feature, or use a Gaussian kernel with a bandwidth tuned per estate. Could fix Serting's sign flip.\n3. **Serting stability**: K sensitivity (Serting negative at K=10, positive at K=5). Check with repeated block seeds before trusting.\n4. **Combine with spatial SAR fusion** from the checklist (coords + SAR), once the prior is verified in the far-field test.\n5. Literature search on spatial label propagation for point-level disease mapping (not done).\n\n## How to resume\n```\ncd /tmp && agentrsi cv --submission /app/submission\nagentrsi selfcheck --submission /app/submission\n```\nCandidate source: `/app/submission/pipeline.py` (K is the module constant `K`). Scratch variants live in `/tmp/exp/`, which may not persist.\n\n## Artifact index\n- `/app/submission/pipeline.py`: nominee (kNN prior + NDVI logistic).\n- `/app/submission/requirements.txt`: no pins.\n- `/app/report/REPORT.md`: technical report with results table and caveats.\n- `/app/report/HANDOFF.md`: this file.\n- `/tmp/exp/knn`, `/tmp/exp/k5`, `/tmp/exp/k20`: K-sensitivity variants (scratch).\n","v_delta_vs_baseline":0.0028161450766765878}],"events":[{"ts":"2026-11-23T05:29:04+00:00","session":"s000-dry","epoch":1,"type":"nominee_declared","summary":"Nominee graded for s000-dry: V lift +0.057286","ref":"sessions/s000-dry/v_report.json","values":{"v_score":0.05728559813610624,"v_delta_vs_incumbent":0.0028161450766765925},"dedup_id":"2026-11-23__13-24-03:nominee","event_idx":0}]}</script>
 <script>
 (function () {
   var raw = document.getElementById("dashboard-data").textContent;
@@ -316,7 +358,15 @@ pre.md-view {
   var eventsByIdx = {};
   DATA.events.forEach(function (e) { eventsByIdx[String(e.event_idx)] = e; });
 
+  var BASELINES = DATA.baselines || {default_id: "ndvi_starter", default_value: 0.05446945305942965, presets: []};
+  var presetsById = {};
+  (BASELINES.presets || []).forEach(function (p) { presetsById[p.id] = p; });
+  var baselineEnabled = true;
+  var baselineValue = Number(BASELINES.default_value);
+  var baselineLabel = (presetsById[BASELINES.default_id] && presetsById[BASELINES.default_id].label) || "NDVI Starter";
+
   var activeTab = "handoff";
+  var mdRenderMode = "rendered";
   var currentSessionId = DATA.sessions.length ? DATA.sessions[DATA.sessions.length - 1].session_id : null;
   var currentEventIdx = null;
   var tooltip = document.getElementById("tooltip");
@@ -335,6 +385,149 @@ pre.md-view {
       .replace(/"/g, "&quot;");
   }
 
+  function renderInlineMd(rawText) {
+    var s = String(rawText || "").replace(/\u0000/g, "");
+    var tokens = [];
+    function stash(htmlStr) {
+      var id = "\u0000T" + tokens.length + "\u0000";
+      tokens.push(htmlStr);
+      return id;
+    }
+    s = s.replace(/`([^`\n]+)`/g, function (_m, code) {
+      return stash("<code>" + esc(code) + "</code>");
+    });
+    s = esc(s);
+    s = s.replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, function (_m, label, url) {
+      if (!/^(https?:\/\/|\/|\.\.?\/|#)/i.test(url)) return label;
+      return stash('<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + label + "</a>");
+    });
+    s = s.replace(/\*\*([^\*\n]+)\*\*/g, "<strong>$1</strong>");
+    s = s.replace(/(^|[^\w])__([^_\n]+?)__(?=[^\w]|$)/g, "$1<strong>$2</strong>");
+    s = s.replace(/\*([^\*\n]+)\*/g, "<em>$1</em>");
+    s = s.replace(/(^|[^\w])_([^_\n]+?)_(?=[^\w]|$)/g, "$1<em>$2</em>");
+    return s.replace(/\u0000T(\d+)\u0000/g, function (_m, idx) { return tokens[Number(idx)] || ""; });
+  }
+
+  function splitTableRow(line) {
+    return line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(function (c) { return c.trim(); });
+  }
+
+  function isTableSep(line) {
+    return /^\s*\|?(\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\s*\|?\s*$/.test(line) ||
+           /^\s*\|\s*:?-{3,}:?\s*\|?\s*$/.test(line);
+  }
+
+  function isBlockBoundary(lines, idx) {
+    var l = lines[idx];
+    if (/^\s*$/.test(l) || /^\s*```/.test(l) || /^\s*#{1,4}\s+/.test(l)) return true;
+    if (/^\s{0,3}([-*_])(\s*\1){2,}\s*$/.test(l)) return true;
+    if (/^\s*>\s?/.test(l) || /^\s*[-*+]\s+/.test(l) || /^\s*\d+\.\s+/.test(l)) return true;
+    if (l.indexOf("|") !== -1 && idx + 1 < lines.length && isTableSep(lines[idx + 1])) return true;
+    return false;
+  }
+
+  function renderMarkdownCore(src) {
+    var lines = String(src || "").replace(/\r\n?/g, "\n").split("\n");
+    var out = [];
+    var i = 0;
+    while (i < lines.length) {
+      var line = lines[i];
+      if (/^\s*$/.test(line)) { i++; continue; }
+
+      var fence = line.match(/^\s*```(.*)$/);
+      if (fence) {
+        i++;
+        var codeBuf = [];
+        while (i < lines.length && !/^\s*```\s*$/.test(lines[i])) {
+          codeBuf.push(lines[i]);
+          i++;
+        }
+        if (i < lines.length) i++;
+        out.push("<pre><code>" + esc(codeBuf.join("\n")) + "</code></pre>");
+        continue;
+      }
+
+      if (/^\s{0,3}([-*_])(\s*\1){2,}\s*$/.test(line)) {
+        out.push("<hr>");
+        i++;
+        continue;
+      }
+
+      var hd = line.match(/^\s*(#{1,4})\s+(.*)$/);
+      if (hd) {
+        var lvl = hd[1].length;
+        out.push("<h" + lvl + ">" + renderInlineMd(hd[2]) + "</h" + lvl + ">");
+        i++;
+        continue;
+      }
+
+      if (line.indexOf("|") !== -1 && i + 1 < lines.length && isTableSep(lines[i + 1])) {
+        var headers = splitTableRow(line);
+        i += 2;
+        var tbody = [];
+        while (i < lines.length && lines[i].indexOf("|") !== -1 && !/^\s*$/.test(lines[i])) {
+          var cells = splitTableRow(lines[i]);
+          var tds = headers.map(function (_h, ci) { return "<td>" + renderInlineMd(cells[ci] || "") + "</td>"; });
+          tbody.push("<tr>" + tds.join("") + "</tr>");
+          i++;
+        }
+        var ths = headers.map(function (h) { return "<th>" + renderInlineMd(h) + "</th>"; });
+        out.push("<table><thead><tr>" + ths.join("") + "</tr></thead><tbody>" + tbody.join("") + "</tbody></table>");
+        continue;
+      }
+
+      if (/^\s*>\s?/.test(line)) {
+        var qBuf = [];
+        while (i < lines.length && /^\s*>\s?/.test(lines[i])) {
+          qBuf.push(renderInlineMd(lines[i].replace(/^\s*>\s?/, "")));
+          i++;
+        }
+        out.push("<blockquote><p>" + qBuf.join("<br>") + "</p></blockquote>");
+        continue;
+      }
+
+      if (/^\s*[-*+]\s+/.test(line)) {
+        var uItems = [];
+        while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i])) {
+          uItems.push("<li>" + renderInlineMd(lines[i].replace(/^\s*[-*+]\s+/, "")) + "</li>");
+          i++;
+        }
+        out.push("<ul>" + uItems.join("") + "</ul>");
+        continue;
+      }
+
+      if (/^\s*\d+\.\s+/.test(line)) {
+        var oItems = [];
+        while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
+          oItems.push("<li>" + renderInlineMd(lines[i].replace(/^\s*\d+\.\s+/, "")) + "</li>");
+          i++;
+        }
+        out.push("<ol>" + oItems.join("") + "</ol>");
+        continue;
+      }
+
+      var pBuf = [];
+      while (i < lines.length && !isBlockBoundary(lines, i)) {
+        pBuf.push(renderInlineMd(lines[i]));
+        i++;
+      }
+      if (pBuf.length) {
+        out.push("<p>" + pBuf.join(" ") + "</p>");
+      } else {
+        i++;
+      }
+    }
+    return out.join("\n");
+  }
+
+  function renderMarkdown(src) {
+    try {
+      return '<div class="md-rendered">' + renderMarkdownCore(src) + "</div>";
+    } catch (_e) {
+      return '<pre class="md-view">' + esc(src) + "</pre>";
+    }
+  }
+
   function showTooltip(ev, text) {
     if (!text) return;
     tooltip.textContent = text;
@@ -344,6 +537,70 @@ pre.md-view {
   }
 
   function hideTooltip() { tooltip.style.display = "none"; }
+
+  function updateBaselineUI() {
+    var svg = document.getElementById("chart-v");
+    var bLine = document.getElementById("ref-baseline-line");
+    var bText = document.getElementById("ref-baseline-label");
+    var active = baselineEnabled && Number.isFinite(baselineValue);
+
+    if (svg && bLine && bText) {
+      if (!active) {
+        bLine.style.display = "none";
+        bText.style.display = "none";
+      } else {
+        var yMin = parseFloat(svg.getAttribute("data-y-min"));
+        var yMax = parseFloat(svg.getAttribute("data-y-max"));
+        var pt = parseFloat(svg.getAttribute("data-pt"));
+        var ph = parseFloat(svg.getAttribute("data-ph"));
+        if (Number.isFinite(yMin) && Number.isFinite(yMax) && yMax > yMin) {
+          var arrow = "";
+          var clamped = baselineValue;
+          if (baselineValue > yMax) { clamped = yMax; arrow = " ▲"; }
+          else if (baselineValue < yMin) { clamped = yMin; arrow = " ▼"; }
+          var frac = (clamped - yMin) / (yMax - yMin);
+          var yPx = pt + ph * (1.0 - frac);
+          bLine.setAttribute("y1", yPx.toFixed(2));
+          bLine.setAttribute("y2", yPx.toFixed(2));
+          var lblY = Math.max(pt + 11, Math.min(pt + ph - 4, yPx - 5));
+          bText.setAttribute("y", lblY.toFixed(2));
+          var signVal = (baselineValue >= 0 ? "+" : "") + baselineValue.toFixed(4);
+          bText.textContent = "Baseline: " + baselineLabel + " (" + signVal + ")" + arrow;
+          bLine.style.display = "";
+          bText.style.display = "";
+        }
+      }
+    }
+
+    document.querySelectorAll('#sessions-table td[data-metric="v_delta_vs_baseline"]').forEach(function (td) {
+      var tr = td.closest("tr");
+      var sid = tr ? tr.getAttribute("data-session") : null;
+      var s = sid ? sessionsById[sid] : null;
+      if (!active || !s || s.v_score === null || s.v_score === undefined) {
+        td.textContent = "—";
+      } else {
+        td.textContent = fmt(Number(s.v_score) - baselineValue, true);
+      }
+    });
+
+    document.querySelectorAll("#chart-v circle.pt-v").forEach(function (ptNode) {
+      var titleEl = ptNode.querySelector("title");
+      if (!titleEl) return;
+      if (!ptNode.dataset.baseTip) {
+        ptNode.dataset.baseTip = titleEl.textContent;
+      }
+      var baseTip = ptNode.dataset.baseTip;
+      var valAttr = ptNode.getAttribute("data-val");
+      var vNum = valAttr !== null ? parseFloat(valAttr) : NaN;
+      if (active && Number.isFinite(vNum)) {
+        titleEl.textContent = baseTip + " | Δ vs " + baselineLabel + ": " + fmt(vNum - baselineValue, true);
+      } else {
+        titleEl.textContent = baseTip;
+      }
+    });
+
+    renderInspector();
+  }
 
   function renderInspector() {
     var box = document.getElementById("inspector-body");
@@ -355,12 +612,12 @@ pre.md-view {
     if (evObj) {
       parts.push(
         '<div class="event-detail">' +
-        '<strong>Event:</strong> <span class="mono">' + esc(evObj.type) + '</span> · ' +
-        esc(evObj.ts) + ' · Epoch ' + esc(evObj.epoch) + ' · Session <strong>' + esc(evObj.session) + '</strong><br>' +
-        '<div>' + esc(evObj.summary) + '</div>' +
-        (evObj.ref ? '<div class="sub">ref: <code>' + esc(evObj.ref) + '</code></div>' : '') +
-        (evObj.values ? '<div class="sub mono">values: ' + esc(JSON.stringify(evObj.values)) + '</div>' : '') +
-        '</div>'
+        '<strong>Event:</strong> <span class="mono">' + esc(evObj.type) + "</span> · " +
+        esc(evObj.ts) + " · Epoch " + esc(evObj.epoch) + " · Session <strong>" + esc(evObj.session) + "</strong><br>" +
+        "<div>" + esc(evObj.summary) + "</div>" +
+        (evObj.ref ? '<div class="sub">ref: <code>' + esc(evObj.ref) + "</code></div>" : "") +
+        (evObj.values ? '<div class="sub mono">values: ' + esc(JSON.stringify(evObj.values)) + "</div>" : "") +
+        "</div>"
       );
     }
 
@@ -374,60 +631,72 @@ pre.md-view {
     if (s.links) {
       ["report", "handoff", "v_report", "certification", "pipeline"].forEach(function (k) {
         if (s.links[k]) {
-          linkItems.push('<a href="' + esc(s.links[k]) + '">' + esc(k) + '</a>');
+          linkItems.push('<a href="' + esc(s.links[k]) + '">' + esc(k) + "</a>");
         }
       });
     }
 
+    var baseBadge = (baselineEnabled && Number.isFinite(baselineValue) && s.v_score !== null && s.v_score !== undefined)
+      ? (' · <span class="mono">V Δ vs ' + esc(baselineLabel) + ": " + fmt(Number(s.v_score) - baselineValue, true) + "</span>")
+      : "";
+
     var headerHtml =
       '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">' +
-      '<div><strong>' + esc(s.session_id) + '</strong> (Epoch ' + s.epoch + ', ' + esc(s.verdict) + ') ' +
-      '<span class="sub">parent: ' + esc(s.parent_id || "—") + ' · ' + esc(s.agent || "") + ' ' + esc(s.model || "") + '</span></div>' +
-      '<div class="sub">' + linkItems.join(" · ") + '</div>' +
-      '</div>';
+      "<div><strong>" + esc(s.session_id) + "</strong> (Epoch " + s.epoch + ", " + esc(s.verdict) + ") " +
+      '<span class="sub">parent: ' + esc(s.parent_id || "—") + " · " + esc(s.agent || "") + " " + esc(s.model || "") + baseBadge + "</span></div>" +
+      '<div class="sub">' + linkItems.join(" · ") + "</div>" +
+      "</div>";
 
     var estRows = ["AirHitam", "Palong", "Serting"].map(function (est) {
       var ev = (s.per_estate_v && s.per_estate_v[est]) || {};
       var et = (s.per_estate_t && s.per_estate_t[est]) || {};
       var vLift = ev.v_lift !== null && ev.v_lift !== undefined ? ev.v_lift : s["v_lift_" + est];
       return (
-        '<tr>' +
-        '<td><strong>' + est + '</strong></td>' +
-        '<td class="num">' + fmt(vLift, true) + '</td>' +
-        '<td class="num">' + fmt(ev.delta_vs_incumbent, true) + '</td>' +
-        '<td class="num">' + (ev.recall_at_25 !== null && ev.recall_at_25 !== undefined ? Number(ev.recall_at_25).toFixed(3) : "—") + '</td>' +
-        '<td class="num">' + fmt(et.pr_auc_lift, true) + '</td>' +
-        '<td class="num">' + fmt(et.delta_vs_incumbent, true) + '</td>' +
-        '<td class="num">[' + fmt(et.ci_low, true) + ', ' + fmt(et.ci_high, true) + ']</td>' +
-        '</tr>'
+        "<tr>" +
+        "<td><strong>" + est + "</strong></td>" +
+        '<td class="num">' + fmt(vLift, true) + "</td>" +
+        '<td class="num">' + fmt(ev.delta_vs_incumbent, true) + "</td>" +
+        '<td class="num">' + (ev.recall_at_25 !== null && ev.recall_at_25 !== undefined ? Number(ev.recall_at_25).toFixed(3) : "—") + "</td>" +
+        '<td class="num">' + fmt(et.pr_auc_lift, true) + "</td>" +
+        '<td class="num">' + fmt(et.delta_vs_incumbent, true) + "</td>" +
+        '<td class="num">[' + fmt(et.ci_low, true) + ", " + fmt(et.ci_high, true) + "]</td>" +
+        "</tr>"
       );
     }).join("");
 
     var breakdown =
       '<div class="table-wrap" style="margin-bottom:8px;"><table>' +
-      '<thead><tr><th>Estate</th><th>V Lift</th><th>V Δ Inc</th><th>V Rec@25%</th><th>T Lift</th><th>T Δ Inc</th><th>T 95% CI</th></tr></thead>' +
-      '<tbody>' + estRows + '</tbody></table></div>';
+      "<thead><tr><th>Estate</th><th>V Lift</th><th>V Δ Inc</th><th>V Rec@25%</th><th>T Lift</th><th>T Δ Inc</th><th>T 95% CI</th></tr></thead>" +
+      "<tbody>" + estRows + "</tbody></table></div>";
 
     var gateHtml = "";
     if (s.failed_reasons && s.failed_reasons.length) {
-      gateHtml += '<div class="sub"><strong>Gate reasons:</strong> ' + s.failed_reasons.map(esc).join("; ") + '</div>';
+      gateHtml += '<div class="sub"><strong>Gate reasons:</strong> ' + s.failed_reasons.map(esc).join("; ") + "</div>";
     }
     if ((s.smells && s.smells.length) || (s.handoff_missing_sections && s.handoff_missing_sections.length)) {
       gateHtml += '<div class="sub warn"><strong>Review flags:</strong> ' +
-        esc(JSON.stringify({smells: s.smells, handoff_missing: s.handoff_missing_sections})) + '</div>';
+        esc(JSON.stringify({smells: s.smells, handoff_missing: s.handoff_missing_sections})) + "</div>";
     }
 
     var docText = activeTab === "report"
       ? (s.report_md || "(No REPORT.md collected for this session)")
       : (s.handoff_md || "(No HANDOFF.md collected for this session)");
 
+    var renderedDoc = (mdRenderMode === "rendered")
+      ? renderMarkdown(docText)
+      : ('<pre class="md-view">' + esc(docText) + "</pre>");
+
     var tabs =
       '<div class="tab-bar">' +
       '<button type="button" class="tab-btn' + (activeTab === "handoff" ? " active" : "") + '" data-tab="handoff">HANDOFF.md</button>' +
       '<button type="button" class="tab-btn' + (activeTab === "report" ? " active" : "") + '" data-tab="report">REPORT.md</button>' +
-      '<span class="sub" style="align-self:center;margin-left:6px;">Read-only agent context (chart/table numbers come from verifier JSONs only)</span>' +
-      '</div>' +
-      '<pre class="md-view">' + esc(docText) + '</pre>';
+      '<span class="sub" style="margin-left:6px;">Read-only agent context</span>' +
+      '<span class="mode-group">' +
+      '<button type="button" class="mode-btn' + (mdRenderMode === "rendered" ? " active" : "") + '" data-mode="rendered">Rendered</button>' +
+      '<button type="button" class="mode-btn' + (mdRenderMode === "raw" ? " active" : "") + '" data-mode="raw">Raw</button>' +
+      "</span>" +
+      "</div>" +
+      renderedDoc;
 
     parts.push(headerHtml + breakdown + gateHtml + tabs);
     box.innerHTML = parts.join("");
@@ -435,6 +704,12 @@ pre.md-view {
     box.querySelectorAll(".tab-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
         activeTab = btn.getAttribute("data-tab");
+        renderInspector();
+      });
+    });
+    box.querySelectorAll(".mode-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        mdRenderMode = btn.getAttribute("data-mode");
         renderInspector();
       });
     });
@@ -477,9 +752,10 @@ pre.md-view {
   });
 
   document.querySelectorAll("svg .pt").forEach(function (pt) {
-    var titleEl = pt.querySelector("title");
-    var txt = titleEl ? titleEl.textContent : "";
-    pt.addEventListener("mousemove", function (ev) { showTooltip(ev, txt); });
+    pt.addEventListener("mousemove", function (ev) {
+      var titleEl = pt.querySelector("title");
+      showTooltip(ev, titleEl ? titleEl.textContent : "");
+    });
     pt.addEventListener("mouseleave", hideTooltip);
   });
 
@@ -493,8 +769,40 @@ pre.md-view {
     });
   });
 
+  var toggleBase = document.getElementById("toggle-baseline");
+  var presetSel = document.getElementById("baseline-preset");
+  var valInput = document.getElementById("baseline-value");
+  if (toggleBase && presetSel && valInput) {
+    toggleBase.addEventListener("change", function () {
+      baselineEnabled = toggleBase.checked;
+      presetSel.disabled = !baselineEnabled;
+      valInput.disabled = !baselineEnabled;
+      updateBaselineUI();
+    });
+    presetSel.addEventListener("change", function () {
+      var pid = presetSel.value;
+      if (presetsById[pid]) {
+        baselineValue = Number(presetsById[pid].value);
+        baselineLabel = presetsById[pid].label;
+        valInput.value = baselineValue.toFixed(6);
+      } else {
+        baselineLabel = "Custom";
+        var parsed = parseFloat(valInput.value);
+        baselineValue = Number.isFinite(parsed) ? parsed : NaN;
+      }
+      updateBaselineUI();
+    });
+    valInput.addEventListener("input", function () {
+      presetSel.value = "custom";
+      baselineLabel = "Custom";
+      var parsed = parseFloat(valInput.value);
+      baselineValue = Number.isFinite(parsed) ? parsed : NaN;
+      updateBaselineUI();
+    });
+  }
+
   highlightSelection();
-  renderInspector();
+  updateBaselineUI();
 })();
 </script>
 </body>

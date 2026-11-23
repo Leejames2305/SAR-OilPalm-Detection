@@ -64,29 +64,31 @@ AgentRSI/.venv/bin/python AgentRSI/scripts/build_agent_base.py      # localhost/
 
 ### Running a Session (Daily Loop)
 
+Session IDs use **`YYMMDD-sXXX-<lens>`** (e.g., `261123-s001-open`, `261124-s002-data-expansion`) so directories sort chronologically across epochs. `build_task.py` infers `--focus` automatically from a matching `-<lens>` suffix and also supports `--next` for auto-numbering.
+
 ```bash
 # 1. Build a Harbor task folder (runs allowlist copy + leak check automatically)
-#    Available --focus lenses (templates/lenses/): open | literature | data-expansion | ablation
+#    Available lenses (templates/lenses/): open | literature | data-expansion | ablation
+#    Pass an explicit ID (lens auto-inferred) or use `--next --focus <lens>`.
 AgentRSI/.venv/bin/python AgentRSI/scripts/build_task.py \
-  --session-id s001 \
-  --focus open \
+  --session-id 261123-s001-open \
   --parent s000-dry
 
 # 2. (Optional) Static lint + dry run before spending API budget
-AgentRSI/.venv/bin/harbor lint AgentRSI/tasks/s001
-AgentRSI/.venv/bin/python AgentRSI/scripts/run_session.py --session-id s001 --dry-run
+AgentRSI/.venv/bin/harbor lint AgentRSI/tasks/261123-s001-open
+AgentRSI/.venv/bin/python AgentRSI/scripts/run_session.py --session-id 261123-s001-open --dry-run
 
 # 3. Run the session (agent sandbox + separate sealed verifier)
 #    Defaults come from config/session.yaml; flags below are optional overrides.
 AgentRSI/.venv/bin/python AgentRSI/scripts/run_session.py \
-  --session-id s001 \
+  --session-id 261123-s001-open \
   --agent codex \
   --model gpt-6.1-terra
 
-# 4. Collect outputs, run secret/smell scans, evaluate T gate, and update lineage
+# 4. Collect outputs, run secret/smell scans, evaluate T gate, and refresh dashboard
 #    Add --dry-session when testing to skip spending a T certification attempt or promoting.
 AgentRSI/.venv/bin/python AgentRSI/scripts/collect.py \
-  --session-id s001 \
+  --session-id 261123-s001-open \
   --parent starter
 ```
 

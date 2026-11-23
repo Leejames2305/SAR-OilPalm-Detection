@@ -6,6 +6,7 @@ import re
 import shutil
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,40 @@ from libbuilder.lineage import load_lineage
 from libbuilder.render_handoff import render_handoff_section
 
 SESSION_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+SESSION_SEQ_RE = re.compile(r"(?:^|-)s(\d+)(?:-|$)")
+
+
+def infer_lens_from_session_id(session_id: str, lenses_dir: Path) -> str | None:
+    """Return matching lens stem if `session_id` ends with `-<lens>` (longest match first)."""
+    if not lenses_dir.exists():
+        return None
+    stems = sorted((p.stem for p in lenses_dir.glob("*.md")), key=len, reverse=True)
+    for stem in stems:
+        if session_id.endswith(f"-{stem}"):
+            return stem
+    return None
+
+
+def next_session_seq(lineage: dict[str, Any], sessions_root: Path | None = None) -> int:
+    """Return next sequential session number (min 1) across lineage and sessions/ directories."""
+    max_seq = 0
+    names: set[str] = set((lineage.get("sessions") or {}).keys())
+    if sessions_root is not None and sessions_root.exists():
+        names.update(p.name for p in sessions_root.iterdir() if p.is_dir())
+    for name in names:
+        m = SESSION_SEQ_RE.search(name)
+        if m:
+            max_seq = max(max_seq, int(m.group(1)))
+    return max_seq + 1
+
+
+def make_session_id(seq: int, lens: str, *, date_str: str | None = None) -> str:
+    """Format a `YYMMDD-sXXX-<lens>` session identifier."""
+    day = date_str or datetime.now().strftime("%y%m%d")
+    sid = f"{day}-s{int(seq):03d}-{lens}"
+    if not SESSION_ID_RE.match(sid):
+        raise ValueError(f"Generated invalid session_id {sid!r}")
+    return sid
 
 
 def _dir_size_bytes(path: Path) -> int:
@@ -53,8 +88,9 @@ def build_task(
     split_cfg = yaml.safe_load((cfg_dir / "split.yaml").read_text())
     lineage = load_lineage(agent_root / "state" / "lineage.json", split_cfg, verifier_cfg)
 
-    lens = focus_lens or str(session_cfg.get("focus_lens", "open"))
     templates_dir = agent_root / "templates"
+    inferred_lens = infer_lens_from_session_id(session_id, templates_dir / "lenses")
+    lens = focus_lens or inferred_lens or str(session_cfg.get("focus_lens", "open"))
     lens_path = templates_dir / "lenses" / f"{lens}.md"
     if not lens_path.exists():
         raise FileNotFoundError(f"Unknown focus lens {lens!r}: {lens_path} not found")
@@ -142,12 +178,13 @@ def build_task(
     agent_cpus = int(session_cfg["agent_cpus"])
     handoff_md = render_handoff_section(prev_session_dir, lineage)
 
-    # Render templates
+    # Render templates (avoid doubling -<lens> when session_id already ends with -<lens>)
+    task_name = session_id if session_id.endswith(f"-{lens}") else f"{session_id}-{lens}"
     (task_dir / "task.toml").write_text(
         _render_template(
             (templates_dir / "task.toml.tmpl").read_text(),
             {
-                "TASK_NAME": f"{session_id}-{lens}",
+                "TASK_NAME": task_name,
                 "AGENT_TIMEOUT_SEC": str(float(agent_timeout)),
                 "AGENT_CPUS": str(agent_cpus),
                 "AGENT_MEMORY_MB": str(int(session_cfg["agent_memory_mb"])),

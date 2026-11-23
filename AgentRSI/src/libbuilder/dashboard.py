@@ -15,7 +15,7 @@ import yaml
 
 from libbuilder.env_utils import AGENT_ROOT
 from libbuilder.events import load_events
-from libbuilder.lineage import default_lineage, load_lineage
+from libbuilder.lineage import STARTER_V_METRICS, default_lineage, load_lineage
 
 ESTATES = ("AirHitam", "Palong", "Serting")
 ESTATE_COLORS = {
@@ -247,6 +247,41 @@ def collect_dashboard_data(
 
     sessions.sort(key=lambda s: (int(s["epoch"]), str(s["sort_ts"]), str(s["session_id"])))
 
+    default_baseline = float(STARTER_V_METRICS["score"])
+    coords_v_lift = next(
+        (
+            float(s["v_score"]) - float(s["v_delta_vs_coords"])
+            for s in reversed(sessions)
+            if s.get("v_score") is not None and s.get("v_delta_vs_coords") is not None
+        ),
+        0.06646184597484039,
+    )
+    baselines = {
+        "default_id": "ndvi_starter",
+        "default_value": default_baseline,
+        "presets": [
+            {
+                "id": "ndvi_starter",
+                "label": "NDVI Starter",
+                "value": default_baseline,
+                "raw_pr_auc_mean": 0.126833,
+            },
+            {
+                "id": "coords_only",
+                "label": "Coords-only",
+                "value": coords_v_lift,
+            },
+            {
+                "id": "poc_ref",
+                "label": "POC Best (SAR+Spatial)",
+                "value": round((0.062 + 0.150 + 0.071) / 3.0, 6),
+            },
+        ],
+    }
+    for s in sessions:
+        vs = s.get("v_score")
+        s["v_delta_vs_baseline"] = (vs - default_baseline) if vs is not None else None
+
     inc = lineage.get("incumbent") or {}
     daily_spend = {str(k): float(v) for k, v in sorted((lineage.get("daily_spend_usd") or {}).items())}
     latest_day = max(daily_spend.keys()) if daily_spend else ""
@@ -289,6 +324,7 @@ def collect_dashboard_data(
 
     return {
         "header": header,
+        "baselines": baselines,
         "sessions": sessions,
         "events": indexed_events,
     }
@@ -348,6 +384,16 @@ def _build_chart_geometry(sessions: list[dict[str, Any]]) -> dict[str, Any]:
     return {"w": w, "h": h, "pl": pl, "pr": pr, "pt": pt, "pb": pb, "pw": pw, "ph": ph, "xs": xs, "spans": spans}
 
 
+def _short_tick_label(sid: str, n_sessions: int) -> str:
+    """Keep X-axis tick labels legible when multiple YYMMDD-sXXX-<lens> sessions accumulate."""
+    if n_sessions < 3 or len(sid) <= 14:
+        return sid
+    m = re.match(r"^(\d{6}-s\d+)-.+", sid)
+    if m:
+        return m.group(1)
+    return sid[:13] + "…"
+
+
 def _render_epoch_bands_and_axes(
     geom: dict[str, Any],
     sessions: list[dict[str, Any]],
@@ -405,12 +451,15 @@ def _render_epoch_bands_and_axes(
             f'<line class="ref-zero" data-ref="zero" x1="{pl}" y1="{yz:.2f}" x2="{pl + pw}" y2="{yz:.2f}" />'
         )
 
-    # X axis labels
+    # X axis labels (compact when 3+ long IDs appear; full ID on hover)
     for i, sess in enumerate(sessions):
-        sid = html.escape(str(sess["session_id"]))
+        raw_sid = str(sess["session_id"])
+        sid_full = html.escape(raw_sid)
+        tick_lbl = html.escape(_short_tick_label(raw_sid, len(sessions)))
         xp = xs[i]
         parts.append(
-            f'<text class="axis-text x-tick" x="{xp:.2f}" y="{pt + ph + 16}" text-anchor="middle">{sid}</text>'
+            f'<text class="axis-text x-tick" data-session="{sid_full}" x="{xp:.2f}" '
+            f'y="{pt + ph + 16}" text-anchor="middle"><title>{sid_full}</title>{tick_lbl}</text>'
         )
 
     parts.append(
@@ -419,7 +468,11 @@ def _render_epoch_bands_and_axes(
     return parts, y_px
 
 
-def _render_v_chart_svg(sessions: list[dict[str, Any]], header: dict[str, Any]) -> str:
+def _render_v_chart_svg(
+    sessions: list[dict[str, Any]],
+    header: dict[str, Any],
+    baselines: dict[str, Any] | None = None,
+) -> str:
     geom = _build_chart_geometry(sessions)
     w, h = geom["w"], geom["h"]
     pl, pt, pw, ph = geom["pl"], geom["pt"], geom["pw"], geom["ph"]
@@ -434,7 +487,11 @@ def _render_v_chart_svg(sessions: list[dict[str, Any]], header: dict[str, Any]) 
             f'No collected sessions yet (V search signal)</text></svg>'
         )
 
-    vals: list[float] = []
+    base_val = _finite_float((baselines or {}).get("default_value"))
+    if base_val is None:
+        base_val = float(STARTER_V_METRICS["score"])
+
+    vals: list[float] = [base_val]
     inc_v = _finite_float((header.get("incumbent") or {}).get("v_score"))
     if inc_v is not None:
         vals.append(inc_v)
@@ -446,7 +503,7 @@ def _render_v_chart_svg(sessions: list[dict[str, Any]], header: dict[str, Any]) 
     y_min, y_max = _compute_bounds(vals, (0.0, 0.08))
     parts, y_px = _render_epoch_bands_and_axes(geom, sessions, y_min, y_max, zero_ref=True)
 
-    # Incumbent horizontal reference line
+    # Incumbent horizontal reference line (label right-aligned)
     if inc_v is not None and y_min <= inc_v <= y_max:
         yi = y_px(inc_v)
         inc_id = html.escape(str((header.get("incumbent") or {}).get("id", "incumbent")))
@@ -458,6 +515,17 @@ def _render_v_chart_svg(sessions: list[dict[str, Any]], header: dict[str, Any]) 
             f'<text class="ref-label-blue" x="{pl + pw - 4}" y="{yi - 5:.2f}" text-anchor="end">'
             f'Incumbent ({inc_id}): {inc_v:+.4f}</text>'
         )
+
+    # Customisable PR-AUC comparison baseline line (label left-aligned so it stays clear of incumbent label)
+    yb = y_px(base_val)
+    parts.append(
+        f'<line id="ref-baseline-line" class="ref-baseline" data-ref="comparison-baseline" '
+        f'x1="{pl}" y1="{yb:.2f}" x2="{pl + pw}" y2="{yb:.2f}" />'
+    )
+    parts.append(
+        f'<text id="ref-baseline-label" class="ref-label-amber" x="{pl + 6}" y="{yb - 5:.2f}" '
+        f'text-anchor="start">Baseline: NDVI Starter ({base_val:+.4f})</text>'
+    )
 
     # Per-estate series (polylines per epoch so lines never cross epoch boundaries)
     for est in ESTATES:
@@ -475,11 +543,11 @@ def _render_v_chart_svg(sessions: list[dict[str, Any]], header: dict[str, Any]) 
                     f'<polyline class="series-line estate-series" data-series="{key}" data-epoch="{ep}" '
                     f'fill="none" stroke="{color}" stroke-width="1.5" stroke-opacity="0.82" points="{coord_str}" />'
                 )
-            for _, x, y, v in pts_ep:
-                sid = html.escape(str(sessions[_]["session_id"]))
+            for idx, x, y, v in pts_ep:
+                sid = html.escape(str(sessions[idx]["session_id"]))
                 parts.append(
-                    f'<circle class="pt pt-v estate-series" data-series="{key}" data-session="{sid}" data-epoch="{ep}" '
-                    f'cx="{x:.2f}" cy="{y:.2f}" r="3" fill="{color}" fill-opacity="0.85">'
+                    f'<circle class="pt pt-v estate-series" data-series="{key}" data-session="{sid}" '
+                    f'data-epoch="{ep}" data-val="{v}" cx="{x:.2f}" cy="{y:.2f}" r="3" fill="{color}" fill-opacity="0.85">'
                     f'<title>{sid} · {est} V lift: {v:+.6f}</title></circle>'
                 )
 
@@ -504,13 +572,15 @@ def _render_v_chart_svg(sessions: list[dict[str, Any]], header: dict[str, Any]) 
             tip = f"{sid} (Epoch {ep}{', dry' if is_dry else ''}): V composite = {v:+.6f}"
             parts.append(
                 f'<circle class="pt pt-v clickable" data-chart="v" data-series="v_score" '
-                f'data-session="{sid}" data-epoch="{ep}" cx="{x:.2f}" cy="{y:.2f}" r="5" '
+                f'data-session="{sid}" data-epoch="{ep}" data-val="{v}" cx="{x:.2f}" cy="{y:.2f}" r="5" '
                 f'fill="{fill}" stroke="#1d4ed8" stroke-width="2"><title>{tip}</title></circle>'
             )
 
     return (
-        f'<svg id="chart-v" viewBox="0 0 {w} {h}" role="img" '
-        f'aria-label="Validation V search signal optimistic">' + "".join(parts) + "</svg>"
+        f'<svg id="chart-v" viewBox="0 0 {w} {h}" '
+        f'data-y-min="{y_min:.8f}" data-y-max="{y_max:.8f}" '
+        f'data-pl="{pl}" data-pt="{pt}" data-pw="{pw}" data-ph="{ph}" '
+        f'role="img" aria-label="Validation V search signal optimistic">' + "".join(parts) + "</svg>"
     )
 
 
@@ -620,7 +690,7 @@ def _render_t_chart_svg(sessions: list[dict[str, Any]], header: dict[str, Any]) 
 def _render_sessions_rows(sessions: list[dict[str, Any]]) -> str:
     if not sessions:
         return (
-            '<tr class="empty-row"><td colspan="15">No collected sessions found under '
+            '<tr class="empty-row"><td colspan="18">No collected sessions found under '
             '<code>AgentRSI/sessions/</code>.</td></tr>'
         )
     rows: list[str] = []
@@ -677,6 +747,7 @@ def _render_sessions_rows(sessions: list[dict[str, Any]]) -> str:
             f'<td class="num" data-metric="v_lift_Palong">{_fmt_signed(s["v_lift_Palong"])}</td>'
             f'<td class="num" data-metric="v_lift_Serting">{_fmt_signed(s["v_lift_Serting"])}</td>'
             f'<td class="num" data-metric="v_delta_vs_incumbent">{_fmt_signed(s["v_delta_vs_incumbent"])}</td>'
+            f'<td class="num" data-metric="v_delta_vs_baseline">{_fmt_signed(s.get("v_delta_vs_baseline"))}</td>'
             f'<td class="num" data-metric="t_comp_delta">{_fmt_signed(s["t_comp_delta"])}</td>'
             f'<td class="num" data-metric="t_ci">{ci_txt}</td>'
             f'<td class="num" data-metric="worst_estate">{worst_txt}</td>'
@@ -793,8 +864,17 @@ code, pre, .mono, .num { font-family: ui-monospace, SFMono-Regular, Menlo, Conso
 }
 .tag-v { font-size: 11px; background: #dbeafe; color: #1e40af; padding: 1px 6px; font-weight: 600; }
 .tag-t { font-size: 11px; background: #dcfce7; color: #166534; padding: 1px 6px; font-weight: 600; }
-.controls { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.controls { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .controls label { cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+.controls select, .controls input[type="number"] {
+  font-size: 12px;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+}
+.controls input[type="number"] { width: 88px; font-family: ui-monospace, monospace; }
+.ctrl-sep { color: var(--border); }
 svg { width: 100%; height: auto; display: block; }
 .epoch-even { fill: #f8fafc; }
 .epoch-odd { fill: #f1f5f9; }
@@ -805,9 +885,11 @@ svg { width: 100%; height: auto; display: block; }
 .axis-text { font-size: 10px; fill: #475569; font-family: ui-monospace, monospace; }
 .ref-zero { stroke: #94a3b8; stroke-width: 1.1; }
 .ref-incumbent { stroke: #1d4ed8; stroke-width: 1.2; stroke-dasharray: 5 3; }
+.ref-baseline { stroke: #b45309; stroke-width: 1.4; stroke-dasharray: 2 3; }
 .ref-floor { stroke: #15803d; stroke-width: 1.4; stroke-dasharray: 5 3; }
 .ref-nondeg { stroke: #b91c1c; stroke-width: 1.1; stroke-dasharray: 3 3; }
 .ref-label-blue { font-size: 10px; fill: #1d4ed8; }
+.ref-label-amber { font-size: 10px; fill: #b45309; font-weight: 600; }
 .ref-label-green { font-size: 10px; fill: #15803d; font-weight: 600; }
 .ref-label-red { font-size: 10px; fill: #b91c1c; }
 .empty-msg { font-size: 12px; fill: #64748b; }
@@ -842,8 +924,8 @@ tr.selected { background: #dbeafe !important; }
 @media (max-width: 980px) { .bottom-grid { grid-template-columns: 1fr; } }
 .events-wrap { max-height: 460px; overflow: auto; }
 .events-wrap td:last-child { white-space: normal; min-width: 220px; }
-.tab-bar { display: flex; gap: 6px; margin: 8px 0; }
-.tab-btn {
+.tab-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; align-items: center; }
+.tab-btn, .mode-btn {
   border: 1px solid var(--border);
   background: #f1f5f9;
   padding: 4px 10px;
@@ -851,11 +933,37 @@ tr.selected { background: #dbeafe !important; }
   font-size: 12px;
 }
 .tab-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.mode-btn.active { background: #334155; color: #fff; border-color: #334155; }
+.mode-group { margin-left: auto; display: inline-flex; gap: 4px; }
+.md-rendered {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 10px 12px;
+  max-height: 380px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.md-rendered h1, .md-rendered h2, .md-rendered h3, .md-rendered h4 {
+  margin: 10px 0 6px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 2px;
+}
+.md-rendered h1:first-child, .md-rendered h2:first-child { margin-top: 0; }
+.md-rendered p { margin: 0 0 8px; }
+.md-rendered ul, .md-rendered ol { margin: 0 0 8px; padding-left: 20px; }
+.md-rendered li { margin: 2px 0; }
+.md-rendered code { background: #e2e8f0; padding: 1px 4px; font-size: 11px; }
+.md-rendered pre { background: #0f172a; color: #f8fafc; padding: 8px 10px; overflow: auto; margin: 0 0 8px; }
+.md-rendered pre code { background: none; padding: 0; color: inherit; }
+.md-rendered blockquote { border-left: 3px solid var(--border); margin: 0 0 8px; padding: 2px 10px; color: var(--muted); }
+.md-rendered table { width: auto; min-width: 60%; margin: 6px 0 10px; background: #fff; border: 1px solid var(--border); }
+.md-rendered th, .md-rendered td { border: 1px solid #e2e8f0; padding: 4px 8px; white-space: normal; }
 pre.md-view {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   padding: 10px;
-  max-height: 360px;
+  max-height: 380px;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
@@ -883,7 +991,7 @@ pre.md-view {
 }
 """
 
-INLINE_JS = """
+INLINE_JS = r"""
 (function () {
   var raw = document.getElementById("dashboard-data").textContent;
   var DATA = JSON.parse(raw);
@@ -892,7 +1000,15 @@ INLINE_JS = """
   var eventsByIdx = {};
   DATA.events.forEach(function (e) { eventsByIdx[String(e.event_idx)] = e; });
 
+  var BASELINES = DATA.baselines || {default_id: "ndvi_starter", default_value: 0.05446945305942965, presets: []};
+  var presetsById = {};
+  (BASELINES.presets || []).forEach(function (p) { presetsById[p.id] = p; });
+  var baselineEnabled = true;
+  var baselineValue = Number(BASELINES.default_value);
+  var baselineLabel = (presetsById[BASELINES.default_id] && presetsById[BASELINES.default_id].label) || "NDVI Starter";
+
   var activeTab = "handoff";
+  var mdRenderMode = "rendered";
   var currentSessionId = DATA.sessions.length ? DATA.sessions[DATA.sessions.length - 1].session_id : null;
   var currentEventIdx = null;
   var tooltip = document.getElementById("tooltip");
@@ -911,6 +1027,149 @@ INLINE_JS = """
       .replace(/"/g, "&quot;");
   }
 
+  function renderInlineMd(rawText) {
+    var s = String(rawText || "").replace(/\u0000/g, "");
+    var tokens = [];
+    function stash(htmlStr) {
+      var id = "\u0000T" + tokens.length + "\u0000";
+      tokens.push(htmlStr);
+      return id;
+    }
+    s = s.replace(/`([^`\n]+)`/g, function (_m, code) {
+      return stash("<code>" + esc(code) + "</code>");
+    });
+    s = esc(s);
+    s = s.replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, function (_m, label, url) {
+      if (!/^(https?:\/\/|\/|\.\.?\/|#)/i.test(url)) return label;
+      return stash('<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + label + "</a>");
+    });
+    s = s.replace(/\*\*([^\*\n]+)\*\*/g, "<strong>$1</strong>");
+    s = s.replace(/(^|[^\w])__([^_\n]+?)__(?=[^\w]|$)/g, "$1<strong>$2</strong>");
+    s = s.replace(/\*([^\*\n]+)\*/g, "<em>$1</em>");
+    s = s.replace(/(^|[^\w])_([^_\n]+?)_(?=[^\w]|$)/g, "$1<em>$2</em>");
+    return s.replace(/\u0000T(\d+)\u0000/g, function (_m, idx) { return tokens[Number(idx)] || ""; });
+  }
+
+  function splitTableRow(line) {
+    return line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(function (c) { return c.trim(); });
+  }
+
+  function isTableSep(line) {
+    return /^\s*\|?(\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\s*\|?\s*$/.test(line) ||
+           /^\s*\|\s*:?-{3,}:?\s*\|?\s*$/.test(line);
+  }
+
+  function isBlockBoundary(lines, idx) {
+    var l = lines[idx];
+    if (/^\s*$/.test(l) || /^\s*```/.test(l) || /^\s*#{1,4}\s+/.test(l)) return true;
+    if (/^\s{0,3}([-*_])(\s*\1){2,}\s*$/.test(l)) return true;
+    if (/^\s*>\s?/.test(l) || /^\s*[-*+]\s+/.test(l) || /^\s*\d+\.\s+/.test(l)) return true;
+    if (l.indexOf("|") !== -1 && idx + 1 < lines.length && isTableSep(lines[idx + 1])) return true;
+    return false;
+  }
+
+  function renderMarkdownCore(src) {
+    var lines = String(src || "").replace(/\r\n?/g, "\n").split("\n");
+    var out = [];
+    var i = 0;
+    while (i < lines.length) {
+      var line = lines[i];
+      if (/^\s*$/.test(line)) { i++; continue; }
+
+      var fence = line.match(/^\s*```(.*)$/);
+      if (fence) {
+        i++;
+        var codeBuf = [];
+        while (i < lines.length && !/^\s*```\s*$/.test(lines[i])) {
+          codeBuf.push(lines[i]);
+          i++;
+        }
+        if (i < lines.length) i++;
+        out.push("<pre><code>" + esc(codeBuf.join("\n")) + "</code></pre>");
+        continue;
+      }
+
+      if (/^\s{0,3}([-*_])(\s*\1){2,}\s*$/.test(line)) {
+        out.push("<hr>");
+        i++;
+        continue;
+      }
+
+      var hd = line.match(/^\s*(#{1,4})\s+(.*)$/);
+      if (hd) {
+        var lvl = hd[1].length;
+        out.push("<h" + lvl + ">" + renderInlineMd(hd[2]) + "</h" + lvl + ">");
+        i++;
+        continue;
+      }
+
+      if (line.indexOf("|") !== -1 && i + 1 < lines.length && isTableSep(lines[i + 1])) {
+        var headers = splitTableRow(line);
+        i += 2;
+        var tbody = [];
+        while (i < lines.length && lines[i].indexOf("|") !== -1 && !/^\s*$/.test(lines[i])) {
+          var cells = splitTableRow(lines[i]);
+          var tds = headers.map(function (_h, ci) { return "<td>" + renderInlineMd(cells[ci] || "") + "</td>"; });
+          tbody.push("<tr>" + tds.join("") + "</tr>");
+          i++;
+        }
+        var ths = headers.map(function (h) { return "<th>" + renderInlineMd(h) + "</th>"; });
+        out.push("<table><thead><tr>" + ths.join("") + "</tr></thead><tbody>" + tbody.join("") + "</tbody></table>");
+        continue;
+      }
+
+      if (/^\s*>\s?/.test(line)) {
+        var qBuf = [];
+        while (i < lines.length && /^\s*>\s?/.test(lines[i])) {
+          qBuf.push(renderInlineMd(lines[i].replace(/^\s*>\s?/, "")));
+          i++;
+        }
+        out.push("<blockquote><p>" + qBuf.join("<br>") + "</p></blockquote>");
+        continue;
+      }
+
+      if (/^\s*[-*+]\s+/.test(line)) {
+        var uItems = [];
+        while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i])) {
+          uItems.push("<li>" + renderInlineMd(lines[i].replace(/^\s*[-*+]\s+/, "")) + "</li>");
+          i++;
+        }
+        out.push("<ul>" + uItems.join("") + "</ul>");
+        continue;
+      }
+
+      if (/^\s*\d+\.\s+/.test(line)) {
+        var oItems = [];
+        while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
+          oItems.push("<li>" + renderInlineMd(lines[i].replace(/^\s*\d+\.\s+/, "")) + "</li>");
+          i++;
+        }
+        out.push("<ol>" + oItems.join("") + "</ol>");
+        continue;
+      }
+
+      var pBuf = [];
+      while (i < lines.length && !isBlockBoundary(lines, i)) {
+        pBuf.push(renderInlineMd(lines[i]));
+        i++;
+      }
+      if (pBuf.length) {
+        out.push("<p>" + pBuf.join(" ") + "</p>");
+      } else {
+        i++;
+      }
+    }
+    return out.join("\n");
+  }
+
+  function renderMarkdown(src) {
+    try {
+      return '<div class="md-rendered">' + renderMarkdownCore(src) + "</div>";
+    } catch (_e) {
+      return '<pre class="md-view">' + esc(src) + "</pre>";
+    }
+  }
+
   function showTooltip(ev, text) {
     if (!text) return;
     tooltip.textContent = text;
@@ -920,6 +1179,70 @@ INLINE_JS = """
   }
 
   function hideTooltip() { tooltip.style.display = "none"; }
+
+  function updateBaselineUI() {
+    var svg = document.getElementById("chart-v");
+    var bLine = document.getElementById("ref-baseline-line");
+    var bText = document.getElementById("ref-baseline-label");
+    var active = baselineEnabled && Number.isFinite(baselineValue);
+
+    if (svg && bLine && bText) {
+      if (!active) {
+        bLine.style.display = "none";
+        bText.style.display = "none";
+      } else {
+        var yMin = parseFloat(svg.getAttribute("data-y-min"));
+        var yMax = parseFloat(svg.getAttribute("data-y-max"));
+        var pt = parseFloat(svg.getAttribute("data-pt"));
+        var ph = parseFloat(svg.getAttribute("data-ph"));
+        if (Number.isFinite(yMin) && Number.isFinite(yMax) && yMax > yMin) {
+          var arrow = "";
+          var clamped = baselineValue;
+          if (baselineValue > yMax) { clamped = yMax; arrow = " ▲"; }
+          else if (baselineValue < yMin) { clamped = yMin; arrow = " ▼"; }
+          var frac = (clamped - yMin) / (yMax - yMin);
+          var yPx = pt + ph * (1.0 - frac);
+          bLine.setAttribute("y1", yPx.toFixed(2));
+          bLine.setAttribute("y2", yPx.toFixed(2));
+          var lblY = Math.max(pt + 11, Math.min(pt + ph - 4, yPx - 5));
+          bText.setAttribute("y", lblY.toFixed(2));
+          var signVal = (baselineValue >= 0 ? "+" : "") + baselineValue.toFixed(4);
+          bText.textContent = "Baseline: " + baselineLabel + " (" + signVal + ")" + arrow;
+          bLine.style.display = "";
+          bText.style.display = "";
+        }
+      }
+    }
+
+    document.querySelectorAll('#sessions-table td[data-metric="v_delta_vs_baseline"]').forEach(function (td) {
+      var tr = td.closest("tr");
+      var sid = tr ? tr.getAttribute("data-session") : null;
+      var s = sid ? sessionsById[sid] : null;
+      if (!active || !s || s.v_score === null || s.v_score === undefined) {
+        td.textContent = "—";
+      } else {
+        td.textContent = fmt(Number(s.v_score) - baselineValue, true);
+      }
+    });
+
+    document.querySelectorAll("#chart-v circle.pt-v").forEach(function (ptNode) {
+      var titleEl = ptNode.querySelector("title");
+      if (!titleEl) return;
+      if (!ptNode.dataset.baseTip) {
+        ptNode.dataset.baseTip = titleEl.textContent;
+      }
+      var baseTip = ptNode.dataset.baseTip;
+      var valAttr = ptNode.getAttribute("data-val");
+      var vNum = valAttr !== null ? parseFloat(valAttr) : NaN;
+      if (active && Number.isFinite(vNum)) {
+        titleEl.textContent = baseTip + " | Δ vs " + baselineLabel + ": " + fmt(vNum - baselineValue, true);
+      } else {
+        titleEl.textContent = baseTip;
+      }
+    });
+
+    renderInspector();
+  }
 
   function renderInspector() {
     var box = document.getElementById("inspector-body");
@@ -931,12 +1254,12 @@ INLINE_JS = """
     if (evObj) {
       parts.push(
         '<div class="event-detail">' +
-        '<strong>Event:</strong> <span class="mono">' + esc(evObj.type) + '</span> · ' +
-        esc(evObj.ts) + ' · Epoch ' + esc(evObj.epoch) + ' · Session <strong>' + esc(evObj.session) + '</strong><br>' +
-        '<div>' + esc(evObj.summary) + '</div>' +
-        (evObj.ref ? '<div class="sub">ref: <code>' + esc(evObj.ref) + '</code></div>' : '') +
-        (evObj.values ? '<div class="sub mono">values: ' + esc(JSON.stringify(evObj.values)) + '</div>' : '') +
-        '</div>'
+        '<strong>Event:</strong> <span class="mono">' + esc(evObj.type) + "</span> · " +
+        esc(evObj.ts) + " · Epoch " + esc(evObj.epoch) + " · Session <strong>" + esc(evObj.session) + "</strong><br>" +
+        "<div>" + esc(evObj.summary) + "</div>" +
+        (evObj.ref ? '<div class="sub">ref: <code>' + esc(evObj.ref) + "</code></div>" : "") +
+        (evObj.values ? '<div class="sub mono">values: ' + esc(JSON.stringify(evObj.values)) + "</div>" : "") +
+        "</div>"
       );
     }
 
@@ -950,60 +1273,72 @@ INLINE_JS = """
     if (s.links) {
       ["report", "handoff", "v_report", "certification", "pipeline"].forEach(function (k) {
         if (s.links[k]) {
-          linkItems.push('<a href="' + esc(s.links[k]) + '">' + esc(k) + '</a>');
+          linkItems.push('<a href="' + esc(s.links[k]) + '">' + esc(k) + "</a>");
         }
       });
     }
 
+    var baseBadge = (baselineEnabled && Number.isFinite(baselineValue) && s.v_score !== null && s.v_score !== undefined)
+      ? (' · <span class="mono">V Δ vs ' + esc(baselineLabel) + ": " + fmt(Number(s.v_score) - baselineValue, true) + "</span>")
+      : "";
+
     var headerHtml =
       '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">' +
-      '<div><strong>' + esc(s.session_id) + '</strong> (Epoch ' + s.epoch + ', ' + esc(s.verdict) + ') ' +
-      '<span class="sub">parent: ' + esc(s.parent_id || "—") + ' · ' + esc(s.agent || "") + ' ' + esc(s.model || "") + '</span></div>' +
-      '<div class="sub">' + linkItems.join(" · ") + '</div>' +
-      '</div>';
+      "<div><strong>" + esc(s.session_id) + "</strong> (Epoch " + s.epoch + ", " + esc(s.verdict) + ") " +
+      '<span class="sub">parent: ' + esc(s.parent_id || "—") + " · " + esc(s.agent || "") + " " + esc(s.model || "") + baseBadge + "</span></div>" +
+      '<div class="sub">' + linkItems.join(" · ") + "</div>" +
+      "</div>";
 
     var estRows = ["AirHitam", "Palong", "Serting"].map(function (est) {
       var ev = (s.per_estate_v && s.per_estate_v[est]) || {};
       var et = (s.per_estate_t && s.per_estate_t[est]) || {};
       var vLift = ev.v_lift !== null && ev.v_lift !== undefined ? ev.v_lift : s["v_lift_" + est];
       return (
-        '<tr>' +
-        '<td><strong>' + est + '</strong></td>' +
-        '<td class="num">' + fmt(vLift, true) + '</td>' +
-        '<td class="num">' + fmt(ev.delta_vs_incumbent, true) + '</td>' +
-        '<td class="num">' + (ev.recall_at_25 !== null && ev.recall_at_25 !== undefined ? Number(ev.recall_at_25).toFixed(3) : "—") + '</td>' +
-        '<td class="num">' + fmt(et.pr_auc_lift, true) + '</td>' +
-        '<td class="num">' + fmt(et.delta_vs_incumbent, true) + '</td>' +
-        '<td class="num">[' + fmt(et.ci_low, true) + ', ' + fmt(et.ci_high, true) + ']</td>' +
-        '</tr>'
+        "<tr>" +
+        "<td><strong>" + est + "</strong></td>" +
+        '<td class="num">' + fmt(vLift, true) + "</td>" +
+        '<td class="num">' + fmt(ev.delta_vs_incumbent, true) + "</td>" +
+        '<td class="num">' + (ev.recall_at_25 !== null && ev.recall_at_25 !== undefined ? Number(ev.recall_at_25).toFixed(3) : "—") + "</td>" +
+        '<td class="num">' + fmt(et.pr_auc_lift, true) + "</td>" +
+        '<td class="num">' + fmt(et.delta_vs_incumbent, true) + "</td>" +
+        '<td class="num">[' + fmt(et.ci_low, true) + ", " + fmt(et.ci_high, true) + "]</td>" +
+        "</tr>"
       );
     }).join("");
 
     var breakdown =
       '<div class="table-wrap" style="margin-bottom:8px;"><table>' +
-      '<thead><tr><th>Estate</th><th>V Lift</th><th>V Δ Inc</th><th>V Rec@25%</th><th>T Lift</th><th>T Δ Inc</th><th>T 95% CI</th></tr></thead>' +
-      '<tbody>' + estRows + '</tbody></table></div>';
+      "<thead><tr><th>Estate</th><th>V Lift</th><th>V Δ Inc</th><th>V Rec@25%</th><th>T Lift</th><th>T Δ Inc</th><th>T 95% CI</th></tr></thead>" +
+      "<tbody>" + estRows + "</tbody></table></div>";
 
     var gateHtml = "";
     if (s.failed_reasons && s.failed_reasons.length) {
-      gateHtml += '<div class="sub"><strong>Gate reasons:</strong> ' + s.failed_reasons.map(esc).join("; ") + '</div>';
+      gateHtml += '<div class="sub"><strong>Gate reasons:</strong> ' + s.failed_reasons.map(esc).join("; ") + "</div>";
     }
     if ((s.smells && s.smells.length) || (s.handoff_missing_sections && s.handoff_missing_sections.length)) {
       gateHtml += '<div class="sub warn"><strong>Review flags:</strong> ' +
-        esc(JSON.stringify({smells: s.smells, handoff_missing: s.handoff_missing_sections})) + '</div>';
+        esc(JSON.stringify({smells: s.smells, handoff_missing: s.handoff_missing_sections})) + "</div>";
     }
 
     var docText = activeTab === "report"
       ? (s.report_md || "(No REPORT.md collected for this session)")
       : (s.handoff_md || "(No HANDOFF.md collected for this session)");
 
+    var renderedDoc = (mdRenderMode === "rendered")
+      ? renderMarkdown(docText)
+      : ('<pre class="md-view">' + esc(docText) + "</pre>");
+
     var tabs =
       '<div class="tab-bar">' +
       '<button type="button" class="tab-btn' + (activeTab === "handoff" ? " active" : "") + '" data-tab="handoff">HANDOFF.md</button>' +
       '<button type="button" class="tab-btn' + (activeTab === "report" ? " active" : "") + '" data-tab="report">REPORT.md</button>' +
-      '<span class="sub" style="align-self:center;margin-left:6px;">Read-only agent context (chart/table numbers come from verifier JSONs only)</span>' +
-      '</div>' +
-      '<pre class="md-view">' + esc(docText) + '</pre>';
+      '<span class="sub" style="margin-left:6px;">Read-only agent context</span>' +
+      '<span class="mode-group">' +
+      '<button type="button" class="mode-btn' + (mdRenderMode === "rendered" ? " active" : "") + '" data-mode="rendered">Rendered</button>' +
+      '<button type="button" class="mode-btn' + (mdRenderMode === "raw" ? " active" : "") + '" data-mode="raw">Raw</button>' +
+      "</span>" +
+      "</div>" +
+      renderedDoc;
 
     parts.push(headerHtml + breakdown + gateHtml + tabs);
     box.innerHTML = parts.join("");
@@ -1011,6 +1346,12 @@ INLINE_JS = """
     box.querySelectorAll(".tab-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
         activeTab = btn.getAttribute("data-tab");
+        renderInspector();
+      });
+    });
+    box.querySelectorAll(".mode-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        mdRenderMode = btn.getAttribute("data-mode");
         renderInspector();
       });
     });
@@ -1053,9 +1394,10 @@ INLINE_JS = """
   });
 
   document.querySelectorAll("svg .pt").forEach(function (pt) {
-    var titleEl = pt.querySelector("title");
-    var txt = titleEl ? titleEl.textContent : "";
-    pt.addEventListener("mousemove", function (ev) { showTooltip(ev, txt); });
+    pt.addEventListener("mousemove", function (ev) {
+      var titleEl = pt.querySelector("title");
+      showTooltip(ev, titleEl ? titleEl.textContent : "");
+    });
     pt.addEventListener("mouseleave", hideTooltip);
   });
 
@@ -1069,8 +1411,40 @@ INLINE_JS = """
     });
   });
 
+  var toggleBase = document.getElementById("toggle-baseline");
+  var presetSel = document.getElementById("baseline-preset");
+  var valInput = document.getElementById("baseline-value");
+  if (toggleBase && presetSel && valInput) {
+    toggleBase.addEventListener("change", function () {
+      baselineEnabled = toggleBase.checked;
+      presetSel.disabled = !baselineEnabled;
+      valInput.disabled = !baselineEnabled;
+      updateBaselineUI();
+    });
+    presetSel.addEventListener("change", function () {
+      var pid = presetSel.value;
+      if (presetsById[pid]) {
+        baselineValue = Number(presetsById[pid].value);
+        baselineLabel = presetsById[pid].label;
+        valInput.value = baselineValue.toFixed(6);
+      } else {
+        baselineLabel = "Custom";
+        var parsed = parseFloat(valInput.value);
+        baselineValue = Number.isFinite(parsed) ? parsed : NaN;
+      }
+      updateBaselineUI();
+    });
+    valInput.addEventListener("input", function () {
+      presetSel.value = "custom";
+      baselineLabel = "Custom";
+      var parsed = parseFloat(valInput.value);
+      baselineValue = Number.isFinite(parsed) ? parsed : NaN;
+      updateBaselineUI();
+    });
+  }
+
   highlightSelection();
-  renderInspector();
+  updateBaselineUI();
 })();
 """
 
@@ -1093,7 +1467,18 @@ def render_dashboard_html(data: dict[str, Any]) -> str:
     latest_usd = float(header.get("latest_spend_usd") or 0.0)
     total_usd = float(header.get("total_spend_usd") or 0.0)
 
-    chart_v = _render_v_chart_svg(sessions, header)
+    baselines = data.get("baselines") or {"default_id": "ndvi_starter", "default_value": float(STARTER_V_METRICS["score"]), "presets": []}
+    default_base_id = str(baselines.get("default_id") or "ndvi_starter")
+    default_base_val = float(baselines.get("default_value") or STARTER_V_METRICS["score"])
+    preset_opts = [
+        f'<option value="{html.escape(str(p["id"]))}"'
+        + (' selected' if p["id"] == default_base_id else '')
+        + f'>{html.escape(str(p["label"]))} ({float(p["value"]):+.4f})</option>'
+        for p in (baselines.get("presets") or [])
+    ]
+    preset_opts.append('<option value="custom">Custom</option>')
+
+    chart_v = _render_v_chart_svg(sessions, header, baselines)
     chart_t = _render_t_chart_svg(sessions, header)
     sessions_rows = _render_sessions_rows(sessions)
     events_rows = _render_event_rows(events)
@@ -1163,6 +1548,10 @@ def render_dashboard_html(data: dict[str, Any]) -> str:
         <label><input type="checkbox" checked data-toggle-series="v_lift_AirHitam"><span style="color:#0f766e">AirHitam</span></label>
         <label><input type="checkbox" checked data-toggle-series="v_lift_Palong"><span style="color:#b45309">Palong</span></label>
         <label><input type="checkbox" checked data-toggle-series="v_lift_Serting"><span style="color:#7c3aed">Serting</span></label>
+        <span class="ctrl-sep">|</span>
+        <label><input type="checkbox" id="toggle-baseline" checked><span style="color:#b45309">Baseline</span></label>
+        <select id="baseline-preset" aria-label="Comparison baseline preset">{"".join(preset_opts)}</select>
+        <input type="number" id="baseline-value" step="0.001" value="{default_base_val:.6f}" aria-label="Custom baseline V lift">
       </div>
     </div>
     {chart_v}
@@ -1199,6 +1588,7 @@ def render_dashboard_html(data: dict[str, Any]) -> str:
           <th>V Palong</th>
           <th>V Serting</th>
           <th>V &Delta; Inc</th>
+          <th>V &Delta; Base</th>
           <th>T &Delta;PR-AUC</th>
           <th>T CI</th>
           <th>Worst Estate T &Delta;</th>
@@ -1388,6 +1778,13 @@ def verify_dashboard(
             errors.append(f"Incumbent v_score mismatch: {inc_html.get('v_score')} != {inc_disk.get('v_score')}")
 
     # 2. Sessions vs disk reward.json + certification.json + static table cells
+    baselines_payload = payload.get("baselines") or {}
+    expected_base_val = float(STARTER_V_METRICS["score"])
+    if _finite_float(baselines_payload.get("default_value")) != expected_base_val:
+        errors.append(
+            f"Baseline default_value mismatch: {baselines_payload.get('default_value')} != {expected_base_val}"
+        )
+
     sessions_list = payload.get("sessions") or []
     sessions_by_id = {s["session_id"]: s for s in sessions_list}
     disk_session_dirs = (
@@ -1434,6 +1831,17 @@ def verify_dashboard(
                 if t_cells[html_k] != expected_txt:
                     errors.append(f"{sid}: table cell {html_k}='{t_cells[html_k]}' != '{expected_txt}'")
 
+        rew_score = _finite_float(rew.get("score"))
+        expected_base_delta = (rew_score - expected_base_val) if rew_score is not None else None
+        if _finite_float(s.get("v_delta_vs_baseline")) != expected_base_delta:
+            errors.append(
+                f"{sid}: v_delta_vs_baseline={s.get('v_delta_vs_baseline')} != {expected_base_delta}"
+            )
+        if t_cells.get("v_delta_vs_baseline") != _fmt_signed(expected_base_delta):
+            errors.append(
+                f"{sid}: table v_delta_vs_baseline='{t_cells.get('v_delta_vs_baseline')}' != '{_fmt_signed(expected_base_delta)}'"
+            )
+
         comp = cert.get("composite") or {}
         gate = cert.get("gate") or {}
         if cert:
@@ -1477,6 +1885,9 @@ def verify_dashboard(
     v_elems = parser.svgs["chart-v"]
     t_elems = parser.svgs["chart-t"]
     if sessions_list:
+        v_refs = {a.get("data-ref") for tag, a in v_elems if tag == "line" and a.get("data-ref")}
+        if "comparison-baseline" not in v_refs:
+            errors.append("Chart V missing comparison-baseline reference line")
         t_refs = {a.get("data-ref") for tag, a in t_elems if tag == "line" and a.get("data-ref")}
         if "effect-floor" not in t_refs:
             errors.append("Chart T missing +0.03 effect-floor reference line")
