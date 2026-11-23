@@ -1,6 +1,6 @@
 # AgentRSI Plan
 
-**Version:** 2.0 (23 Nov 2026) | **Phase:** M0 and M1 closed (M1 hardened 23 Nov) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
+**Version:** 2.1 (23 Nov 2026) | **Phase:** M0 and M1 closed (M1 hardened 23 Nov) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
 
 **Goal.** Turn this project into an RSI4EO-style loop. A coding agent builds the oil-palm triage model in a sandbox, a sealed verifier scores it, and each day's session starts from what the last one found. Humans design the harness and verifier. Agents build the models.
 
@@ -14,13 +14,13 @@ Evidence tags: **[V]** read in Harbor docs or source | **[T]** tested on this ma
 
 | RSI4EO concept | Here |
 |---|---|
-| Harness H (data, libs, budget) | Combined multi-date SAR + S2 NDVI tables and all ROI-masked ALOS-2 rasters for 3 estates, prior POC reports, the incumbent pipeline, GEE/GCS access, a Python geo/ML stack. **CPU only.** |
+| Harness H (data, libs, budget) | Combined multi-date SAR + S2 NDVI tables and all ROI-masked ALOS-2 rasters for 3 estates, prior POC reports, the incumbent pipeline, GEE read access (no GCS), a Python geo/ML stack. **CPU only** (optional Colab GPU offload via host MCP broker in M8). |
 | Verifier V (sealed, scores only) | Sealed held-out blocks for all three estates, each with a validation part (V) and a certification part (T). Returns scores, never labels. |
 | Pipeline pi | `submission/`: `fit_predict(labeled, unlabeled, ctx) -> risk scores`, a **training recipe** (the product trains on about 1000 labels in a new field and predicts the rest). |
 | Few-label task | Same shape: a labelled slice (L) per estate, the rest (V + T) merged into one unlabeled pool. |
 | Recursion inside a task | Agent-driven within the 8 h session. Pseudo-labelling on the unlabeled pool is allowed; nothing is prescribed. |
 | **Not in the paper:** recursion across tasks | Our addition. Session N+1 is generated from session N's handoff and the incumbent. |
-| 12 h, 4 x GB200, offline | 8 h, CPU-only, **public internet**, GEE/GCS access. |
+| 12 h, 4 x GB200, offline | 8 h, CPU-only sandbox, **public internet**, GEE read access (optional Colab GPU offload via host MCP broker in M8). |
 
 CPU-only is fine: earlier POCs show nonlinear and deep models lose to linear ones at n=160 positives. Ideas and verification are the bottleneck, not compute.
 
@@ -43,7 +43,8 @@ CPU-only is fine: earlier POCs show nonlinear and deep models lose to linear one
 | **Packages** | The agent ships a pinned `requirements.txt` and the verifier installs it from PyPI. No allowlist, no approval flow. | Your call (11 Nov). |
 | **Runtime** | Rootful Podman from WSL, Docker Desktop as fallback. Harbor pinned at `0.25.0`. | Rootless cannot enforce CPU or memory limits. |
 | **Focus** | Open-ended research, explicitly including data expansion. Optional lenses (`literature`, `data-expansion`, `ablation`) bias the instruction. | |
-| **Data egress** | ROI-masked ALOS-2, tree coordinates and labels go to the inference provider. The GCS/GEE service-account key is passed to the agent. | Your call (11 Nov). |
+| **Data egress & GEE SA** | ROI-masked ALOS-2, tree coordinates and labels go to the inference provider. A **GEE-only** service-account key (`Keys_SAEarthEngine.json`, Earth Engine viewer only — **no GCS bucket access**) is mounted read-only into the agent sandbox. Verified live (23 Nov): GEE Sentinel-2 queries succeed while GCS `sar-oilpalm` (metadata/list/read) and IAM all return HTTP 403. **[T]** | Your calls (11 Nov, 23 Nov): least-privilege GEE-only SA protects the `sar-oilpalm` bucket holding ground-truth labels. |
+| **Optional Colab GPU offload** | **Host-side WSL MCP broker** wrapping `google-colab-cli`, never direct Google OAuth/ADC tokens inside the container. Planned for **M8**. | `google-colab-cli` requires `https://www.googleapis.com/auth/cloud-platform` scope, which would grant full personal GCP access (including `sar-oilpalm` truth labels) if passed into the container. |
 | **Layout** | Everything AgentRSI builds, runs or generates lives under `AgentRSI/`, the dashboard included. Generated tasks live in `AgentRSI/tasks/<id>/`. Harbor's file is `instruction.md` (singular) **[V]**. | |
 | **Split sizes** | Proportional: each estate's trees go to L / V / T at about 40 / 30 / 30 % (±10 pt tolerance, minimums 50 L / 35 V / 35 T Unhealthy). Scales to any estate size. | Your call (17 Nov). Accepts L < 1000 for the two smaller estates so Serting clears 35 V / 35 T positives. |
 | **Block size** | **80 m** spatial blocks, frozen in `config/split.yaml` (epoch 1, single source of truth read by `common.py`). | 220 m is infeasible for Serting; 165 m fails Serting's ±10 pt tree-share cap (~13 expected redraws). 80 m gives 70 / 47 / 29 blocks (2.0 / 2.0 / 6.2 expected draws). |
@@ -150,7 +151,7 @@ artifacts = ["/app/submission", "/app/report", "/app/datasets"]
   - Preferred: `stage_secrets.py` copies the service-account JSON to a mode-0600 file under `/mnt/wsl/agentrsi/` (tmpfs visible to the engine, wiped on WSL restart, restaged each run). The task mounts it **read-only** at `/run/secrets/gcp-sa.json` and sets `GOOGLE_APPLICATION_CREDENTIALS`. **[T]**
   - Fallback: an agent-phase env var (`--ae`). **[T]**
   - Only the placeholders `GCP_PROJECT` and `GCP_SA_KEY_PATH` live in `.env.example`. The instruction says where the key is, to initialise `ee` with it, and never to print or copy it.
-- **`instruction.md` sections:** Mission | Harness map | Pipeline contract | Deliverables with absolute paths | Freedom (internet, papers, GEE/GCS, pseudo-labelling, data expansion) | Constraints (CPU only, 28800 s, never touch `/tests`, never try to recover sealed labels, never print credentials) | Checkpoint rule | Nominee (name the one pipeline to certify) | Handoff from the previous session (auto-injected). The paper's "do not use online solutions" line is dropped on purpose.
+- **`instruction.md` sections:** Mission | Harness map | Pipeline contract | Deliverables with absolute paths | Freedom (internet, papers, GEE, pseudo-labelling, data expansion) | Constraints (CPU only, 28800 s, never touch `/tests`, never try to recover sealed labels, never print credentials) | Checkpoint rule | Nominee (name the one pipeline to certify) | Handoff from the previous session (auto-injected). The paper's "do not use online solutions" line is dropped on purpose.
 - **Checkpoint rule:** refresh `HANDOFF.md` at least hourly, because a hard timeout can kill the agent mid-write.
 - **`HANDOFF.md` schema** (validated by the builder): State of play | What I tried (idea / result / verdict / evidence path) | Dead ends | Open leads, ranked | How to resume | Artifact index. `REPORT.md` is the long report with literature notes.
 
@@ -227,6 +228,20 @@ A simple, interactive timeline of RSI progress inside `AgentRSI/`.
 - Several agents or models can attempt from the same parent as branches in `lineage.json`; the gate picks.
 - Any verifier, split, or reward-weight change starts a new **epoch** (incumbent re-scored with `regrade` or rerun; scores are never compared across epochs). Before S1 runs, changes are free.
 
+### Optional Colab GPU offload (M8)
+
+On-demand GPU VMs via `google-colab-cli` can accelerate offline feature/embedding extraction (e.g., geospatial foundation models over ROI rasters) and heavy exploration, while keeping the agent container and verifier CPU-only.
+
+- **Why tokens never enter the container:** `google-colab-cli` requires `openid`, `userinfo.email`, `colaboratory`, **and `https://www.googleapis.com/auth/cloud-platform`** (both `--auth=oauth2` and `--auth=adc`). Even though it does not expose Gmail or full Drive, `cloud-platform` grants full personal GCP access — including the `sar-oilpalm` bucket holding sealed ground-truth labels and unrestricted GCP billing. Passing user OAuth/ADC credentials into the agent sandbox would defeat the least-privilege GEE-only SA.
+- **Architecture (WSL host MCP broker):**
+  1. **Host-only auth:** authenticate `google-colab-cli` once on the WSL host (native keyring or `--auth=adc`). No user Google token ever touches `/mnt/wsl/` or any container.
+  2. **Hardened MCP broker (`AgentRSI/src/colab_broker/`):** runs on the WSL host during GPU-enabled sessions and listens on a Unix domain socket under `/mnt/wsl/agentrsi/colab-mcp.sock` (mounted into the agent container, reusing the `/mnt/wsl/` bridge proven in M0 **[T]**; alternatively Streamable HTTP via sidecar with per-session `${COLAB_MCP_TOKEN}`).
+  3. **Harbor native MCP wiring **[V]**:** registered in `task.toml` via `[[environment.mcp_servers]]` (natively supported by both Claude Code and Codex in Harbor `0.25.0`, with `stdio` relay over the mounted socket or `streamable-http` + `headers` resolved from host env).
+- **Mandatory broker guardrails:**
+  - **Narrow tool surface only:** `colab_run(script, files, gpu, timeout_min)`, `colab_status(job_id)`, `colab_fetch(job_id)`, `colab_stop(job_id)`. **Never** expose raw `colab` CLI, `colab auth` (which injects personal GCP credentials into the VM), or Google Drive mounting.
+  - **Credit & lifecycle guards:** GPU tier allowlist (`T4`/`L4` default, `A100` opt-in), max 1 active VM per session, hard per-job timeout + per-session GPU wall-clock cap, automatic `colab delete`/unassign on idle or session exit (`finally:` in `run_session.py`), and audit entries in `state/events.jsonl`.
+- **Verifier contract boundary:** the verifier stays **CPU-only** (`4 CPU / 4 GiB / 1 h`) with no Colab access. Colab GPU outputs must land as reproducible `datasets/<name>/features.parquet` (plus extraction script) or distilled artifacts that a fast CPU `fit_predict()` consumes at grading time.
+
 ### Runtime and cost
 
 - **Sizing.** The engine has 15.2 GiB and 12 CPUs, shared with WSL and Windows. One session at a time (`6 + 4 GiB` agent + verifier). Limits are enforced only on the **rootful** engine.
@@ -247,6 +262,7 @@ Each has an exit test.
 - **M5 — First real session (S1, 8 h, spend-capped).** *Exit:* you review the report and dashboard; we tune the templates.
 - **M6 — Iteration and schedule.** S2 generated from S1, gate works, resume is frictionless. Then Windows Task Scheduler or cron runs `daily.sh` (collect, dashboard, ledger, kill switch).
 - **M7 — In-run verifier (v2).** Multi-container sidecar, MCP score tool, query budget covering all three estates, noise added to returned V scores.
+- **M8 — Optional Colab GPU offload (MCP broker).** Host-side WSL MCP broker (`src/colab_broker/`) wrapping `google-colab-cli` over `/mnt/wsl/agentrsi/colab-mcp.sock` via Harbor `[[environment.mcp_servers]]`, with GPU allowlist, max-1-VM cap, idle/exit auto-teardown, and blocked `colab auth` / Drive mount. *Exit:* agent extracts a small GPU test artifact on a Colab T4 via MCP, VM is auto-deleted on exit, and neither the agent container nor the Colab VM can read `sar-oilpalm` or any host Google token.
 - **Later:** more focus lenses, split-refresh epochs, extra estates as folds, remote sandboxes.
 
 ---
@@ -282,6 +298,7 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 | Block size chosen | **Pass.** 80 m (70 / 47 / 29 blocks). | `config/split.yaml` |
 | Sealed master and verifier staging | **Pass (host side).** `.sealed/` mode `700`, files `600`, git-ignored. `labels_master.csv` (`ea434957…`, 7,220 rows) staged in `.sealed/verifier_context/`. Root-owned image copy is M2 (`[?]`: likely prebuilt local image + `FROM` since Harbor `tests/` context cannot reach `.sealed/`). | `.sealed/`, `.sealed/verifier_context/manifest.json` |
 | Multi-date features from raw sources | **Pass.** 7,220 trees × 18 features, **0 NaNs**: auto-discovered ALOS-2 `260610` + `261014` (`HH, HV, VH, VV, HAlpha_H, HAlpha_A, HAlpha_alpha` per date) + S2 `B4, B8, NDVI, clear_count`. AirHitam NDVI matches POC (`0.0` diff); local SAR re-extraction matches (`0.0` diff). | `.work/features.csv`, `src/DataPipeline/features.py` |
+| Least-privilege GEE SA verified | **Pass.** `Keys_SAEarthEngine.json` (`gee-resources@…`) succeeds on live S2 Earth Engine queries (`60` scenes sampled) and returns HTTP `403` on all `sar-oilpalm` GCS probes (bucket metadata, list objects, list project buckets, object get) and IAM APIs. **[T]** | `AgentRSI/.secrets/Keys_SAEarthEngine.json` |
 | Composite gate calibrated (resampled splits) | **Pass on synthetic arms.** `003-Calibration.py gate` over 120 **resampled** 80 m splits (never touching frozen T, 17 candidate features): 0.000 false adopts, 0.967 power at +0.04, 1.000 at +0.06; `comp_only` recorded. Non-degradation confirmed at `-0.03`. Real candidates stay open. | `.work/gate_results.json`, Observations › Gate calibration |
 
 ### Next actions
@@ -389,7 +406,8 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 | **Spatial location mistaken for model skill** | Coordinates-only baseline reported per estate. |
 | **Dashboard shows optimistic V as certified** | V labelled "search signal"; T shown separately with CI and `+0.03` line; never merged. |
 | Dashboard numbers drift from verifier | Reads verifier/collector JSONs only; M4 diffs page against them. |
-| **Credential theft** (agent on open web holds SA key) | Least-privilege SA (Object Viewer + EE read), read-only mount outside build context, instruction forbids printing, `collect.py` secret scan fails collection, `.secrets/` and `.env` gitignored. |
+| **Credential theft** (agent on open web holds SA key) | Least-privilege **GEE-only** SA (`Keys_SAEarthEngine.json`, Earth Engine viewer only — verified HTTP 403 on `sar-oilpalm` GCS and IAM), read-only mount outside build context, instruction forbids printing, `collect.py` secret scan fails collection, `.secrets/` and `.env` gitignored. |
+| **Colab OAuth/ADC exposure or credit burn** (M8) | Never pass `google-colab-cli` tokens into containers (`cloud-platform` scope exposes personal GCP/GCS). Host-side WSL MCP broker only; block `colab auth` and Drive mounts; enforce GPU allowlist, max 1 VM, per-job/session caps, and auto-teardown. |
 | GEE quota or cost from unattended agent | Instruction asks for point sampling at tree coordinates; monitor quota/billing. |
 | Package install runs untrusted code / PyPI drift | Unprivileged user with unreadable labels; exact pins required and `pip freeze` recorded. |
 | Rootful engine containment | No privileged mode, no extra caps, no host mounts except read-only secret, `harbor lint`. |
@@ -403,6 +421,7 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 
 | Version | Date | Change |
 |---|---|---|
+| 2.1 | 23 Nov 2026 | Verified new GEE-only SA (`Keys_SAEarthEngine.json`: GEE OK, GCS `sar-oilpalm` & IAM HTTP 403) and updated `common.py`. Designed M8 optional Colab GPU offload via host-side WSL MCP broker + Harbor `[[environment.mcp_servers]]` (keeping `cloud-platform`-scoped user tokens strictly off containers). |
 | 2.0 | 23 Nov 2026 | M1 hardened after audit: `config/split.yaml` wired as single source of truth in `common.py`; multi-date ALOS-2 SAR (`260610` + `261014`, auto-discovered) and renamed `HAlpha_H/A/alpha` in base table; V + T merged into single `unlabelled.csv` (no V/T exposure); `002-CheckLeaks.py` fixed for `prior/` docs and binary rasters + 4 seeded controls; `003-Calibration.py` fixed to resample 80 m splits (never touching frozen T) and pooled OOF leakage; stale `tree_id` and single-estate starter references cleaned up. |
 | 1.9 | 20 Nov 2026 | M1 closed. SAR band order confirmed from POC/SNAP pipeline. M2 not started. |
 | 1.8 | 20 Nov 2026 | Non-degradation `-0.03` confirmed; split CSV host exposure accepted; research repo blocked for agent only; re-extraction matched frozen features. |

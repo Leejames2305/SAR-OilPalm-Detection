@@ -24,7 +24,7 @@ LABEL_FILES = {
 }
 ESTATES = list(LABEL_FILES)
 CLASSES = ("Healthy", "Unhealthy", "Middle")
-KEY_FILE = AGENT_ROOT / ".secrets" / "Keys_SABucketRead.json"   # Earth Engine service account, never print it
+KEY_FILE = AGENT_ROOT / ".secrets" / "Keys_SAEarthEngine.json"   # Earth Engine-only service account, never print it
 
 # SAR and optical feature definitions (SAR dates auto-discovered from data/SAR-scenes/)
 SAR_DIR = REPO_ROOT / "data" / "SAR-scenes"
