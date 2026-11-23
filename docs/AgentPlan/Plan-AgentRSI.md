@@ -1,10 +1,10 @@
 # AgentRSI Plan
 
-**Version:** 2.1 (23 Nov 2026) | **Phase:** M0 and M1 closed (M1 hardened 23 Nov) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
+**Version:** 2.2 (23 Nov 2026) | **Phase:** M0, M1 and M2 closed (23 Nov) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
 
 **Goal.** Turn this project into an RSI4EO-style loop. A coding agent builds the oil-palm triage model in a sandbox, a sealed verifier scores it, and each day's session starts from what the last one found. Humans design the harness and verifier. Agents build the models.
 
-**Where we are.** M0 and M1 are closed. All M0 gateway and Podman checks pass. M1's data pipeline (`src/DataPipeline/`) reads the frozen 80 m split from `config/split.yaml` (single source of truth), extracts multi-date ALOS-2 SAR (`260610` and `261014`, auto-discovered) plus Sentinel-2 NDVI from raw sources, emits a combined `L_labelled.csv` and merged `unlabelled.csv` (V + T, no IDs, no V/T exposure), passes hardened leak checks (including `prior/` docs and GeoTIFF rasters), and validates the composite gate over 120 resampled 80 m splits. **M2 is next and waits for go-ahead.**
+**Where we are.** M0, M1, and M2 are closed. Harbor + Podman gateways pass (M0); the data pipeline, frozen 80 m split, multi-date SAR + NDVI tables, GEE-only SA, leak checks, and resampled gate calibration pass (M1); and Verifier v1 (`config/verifier.yaml`, `starter/`, `verifier/`, `localhost/agentrsi-sealed:epoch1`, 11 unit tests, Harbor Oracle/Nop trials, and 5 container adversarial/pip checks) passes end to end (M2). **M3 (Builder, runner, collector) is next and waits for go-ahead.**
 
 Evidence tags: **[V]** read in Harbor docs or source | **[T]** tested on this machine | **[S]** simulation on the real estate tables | **[?]** unverified.
 
@@ -187,11 +187,12 @@ U = Unhealthy, M = Middle (unscored, unmarked in `unlabelled.csv`). Total: 7,220
 - Label protection relies on the unprivileged subprocess + root-only label files, not a network wall.
 - Self-containment is encouraged by the instruction, checked locally by `selfcheck`, and audited by a URL/network-call grep in `collect.py`. If ever needed, `verifier.environment.network_mode` can be switched to `no-network` (or used selectively via `regrade` on a nominee about to be promoted).
 
-**Outputs.**
-- `reward.json` (V, visible to the agent at session end): composite `score`; per estate `pr_auc_lift`, `pr_auc`, `prevalence`, `recall_at_25`, `enrichment_top10`, `roc_auc`, V CI bounds; paired delta vs the incumbent; delta vs coordinates-only; runtime; `pip freeze`.
-- `certification.json` (T, host-only, never injected into any instruction or `tasks/` directory): composite T result with its CI, per-estate T deltas, the non-degradation values, the outcome and the T-attempt count.
+**Outputs** (downloaded from `/logs/verifier/` by Harbor **[V]/[T]**):
+- `reward.json` (flat dict of finite `float | int` ONLY — enforced by Harbor `_parse_reward_json()` **[V]**): `score` (V composite lift), `v_lift_AirHitam`, `v_lift_Palong`, `v_lift_Serting`, `v_delta_vs_incumbent`, `v_delta_vs_coords`, `submission_valid`, `runtime_sec`.
+- `v_report.json` (V-only rich report, zero T numbers): composite & per-estate V metrics (`pr_auc_lift`, `pr_auc`, `prevalence`, `recall_at_25`, `enrichment_top10`, `roc_auc`), paired block-bootstrap V CIs vs incumbent and coordinates-only, `datasets_audit`, `pip_freeze`, `status`/`error`.
+- `certification.json` (T, host-only, never injected into any instruction or `tasks/` directory, no tree IDs or coordinates): composite T result with its paired block-bootstrap CI, per-estate T metrics and deltas, `gate` verdict (`passed`, `worst_estate`, `failed_reasons`).
 
-**Checks before trusting it (M2 exit).** The starter incumbent reproduces a fixed composite and per-estate score; `nop` scores neutral on all three estates; adversarial pipelines (read `/tests`, write the reward, import labels, run forever, malicious package build code) fail safely; a pipeline that fetches data at grading time is flagged.
+**Verified trust checks (M2 exit, 23 Nov).** Starter incumbent reproduces fixed V and T scores (`v_delta_vs_incumbent = 0.0`, `t_comp_delta = 0.0`, `gate_passed = False`); `nop` scores `0.0` lift on all three estates; adversarial pipelines (read `/sealed`, overwrite `/logs/verifier/reward.json`, infinite timeout loop, symlink into `/sealed`, forbidden `requirements.txt` paths/options) all fail safely (`submission_valid = 0`, `score = 0.0`); pinned PyPI install (`tabulate==0.9.0`) succeeds as `runner` and records `pip_freeze`. Note: runtime URL/network-call grep in `collect.py` remains an M3 deliverable.
 
 ### Certification gate
 
@@ -256,7 +257,7 @@ Each has an exit test.
 
 - **M0 — Harbor + Podman spike** · *closed 19 Nov 2026.* *Exit:* full list in Progress.
 - **M1 — Data and sealed split** · *closed 20 Nov 2026, hardened 23 Nov 2026.* `src/DataPipeline/` reading `config/split.yaml` (single source of truth), frozen 80 m split with proportional L/V/T (Middle visible but unscored), multi-date SAR (`260610`, `261014`, auto-discovered, `HAlpha_H/A/alpha`) + S2 NDVI, combined `L_labelled.csv` + merged `unlabelled.csv`, hardened leak checker (verified clean on `prior/` docs and GeoTIFF rasters), and resampled-split composite gate calibration. *Exit:* all checks green in Progress.
-- **M2 — Verifier v1.** `fit_predict` contract (`(estate, Long, Lat)` aligned); `config/verifier.yaml`; root-owned sealed master baked into verifier image (via prebuilt local image + `FROM`, verified); per-estate and composite V scoring; T scoring + gate library with unit tests; pip-install at grading; starter pipeline (NDVI-only balanced LogReg trained on L from the M1 three-estate view, matching the POC baseline); coordinates-only baseline per estate. *Exit:* starter incumbent reproduces a fixed composite and per-estate score; `nop` neutral on all three; adversarial pipelines fail safely; runtime inside caps.
+- **M2 — Verifier v1** · *closed 23 Nov 2026.* `verifier/` scoring, baselines (`incumbent_fit_predict`, `coords_only_fit_predict`), isolated `runner` subprocess + pinned PyPI `pip install`, `config/verifier.yaml`, `starter/`, local sealed base image (`localhost/agentrsi-sealed:epoch1` via `scripts/build_verifier_base.py`), 11 unit tests, Harbor Oracle/Nop integration trials (`spike/m2-verifier`), and 5 container adversarial/pip checks. *Exit:* all checks green in Progress.
 - **M3 — Builder, runner, collector.** `build_task` with the allowlist copier into `environment/` (data, all rasters, prior docs), `run_session`, `collect`, `lineage.json`, T-attempt counter per nominee, spend ledger, `events.jsonl` and `certification.json`. *Exit:* a 20-minute dry session on a cheap model flows end to end; `harbor lint` and `harbor check` pass; `002-CheckLeaks.py` passes on the generated `tasks/` and `jobs/`; re-collecting the same job does not duplicate events.
 - **M4 — Dashboard.** `AgentRSI/scripts/dashboard.py` writes `AgentRSI/dashboard/index.html`, built on fixtures and the M3 dry session. *Exit:* page numbers match `reward.json`, `certification.json` and `lineage.json` exactly (scripted diff); events show context on hover/click; epoch boundaries not joined; CI bands and `+0.03` line shown; works offline; no T number in any `tasks/` dir.
 - **M5 — First real session (S1, 8 h, spend-capped).** *Exit:* you review the report and dashboard; we tune the templates.
@@ -301,13 +302,24 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 | Least-privilege GEE SA verified | **Pass.** `Keys_SAEarthEngine.json` (`gee-resources@…`) succeeds on live S2 Earth Engine queries (`60` scenes sampled) and returns HTTP `403` on all `sar-oilpalm` GCS probes (bucket metadata, list objects, list project buckets, object get) and IAM APIs. **[T]** | `AgentRSI/.secrets/Keys_SAEarthEngine.json` |
 | Composite gate calibrated (resampled splits) | **Pass on synthetic arms.** `003-Calibration.py gate` over 120 **resampled** 80 m splits (never touching frozen T, 17 candidate features): 0.000 false adopts, 0.967 power at +0.04, 1.000 at +0.06; `comp_only` recorded. Non-degradation confirmed at `-0.03`. Real candidates stay open. | `.work/gate_results.json`, Observations › Gate calibration |
 
+### M2 exit checks (closed 23 Nov 2026)
+
+| Exit check | Result | Evidence |
+|---|---|---|
+| Sealed verifier base image + `FROM` route | **Pass.** `scripts/build_verifier_base.py` builds `localhost/agentrsi-sealed:epoch1` (`python:3.12-slim-bookworm` + pinned `numpy`, `pandas`, `scipy`, `scikit-learn`, `pyyaml`, `pyarrow==26.0.1`), root-owned `/sealed` (`0700`/`0600`), unprivileged `runner` (`uid 10001`). `runner` `ls /sealed` denied; Harbor `tests/Dockerfile` `FROM localhost/agentrsi-sealed:epoch1` works cleanly on `-e podman`. **[T]** | `scripts/build_verifier_base.py`, `spike/m2-verifier/tests/Dockerfile` |
+| Host unit tests (metrics, gate, runner) | **Pass.** 11/11 tests pass (`exact_ap` vs sklearn, `nop` metrics, bootstrap identity/gain, gate boundaries, `requirements.txt` sanitizer, dataset audit, symlink rejection, host starter/`nop`/failure grading). | `tests/test_verifier.py`, `verifier/` |
+| Starter oracle reproduces fixed V & T scores | **Pass.** Harbor `-a oracle` matches host run exactly: composite V score `0.054469` (`AirHitam +0.046745`, `Palong +0.042640`, `Serting +0.074023`), `v_delta_vs_incumbent = 0.0`, `v_delta_vs_coords = -0.011992`, T `comp_delta = 0.0`, `gate_passed = False`, `runtime_sec = 4.209`. **[T]** | `jobs/m2-oracle/`, `starter/pipeline.py` |
+| `nop` neutral on all three estates | **Pass.** Harbor `-a nop` returns `score = 0.0`, per-estate `v_lift_* = 0.0`, `recall_at_25 = 0.25`, `enrichment_top10 = 1.0`, `submission_valid = 0`, `runtime_sec = 0.994`. **[T]** | `jobs/m2-nop/` |
+| Pinned PyPI install & adversarial isolation | **Pass (5/5 container tests).** In `localhost/agentrsi-sealed:epoch1`: `read_sealed` (`PermissionError`), `write_reward_json` (`PermissionError`, `/logs/verifier` locked `0700`), `timeout_loop` (killed in `3.24s`), `pip_tabulate` (`tabulate==0.9.0` installed as `runner`, `score = 0.054469`, recorded in `pip_freeze`), `malicious_reqs` (blocked `-r /sealed/...` before pip). **[T]** | `verifier/runner.py` |
+| `harbor lint` & leak check on M2 task/jobs | **Pass.** `harbor lint` exits 0; `002-CheckLeaks.py` passes on `spike/m2-verifier` (8 files) and `jobs/` (172 files). **[T]** | `spike/m2-verifier/`, `jobs/m2-*` |
+
 ### Next actions
 
-**M2 is next and has not started. It waits for your go-ahead.**
+**M3 (Builder, runner, collector) is next and has not started. It waits for your go-ahead.**
 
 **Parked items for upcoming milestones**
-- **M2:** Root-owned sealed master copy inside the verifier image (test prebuilt local image + `FROM` **[?]**); `config/verifier.yaml`; starter pipeline (NDVI-only balanced LogReg on M1 three-estate view) and coordinates-only baseline.
-- **M3:** `run_session.py` picks `BASE_URL` per agent, strips inline `# ...` comments from `.env`, sets `PODMAN_COMPOSE_WARNING_LOGS=false`; allowlist copier bundles `L_labelled.csv`, `unlabelled.csv`, all `data/SAR-scenes/*.tif`, and `prior/` docs; `002-CheckLeaks.py` runs on every built task.
+- **M3:** `build_task` allowlist copier (`L_labelled.csv`, `unlabelled.csv`, all `data/SAR-scenes/*.tif`, `prior/` docs) + `002-CheckLeaks.py` gate; `run_session.py` (`BASE_URL` per agent, inline `# ...` comment stripping from `.env`, `PODMAN_COMPOSE_WARNING_LOGS=false`); `collect.py` (URL/network-call grep, secret scan, T-attempt counter, spend ledger, `lineage.json`, `events.jsonl`, `certification.json` — reading `v_report.json` + `certification.json` + flat `reward.json`).
+- **M4:** `scripts/dashboard.py` generating offline `dashboard/index.html` from `reward.json` / `v_report.json`, `certification.json`, `events.jsonl`, and `lineage.json`.
 - **Deferred:** Yamaguchi SAR in the base table (dB-like values; deferred until a conversion rule is chosen, raw scenes already exposed to agents in `rasters/`).
 
 ---
@@ -366,7 +378,7 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 
 - A task is a directory: `instruction.md`, `task.toml`, `environment/`, `tests/`, optional `solution/`.
 - **Separate verifier:** grading runs in a fresh sandbox built from `tests/Dockerfile`. Data baked there never reaches the agent. Only declared `artifacts` cross over (sanitized: no setuid, no outward symlinks, no special files). Separate verifiers do not inherit runtime mounts, so the service-account key cannot reach grading.
-- **Reward** goes to `/logs/verifier/reward.txt` or `reward.json` (richer, wins if both exist). We use graded metrics on purpose.
+- **Reward** goes to `/logs/verifier/reward.txt` or `reward.json` (richer, wins if both exist). **`reward.json` must be a flat dict of finite `int | float` only** (`_parse_reward_json` rejects strings, nested dicts, and lists) **[V]/[T]**; sibling files (`/logs/verifier/v_report.json`, `certification.json`) are downloaded automatically alongside it **[T]**.
 - **Claude Code:** gateway via `ANTHROPIC_BASE_URL` plus bearer `ANTHROPIC_AUTH_TOKEN`; options `max_turns`, `max_budget_usd`, `reasoning_effort`, `append_system_prompt`, `disable_web_search`; defaults to `--permission-mode bypassPermissions`; Anthropic Messages only.
 - **Codex:** Responses API only. `codex.py` injects `OPENAI_API_KEY` and `OPENAI_BASE_URL`. **[T]** The gateway returns 404 for the Responses WebSocket, so Codex retries 5× (~10 s) then falls back to HTTPS, which works.
 - **`--api-key-name`** names the **host** env var holding the key (`agent_auth_resolution.py` maps it to the agent's own variable). Both trials passed with their matching names (`OPENAI_API_KEY` for Codex, `ANTHROPIC_AUTH_TOKEN` for Claude Code).
@@ -421,6 +433,7 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 
 | Version | Date | Change |
 |---|---|---|
+| 2.2 | 23 Nov 2026 | M2 closed (Verifier v1): `config/verifier.yaml`, `starter/`, `verifier/` library, `scripts/build_verifier_base.py` (`localhost/agentrsi-sealed:epoch1`), 11 unit tests, `spike/m2-verifier` Harbor Oracle/Nop trials, and 5 container adversarial/pip checks. Recorded Harbor `_parse_reward_json` flat-dict rule (`reward.json` + sibling `v_report.json`/`certification.json`). |
 | 2.1 | 23 Nov 2026 | Verified new GEE-only SA (`Keys_SAEarthEngine.json`: GEE OK, GCS `sar-oilpalm` & IAM HTTP 403) and updated `common.py`. Designed M8 optional Colab GPU offload via host-side WSL MCP broker + Harbor `[[environment.mcp_servers]]` (keeping `cloud-platform`-scoped user tokens strictly off containers). |
 | 2.0 | 23 Nov 2026 | M1 hardened after audit: `config/split.yaml` wired as single source of truth in `common.py`; multi-date ALOS-2 SAR (`260610` + `261014`, auto-discovered) and renamed `HAlpha_H/A/alpha` in base table; V + T merged into single `unlabelled.csv` (no V/T exposure); `002-CheckLeaks.py` fixed for `prior/` docs and binary rasters + 4 seeded controls; `003-Calibration.py` fixed to resample 80 m splits (never touching frozen T) and pooled OOF leakage; stale `tree_id` and single-estate starter references cleaned up. |
 | 1.9 | 20 Nov 2026 | M1 closed. SAR band order confirmed from POC/SNAP pipeline. M2 not started. |

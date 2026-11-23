@@ -1,0 +1,23 @@
+epoch: 1
+estates:
+  - AirHitam
+  - Palong
+  - Serting
+reward_weights:
+  AirHitam: 1.0
+  Palong: 1.0
+  Serting: 1.0
+gate:
+  effect_floor: 0.03
+  bootstrap_ci_percentile: 5.0
+  non_degradation_floor: -0.03
+  t_attempt_budget: 20
+  bootstrap_B: 1000
+  bootstrap_seed: 20261120
+  min_bootstrap_positives: 3
+runtime:
+  per_estate_timeout_sec: 300
+  pip_install_timeout_sec: 600
+  max_datasets_mb: 512
+  cpus: 4
+sealed_base_image: "localhost/agentrsi-sealed:epoch1"
