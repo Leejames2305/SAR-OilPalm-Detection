@@ -1,10 +1,10 @@
 # AgentRSI Plan
 
-**Version:** 2.4 (23 Nov 2026) | **Phase:** M0–M3 closed (23 Nov; Harbor `0.27.0`) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
+**Version:** 2.5 (23 Nov 2026) | **Phase:** M0–M4 closed (23 Nov; Harbor `0.27.0`) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
 
 **Goal.** Turn this project into an RSI4EO-style loop. A coding agent builds the oil-palm triage model in a sandbox, a sealed verifier scores it, and each day's session starts from what the last one found. Humans design the harness and verifier. Agents build the models.
 
-**Where we are.** M0, M1, M2, and M3 are closed. Harbor + Podman gateways pass (M0); the data pipeline, frozen 80 m split, multi-date SAR + NDVI tables, GEE-only SA, leak checks, and resampled gate calibration pass (M1); Verifier v1 passes end to end (M2); and the Builder, Runner, Collector, `localhost/agentrsi-agent-base:latest`, `agentrsi` CLI, spend/T-budget guards, idempotent collection, and live `s000-dry` dry session pass end to end (M3). **M4 (Dashboard) is next and waits for go-ahead.**
+**Where we are.** M0, M1, M2, M3, and M4 are closed. Harbor + Podman gateways pass (M0); the data pipeline, frozen 80 m split, multi-date SAR + NDVI tables, GEE-only SA, leak checks, and resampled gate calibration pass (M1); Verifier v1 passes end to end (M2); Builder, Runner, Collector, `localhost/agentrsi-agent-base:latest`, `agentrsi` CLI, spend/T-budget guards, idempotent collection, and live `s000-dry` dry session pass end to end (M3); and the zero-dependency offline Dashboard (`scripts/dashboard.py`, `src/libbuilder/dashboard.py`, auto-refresh in `collect.py`, scripted exact-number diff) passes end to end (M4). **M5 (First real session S1) is next and waits for go-ahead.**
 
 Evidence tags: **[V]** read in Harbor docs or source | **[T]** tested on this machine | **[S]** simulation on the real estate tables | **[?]** unverified.
 
@@ -259,7 +259,7 @@ Each has an exit test.
 - **M1 — Data and sealed split** · *closed 20 Nov 2026, hardened 23 Nov 2026.* `src/DataPipeline/` reading `config/split.yaml` (single source of truth), frozen 80 m split with proportional L/V/T (Middle visible but unscored), multi-date SAR (`260610`, `261014`, auto-discovered, `HAlpha_H/A/alpha`) + S2 NDVI, combined `L_labelled.csv` + merged `unlabelled.csv`, hardened leak checker (verified clean on `prior/` docs and GeoTIFF rasters), and resampled-split composite gate calibration. *Exit:* all checks green in Progress.
 - **M2 — Verifier v1** · *closed 23 Nov 2026.* `verifier/` scoring, baselines (`incumbent_fit_predict`, `coords_only_fit_predict`), isolated `runner` subprocess + pinned PyPI `pip install`, `config/verifier.yaml`, `starter/`, local sealed base image (`localhost/agentrsi-sealed:epoch1` via `scripts/build_verifier_base.py`), 11 unit tests, Harbor Oracle/Nop integration trials (`spike/m2-verifier`), and 5 container adversarial/pip checks. *Exit:* all checks green in Progress.
 - **M3 — Builder, runner, collector** · *closed 23 Nov 2026.* Prebuilt `localhost/agentrsi-agent-base:latest` (`scripts/build_agent_base.py`) with in-container `agentrsi` CLI (`selfcheck`, `cv`, `gcp-init`), `config/session.yaml`, `templates/`, `src/libbuilder/` (`build_task`, `run_session`, `collect`, `render_handoff`, `stage_secrets`, `lineage`, `events`, `env_utils`), `scripts/{build_task,run_session,collect,regrade}.py`, 5 builder/collector unit tests, and end-to-end `s000-dry` session (`claude-code` / `claude-haiku-5-5`). *Exit:* all checks green in Progress (`harbor check` waived on `-e podman`: empirically confirmed still broken in Harbor `0.27.0` because `_wait_until_compose_exec_ready()` runs before `_upload_environment_dir_after_start()` on `crun`).
-- **M4 — Dashboard.** `AgentRSI/scripts/dashboard.py` writes `AgentRSI/dashboard/index.html`, built on fixtures and the M3 dry session. *Exit:* page numbers match `reward.json`, `certification.json` and `lineage.json` exactly (scripted diff); events show context on hover/click; epoch boundaries not joined; CI bands and `+0.03` line shown; works offline; no T number in any `tasks/` dir.
+- **M4 — Dashboard** · *closed 23 Nov 2026.* `src/libbuilder/dashboard.py` + thin CLI `scripts/dashboard.py` (`--verify`) + auto-refresh in `collect.py`, writing self-contained offline `dashboard/index.html` with separate V (search signal) and T (certified + CI + `+0.03` floor) SVG charts broken at epoch boundaries, sessions table, events ledger, and inline `HANDOFF.md`/`REPORT.md` context inspector. *Exit:* all checks green in Progress (20/20 unit tests, `0` mismatches on scripted diff against `s000-dry` and multi-epoch fixtures).
 - **M5 — First real session (S1, 8 h, spend-capped).** *Exit:* you review the report and dashboard; we tune the templates.
 - **M6 — Iteration and schedule.** S2 generated from S1, gate works, resume is frictionless. Then Windows Task Scheduler or cron runs `daily.sh` (collect, dashboard, ledger, kill switch).
 - **M7 — In-run verifier (v2).** Multi-container sidecar, MCP score tool, query budget covering all three estates, noise added to returned V scores.
@@ -323,12 +323,19 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 | Idempotent double collection | **Pass.** Re-collecting `s000-dry` twice leaves `state/events.jsonl` byte-identical, `daily_spend_usd` at `$0.012239`, and `t_attempts_used = 0` (dry flag). **[T]** | `state/events.jsonl`, `state/lineage.json`, `scripts/collect.py` |
 | Handoff injection & leak checks | **Pass.** `build_task --parent s000-dry` injects verified V score (`+0.057286`) with zero T numbers (`ZERO_T_NUMBERS_IN_HANDOFF_TASK`). `harbor lint` exits 0 on `tasks/s000-dry`; `002-CheckLeaks.py` passes on `tasks/` (83 files), `jobs/` (197 files), and `sessions/` (8 files). (`harbor check` waived on `-e podman`: upstream `check-task-template` lacks `/app` in `python:3.13-slim`, failing `crun` before agent start.) **[T]** | `tasks/s000-dry/`, `src/libbuilder/build_task.py` |
 
+### M4 exit checks (closed 23 Nov 2026)
+
+| Exit check | Result | Evidence |
+|---|---|---|
+| Exact-number scripted diff (`dashboard.py --verify`) | **Pass.** Generated `dashboard/index.html` from real `s000-dry` + `state/`; `verify_dashboard` reports `0 mismatches` against `reward.json`, `certification.json`, `lineage.json`, and `events.jsonl`. **[T]** | `dashboard/index.html`, `scripts/dashboard.py`, `src/libbuilder/dashboard.py` |
+| Multi-epoch charts, CI bars & no-drift unit tests | **Pass.** 4/4 dashboard tests pass (20/20 total suite): real `s000-dry`, 2-epoch 5-session fixture (disjoint per-epoch `<polyline>` elements, `.epoch-band`/`.epoch-boundary`, `.ci-bar` + `+0.03` floor, zero `REPORT.md`/`HANDOFF.md` number bleed, HTML/XSS escaping), empty state, and `collect_session()` auto-regeneration. **[T]** | `tests/test_dashboard.py`, `src/libbuilder/collect.py` |
+| Offline & T-isolation checks | **Pass.** Zero external HTTP(S) `<script>`/`<link>`/`url(...)` refs; `dashboard/index.html` confirmed gitignored; `AgentRSI/tasks/` holds zero `certification.json`, `dashboard/`, or T numbers; `002-CheckLeaks.py` passes across `tasks/`, `jobs/`, `sessions/`, and `docs/AgentPlan/`. **[T]** | `.gitignore`, `tasks/`, `002-CheckLeaks.py` |
+
 ### Next actions
 
-**M4 (Dashboard) is next and has not started. It waits for your go-ahead.**
+**M5 (First real session S1, 8 h, spend-capped) is next and has not started. It waits for your go-ahead.**
 
 **Parked items for upcoming milestones**
-- **M4:** `scripts/dashboard.py` generating self-contained offline `dashboard/index.html` from `reward.json` / `v_report.json`, `certification.json`, `events.jsonl`, and `lineage.json` (using fixtures + `s000-dry`, scripted numeric diff, zero T leakage into `tasks/`).
 - **Deferred:** Yamaguchi SAR in the base table (dB-like values; deferred until a conversion rule is chosen, raw scenes already exposed to agents in `rasters/`).
 
 ---
@@ -444,6 +451,7 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 
 | Version | Date | Change |
 |---|---|---|
+| 2.5 | 23 Nov 2026 | M4 closed (Dashboard) & added `AgentRSI/README.md`: built `src/libbuilder/dashboard.py`, `scripts/dashboard.py --verify`, and `collect.py` auto-refresh generating self-contained offline `dashboard/index.html` (separate V/T SVG charts, epoch boundary breaks, bootstrap CI bars, `+0.03` floor, events + `HANDOFF.md`/`REPORT.md` inspector); 20/20 unit tests and leak checks pass. |
 | 2.4 | 23 Nov 2026 | Upgraded pinned Harbor `0.25.0 -> 0.27.0` and refreshed `uv.lock` (147 packages). Re-verified 16/16 unit tests, `harbor lint`, `run_session.py --dry-run`, M2 `oracle` separate-verifier trial (score `0.054469`), and leak checks. Empirically confirmed upstream `harbor check -e podman` `crun: chdir to /app` failure persists in `0.27.0` (`_wait_until_compose_exec_ready()` still precedes `_upload_environment_dir_after_start()`). |
 | 2.3 | 23 Nov 2026 | M3 closed (Builder, runner, collector): `localhost/agentrsi-agent-base:latest`, `agentrsi` CLI, `config/session.yaml`, `templates/`, `src/libbuilder/`, `scripts/`, 16/16 unit tests, live `s000-dry` session (`claude-haiku-5-5`, V `+0.057286`, `$0.0122`), idempotent double collect, handoff & leak checks. Documented Harbor `0.25.0` `harbor check` Podman/`crun` bug and per-agent `--ak` support. |
 | 2.2 | 23 Nov 2026 | M2 closed (Verifier v1): `config/verifier.yaml`, `starter/`, `verifier/` library, `scripts/build_verifier_base.py` (`localhost/agentrsi-sealed:epoch1`), 11 unit tests, `spike/m2-verifier` Harbor Oracle/Nop trials, and 5 container adversarial/pip checks. Recorded Harbor `_parse_reward_json` flat-dict rule (`reward.json` + sibling `v_report.json`/`certification.json`). |
