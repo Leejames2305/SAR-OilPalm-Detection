@@ -45,7 +45,7 @@ CPU-only is fine: earlier POCs show nonlinear and deep models lose to linear one
 | **Focus** | Open-ended research, explicitly including data expansion. Optional lenses (`literature`, `data-expansion`, `ablation`) bias the instruction. | |
 | **Data egress & GEE SA** | ROI-masked ALOS-2, tree coordinates and labels go to the inference provider. A **GEE-only** service-account key (`Keys_SAEarthEngine.json`, Earth Engine viewer only — **no GCS bucket access**) is mounted read-only into the agent sandbox. Verified live (23 Nov): GEE Sentinel-2 queries succeed while GCS `sar-oilpalm` (metadata/list/read) and IAM all return HTTP 403. **[T]** | Your calls (11 Nov, 23 Nov): least-privilege GEE-only SA protects the `sar-oilpalm` bucket holding ground-truth labels. |
 | **Optional Colab GPU offload** | **Host-side WSL MCP broker** wrapping `google-colab-cli`, never direct Google OAuth/ADC tokens inside the container. Planned for **M8**. | `google-colab-cli` requires `https://www.googleapis.com/auth/cloud-platform` scope, which would grant full personal GCP access (including `sar-oilpalm` truth labels) if passed into the container. |
-| **Layout** | Everything AgentRSI builds, runs or generates lives under `AgentRSI/`, the dashboard included. Generated tasks live in `AgentRSI/tasks/<id>/`. Harbor's file is `instruction.md` (singular) **[V]**. | |
+| **Layout & naming** | Everything AgentRSI builds, runs or generates lives under `AgentRSI/`, the dashboard included. Sessions use **`YYMMDD-sXXX-<lens>`** (e.g., `261123-s001-open`, `261123-s002-data-expansion`; verified end-to-end on Harbor `0.27.0` + Podman **[T]**; historical dry run stays `s000-dry`). Generated tasks live in `AgentRSI/tasks/<session_id>/`. Harbor's file is `instruction.md` (singular) **[V]**. | Chronological sorting across long runs; `build_task.py` infers `--focus` from `-<lens>` and avoids doubling it in `task.toml`. |
 | **Split sizes** | Proportional: each estate's trees go to L / V / T at about 40 / 30 / 30 % (±10 pt tolerance, minimums 50 L / 35 V / 35 T Unhealthy). Scales to any estate size. | Your call (17 Nov). Accepts L < 1000 for the two smaller estates so Serting clears 35 V / 35 T positives. |
 | **Block size** | **80 m** spatial blocks, frozen in `config/split.yaml` (epoch 1, single source of truth read by `common.py`). | 220 m is infeasible for Serting; 165 m fails Serting's ±10 pt tree-share cap (~13 expected redraws). 80 m gives 70 / 47 / 29 blocks (2.0 / 2.0 / 6.2 expected draws). |
 | **Middle class** | **Visible but unscored.** Middle trees travel with their block. In L the agent sees them labelled `Middle`; in `unlabelled.csv` (V + T) they sit unmarked, as in a new field. Never in the positive class and never in any metric. Starter pipeline trains without them. | Your call (17 Nov). Whether Middle helps as context stays open (below). |
@@ -70,15 +70,15 @@ CPU-only is fine: earlier POCs show nonlinear and deep models lose to linear one
 Paths in this section and the next are relative to `AgentRSI/`.
 
 ```
-state/lineage.json + sessions/s(N-1)/HANDOFF.md
+state/lineage.json + sessions/<prev_session>/HANDOFF.md
         |  build_task.py   (templates + agent_view + rasters + prior knowledge)
         v
-tasks/sNNN/  --run_session.py-->  stage secrets -> harbor run -p ... -a <agent> -m <model> --base-url ... -e podman
-        |                          agent (8 h, public internet, GEE) writes /app/{submission,report,datasets}
-        |                          agent sandbox ends -> declared artifacts copied out -> separate verifier grades
+tasks/YYMMDD-sXXX-lens/  --run_session.py-->  stage secrets -> harbor run -p ... -a <agent> -m <model> --base-url ... -e podman
+        |                                     agent (8 h, public internet, GEE) writes /app/{submission,report,datasets}
+        |                                     agent sandbox ends -> declared artifacts copied out -> separate verifier grades
         v
-jobs/sNNN/  --collect.py-->  secret scan -> sessions/sNNN/ , lineage.json (certify T, promote or not),
-        |                    state/events.jsonl
+jobs/YYMMDD-sXXX-lens/   --collect.py-->      secret scan -> sessions/YYMMDD-sXXX-lens/ , lineage.json (certify T, promote or not),
+        |                                     state/events.jsonl, dashboard/index.html
         v   next day: build_task.py reads it all again
 scripts/dashboard.py --> dashboard/index.html   (the page you open; regenerated after every collect)
 ```
@@ -115,7 +115,7 @@ AgentRSI/
   scripts/                   thin CLIs: build_task  run_session  collect  regrade  dashboard  daily
   state/lineage.json         incumbent, scores, epochs, spend ledger, T-attempt counter (committed)
   state/events.jsonl         append-only event log (committed)
-  sessions/sNNN/             COLLECTED: REPORT.md HANDOFF.md submission/ datasets/ reward.json
+  sessions/<session_id>/     COLLECTED (YYMMDD-sXXX-lens): REPORT.md HANDOFF.md submission/ datasets/ reward.json
                              certification.json meta.json
   dashboard/index.html       GENERATED by scripts/dashboard.py (gitignored). Open it in a browser.
   tasks/  jobs/              GENERATED (gitignored)
@@ -131,7 +131,7 @@ Sketch. Validate with `harbor lint` and `--dry-run` **[?]**.
 schema_version = "1.4"
 artifacts = ["/app/submission", "/app/report", "/app/datasets"]
 
-[task]            name = "agentrsi/s003-open"
+[task]            name = "agentrsi/261123-s001-open"
 [agent]           timeout_sec = 28800.0            network_mode = "public"
 [environment]     network_mode = "public"          cpus = 6   memory_mb = 6144   storage_mb = 20480
 [verifier]        environment_mode = "separate"    timeout_sec = 3600
