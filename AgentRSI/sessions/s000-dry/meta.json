@@ -1,0 +1,18 @@
+{
+  "session_id": "s000-dry",
+  "job_id": "2026-11-23__13-24-03",
+  "trial_name": "s000-dry__re3ZNtD",
+  "parent_id": "starter",
+  "dry_session": true,
+  "agent": "claude-code",
+  "model": "claude-haiku-5-5",
+  "started_at": "2026-11-23T05:24:09.769665Z",
+  "finished_at": "2026-11-23T05:28:09.273132Z",
+  "cost_usd": 0.012238754999999999,
+  "n_input_tokens": 325317,
+  "n_cache_tokens": 281208,
+  "n_output_tokens": 7827,
+  "exception_info": null,
+  "smells": [],
+  "handoff_missing_sections": []
+}

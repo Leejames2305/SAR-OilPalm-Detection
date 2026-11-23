@@ -1,0 +1,158 @@
+{
+  "epoch": 1,
+  "split_sha256": "26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed",
+  "status": "ok",
+  "submission_valid": true,
+  "error": null,
+  "gate_passed": false,
+  "gate": {
+    "passed": false,
+    "comp_delta": 0.017314013672476158,
+    "comp_ci_low": -0.023218813951312835,
+    "effect_floor": 0.03,
+    "non_degradation_floor": -0.03,
+    "worst_estate": "AirHitam",
+    "worst_estate_delta": -0.03181731415220232,
+    "failed_reasons": [
+      "composite CI lower bound -0.023219 <= 0.0",
+      "composite delta +0.017314 < effect floor +0.0300",
+      "AirHitam delta -0.031817 < non-degradation floor -0.0300"
+    ]
+  },
+  "composite": {
+    "comp_delta": 0.017314013672476158,
+    "ci_low": -0.023218813951312835,
+    "ci_high": 0.06841532785817948,
+    "delta_vs_coords": 0.028366686727620855,
+    "n_valid_draws": 1000,
+    "n_requested_draws": 1000
+  },
+  "estates": {
+    "AirHitam": {
+      "cand_metrics": {
+        "pr_auc": 0.17175225501763017,
+        "prevalence": 0.08078335373317014,
+        "pr_auc_lift": 0.09096890128446003,
+        "recall_at_25": 0.42424242424242425,
+        "enrichment_top10": 2.2727272727272725,
+        "roc_auc": 0.643313965218093,
+        "n_scored": 817,
+        "n_pos": 66
+      },
+      "incumbent_metrics": {
+        "pr_auc": 0.2035695691698325,
+        "prevalence": 0.08078335373317014,
+        "pr_auc_lift": 0.12278621543666235,
+        "recall_at_25": 0.5,
+        "enrichment_top10": 3.333333333333333,
+        "roc_auc": 0.7081668885929872,
+        "n_scored": 817,
+        "n_pos": 66
+      },
+      "coords_metrics": {
+        "pr_auc": 0.09669526628624411,
+        "prevalence": 0.08078335373317014,
+        "pr_auc_lift": 0.015911912553073976,
+        "recall_at_25": 0.3181818181818182,
+        "enrichment_top10": 1.3636363636363635,
+        "roc_auc": 0.47566880522939115,
+        "n_scored": 817,
+        "n_pos": 66
+      },
+      "delta_vs_incumbent": {
+        "delta": -0.03181731415220232,
+        "ci_low": -0.061057633966439324,
+        "ci_high": 0.013598978637625414
+      },
+      "delta_vs_coords": {
+        "delta": 0.07505698873138605,
+        "ci_low": 0.011574071361045359,
+        "ci_high": 0.14417167883611928
+      }
+    },
+    "Palong": {
+      "cand_metrics": {
+        "pr_auc": 0.18211735283556965,
+        "prevalence": 0.11594202898550725,
+        "pr_auc_lift": 0.0661753238500624,
+        "recall_at_25": 0.35,
+        "enrichment_top10": 2.125,
+        "roc_auc": 0.5561372950819672,
+        "n_scored": 690,
+        "n_pos": 80
+      },
+      "incumbent_metrics": {
+        "pr_auc": 0.1579486628792131,
+        "prevalence": 0.11594202898550725,
+        "pr_auc_lift": 0.04200663389370586,
+        "recall_at_25": 0.375,
+        "enrichment_top10": 1.375,
+        "roc_auc": 0.5962090163934426,
+        "n_scored": 690,
+        "n_pos": 80
+      },
+      "coords_metrics": {
+        "pr_auc": 0.16482597545031458,
+        "prevalence": 0.11594202898550725,
+        "pr_auc_lift": 0.04888394646480733,
+        "recall_at_25": 0.3625,
+        "enrichment_top10": 1.875,
+        "roc_auc": 0.5207172131147542,
+        "n_scored": 690,
+        "n_pos": 80
+      },
+      "delta_vs_incumbent": {
+        "delta": 0.024168689956356543,
+        "ci_low": -0.03132464414989437,
+        "ci_high": 0.09312786975839397
+      },
+      "delta_vs_coords": {
+        "delta": 0.017291377385255075,
+        "ci_low": -0.06920706585630611,
+        "ci_high": 0.06308377635213099
+      }
+    },
+    "Serting": {
+      "cand_metrics": {
+        "pr_auc": 0.17561149677962895,
+        "prevalence": 0.08483754512635379,
+        "pr_auc_lift": 0.09077395165327516,
+        "recall_at_25": 0.3829787234042553,
+        "enrichment_top10": 2.425531914893618,
+        "roc_auc": 0.63204498720047,
+        "n_scored": 554,
+        "n_pos": 47
+      },
+      "incumbent_metrics": {
+        "pr_auc": 0.1160208315663547,
+        "prevalence": 0.08483754512635379,
+        "pr_auc_lift": 0.031183286440000915,
+        "recall_at_25": 0.3829787234042553,
+        "enrichment_top10": 0.6382978723404255,
+        "roc_auc": 0.6378362499475428,
+        "n_scored": 554,
+        "n_pos": 47
+      },
+      "coords_metrics": {
+        "pr_auc": 0.18285980271340752,
+        "prevalence": 0.08483754512635379,
+        "pr_auc_lift": 0.09802225758705373,
+        "recall_at_25": 0.425531914893617,
+        "enrichment_top10": 1.9148936170212765,
+        "roc_auc": 0.5424063116370809,
+        "n_scored": 554,
+        "n_pos": 47
+      },
+      "delta_vs_incumbent": {
+        "delta": 0.059590665213274246,
+        "ci_low": -0.03092426680493211,
+        "ci_high": 0.1793271211584327
+      },
+      "delta_vs_coords": {
+        "delta": -0.007248305933778565,
+        "ci_low": -0.04567218842595302,
+        "ci_high": 0.10097361214427703
+      }
+    }
+  }
+}

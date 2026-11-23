@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "epoch": 1,
+  "split_sha256": "26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed",
+  "t_attempts_used": 0,
+  "t_attempt_budget": 20,
+  "kill_switch": false,
+  "daily_spend_usd": {
+    "2026-11-23": 0.012239
+  },
+  "incumbent": {
+    "id": "starter",
+    "source_dir": "starter",
+    "epoch": 1,
+    "v_score": 0.05446945305942965,
+    "per_estate_v_lift": {
+      "AirHitam": 0.046744654198282894,
+      "Palong": 0.04264048377897063,
+      "Serting": 0.07402322120103541
+    }
+  },
+  "epochs": [
+    {
+      "epoch": 1,
+      "split_sha256": "26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed",
+      "started_at": "2026-11-23T05:29:04+00:00"
+    }
+  ],
+  "sessions": {
+    "s000-dry": {
+      "session_id": "s000-dry",
+      "job_id": "2026-11-23__13-24-03",
+      "parent_id": "starter",
+      "epoch": 1,
+      "dry_session": true,
+      "status": "ok",
+      "submission_valid": true,
+      "v_score": 0.05728559813610624,
+      "v_delta_vs_incumbent": 0.0028161450766765925,
+      "gate_passed": false,
+      "t_comp_delta": 0.017314013672476158,
+      "t_ci_low": -0.023218813951312835,
+      "promoted": false,
+      "cost_usd": 0.012238754999999999,
+      "collected_at": "2026-11-23T05:29:04+00:00"
+    }
+  }
+}

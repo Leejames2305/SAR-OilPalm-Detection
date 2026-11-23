@@ -1,0 +1,114 @@
+{
+  "epoch": 1,
+  "split_sha256": "26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed",
+  "status": "ok",
+  "submission_valid": true,
+  "error": null,
+  "runtime_sec": 6.768,
+  "composite": {
+    "score": 0.05728559813610624,
+    "delta_vs_incumbent": {
+      "comp_delta": 0.0028161450766765925,
+      "ci_low": -0.022034937354707563,
+      "ci_high": 0.04071098154944929,
+      "n_valid_draws": 1000,
+      "n_requested_draws": 1000
+    },
+    "delta_vs_coords": {
+      "comp_delta": -0.00917624783873415,
+      "ci_low": -0.04416261462225633,
+      "ci_high": 0.04474580589971598,
+      "n_valid_draws": 1000,
+      "n_requested_draws": 1000
+    }
+  },
+  "estates": {
+    "AirHitam": {
+      "pr_auc": 0.07373350815019963,
+      "prevalence": 0.052054794520547946,
+      "pr_auc_lift": 0.021678713629651687,
+      "recall_at_25": 0.3684210526315789,
+      "enrichment_top10": 1.8421052631578945,
+      "roc_auc": 0.5760191664131427,
+      "n_scored": 730,
+      "n_pos": 38,
+      "delta_vs_incumbent": {
+        "delta": -0.025065940568631206,
+        "ci_low": -0.055573248039541334,
+        "ci_high": 0.004571656045553894
+      },
+      "delta_vs_coords": {
+        "delta": -0.01811308495617321,
+        "ci_low": -0.10705586168537232,
+        "ci_high": 0.060743194328703405
+      },
+      "incumbent_v_pr_auc": 0.09879944871883084,
+      "coords_v_pr_auc": 0.09184659310637285
+    },
+    "Palong": {
+      "pr_auc": 0.1446810122417544,
+      "prevalence": 0.0759493670886076,
+      "pr_auc_lift": 0.0687316451531468,
+      "recall_at_25": 0.4074074074074074,
+      "enrichment_top10": 2.222222222222222,
+      "roc_auc": 0.6487682507469419,
+      "n_scored": 711,
+      "n_pos": 54,
+      "delta_vs_incumbent": {
+        "delta": 0.026091161374176164,
+        "ci_low": -0.03823013637844661,
+        "ci_high": 0.11595387805821145
+      },
+      "delta_vs_coords": {
+        "delta": -0.0590754484890888,
+        "ci_low": -0.13573345629233963,
+        "ci_high": 0.034776042584208765
+      },
+      "incumbent_v_pr_auc": 0.11858985086757823,
+      "coords_v_pr_auc": 0.2037564607308432
+    },
+    "Serting": {
+      "pr_auc": 0.17053329531371622,
+      "prevalence": 0.08908685968819599,
+      "pr_auc_lift": 0.08144643562552023,
+      "recall_at_25": 0.425,
+      "enrichment_top10": 1.25,
+      "roc_auc": 0.6695904645476772,
+      "n_scored": 449,
+      "n_pos": 40,
+      "delta_vs_incumbent": {
+        "delta": 0.00742321442448482,
+        "ci_low": -0.013816108218085266,
+        "ci_high": 0.07898065125098508
+      },
+      "delta_vs_coords": {
+        "delta": 0.04965978992905956,
+        "ci_low": 0.02632143483517893,
+        "ci_high": 0.14032441064893716
+      },
+      "incumbent_v_pr_auc": 0.1631100808892314,
+      "coords_v_pr_auc": 0.12087350538465666
+    }
+  },
+  "datasets_audit": {
+    "exists": true,
+    "valid": true,
+    "total_mb": 0.0,
+    "datasets": {},
+    "errors": []
+  },
+  "pip_freeze": [
+    "cloudpickle==3.1.3",
+    "joblib==1.6.0",
+    "narwhals==2.29.0",
+    "numpy==2.5.5",
+    "pandas==3.1.1",
+    "pyarrow==26.0.1",
+    "python-dateutil==4.0.0",
+    "PyYAML==6.0.3",
+    "scikit-learn==1.9.1",
+    "scipy==1.18.1",
+    "threadpoolctl==3.8.0",
+    "tzdata==2026.6"
+  ]
+}
