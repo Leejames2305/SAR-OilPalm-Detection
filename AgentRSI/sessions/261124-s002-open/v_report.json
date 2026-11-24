@@ -1,0 +1,121 @@
+{
+  "epoch": 1,
+  "split_sha256": "26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed",
+  "status": "ok",
+  "submission_valid": true,
+  "error": null,
+  "runtime_sec": 13.666,
+  "composite": {
+    "score": 0.019786686898307364,
+    "delta_vs_incumbent": {
+      "comp_delta": -0.09896382500089869,
+      "ci_low": -0.23314920333996658,
+      "ci_high": -0.05949591121252575,
+      "n_valid_draws": 1000,
+      "n_requested_draws": 1000
+    },
+    "delta_vs_coords": {
+      "comp_delta": -0.046675159076533024,
+      "ci_low": -0.11172521772462607,
+      "ci_high": -0.014417702149077045,
+      "n_valid_draws": 1000,
+      "n_requested_draws": 1000
+    }
+  },
+  "estates": {
+    "AirHitam": {
+      "pr_auc": 0.050328588876022914,
+      "prevalence": 0.052054794520547946,
+      "pr_auc_lift": -0.001726205644525032,
+      "recall_at_25": 0.23684210526315788,
+      "enrichment_top10": 0.7894736842105262,
+      "roc_auc": 0.47919835716458775,
+      "n_scored": 730,
+      "n_pos": 38,
+      "delta_vs_incumbent": {
+        "delta": -0.03875389373363945,
+        "ci_low": -0.10967262474639547,
+        "ci_high": 0.014107436635956662
+      },
+      "delta_vs_coords": {
+        "delta": -0.04151800423034993,
+        "ci_low": -0.1256877426030117,
+        "ci_high": -0.0008565692463714298
+      },
+      "incumbent_v_pr_auc": 0.08908248260966237,
+      "coords_v_pr_auc": 0.09184659310637285
+    },
+    "Palong": {
+      "pr_auc": 0.10694347682517703,
+      "prevalence": 0.0759493670886076,
+      "pr_auc_lift": 0.030994109736569436,
+      "recall_at_25": 0.3888888888888889,
+      "enrichment_top10": 1.111111111111111,
+      "roc_auc": 0.6226957551158464,
+      "n_scored": 711,
+      "n_pos": 54,
+      "delta_vs_incumbent": {
+        "delta": -0.22231187498258898,
+        "ci_low": -0.3058281608639725,
+        "ci_high": -0.1537289089293308
+      },
+      "delta_vs_coords": {
+        "delta": -0.09681298390566616,
+        "ci_low": -0.18566739915021663,
+        "ci_high": -0.03666277360252296
+      },
+      "incumbent_v_pr_auc": 0.329255351807766,
+      "coords_v_pr_auc": 0.2037564607308432
+    },
+    "Serting": {
+      "pr_auc": 0.11917901629107368,
+      "prevalence": 0.08908685968819599,
+      "pr_auc_lift": 0.030092156602877687,
+      "recall_at_25": 0.28125,
+      "enrichment_top10": 1.0,
+      "roc_auc": 0.5259168704156479,
+      "n_scored": 449,
+      "n_pos": 40,
+      "delta_vs_incumbent": {
+        "delta": -0.035825706286467654,
+        "ci_low": -0.4290648554054681,
+        "ci_high": 0.05322096587637039
+      },
+      "delta_vs_coords": {
+        "delta": -0.001694489093582982,
+        "ci_low": -0.1258196813304129,
+        "ci_high": 0.06894053673417194
+      },
+      "incumbent_v_pr_auc": 0.15500472257754133,
+      "coords_v_pr_auc": 0.12087350538465666
+    }
+  },
+  "datasets_audit": {
+    "exists": true,
+    "valid": true,
+    "total_mb": 14.117,
+    "datasets": {
+      "alos_winstats": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 403,
+        "nans": 329630
+      }
+    },
+    "errors": []
+  },
+  "pip_freeze": [
+    "cloudpickle==3.1.3",
+    "joblib==1.6.0",
+    "narwhals==2.29.0",
+    "numpy==2.5.5",
+    "pandas==3.1.1",
+    "pyarrow==26.0.1",
+    "python-dateutil==4.0.0",
+    "PyYAML==6.0.3",
+    "scikit-learn==1.9.1",
+    "scipy==1.18.1",
+    "threadpoolctl==3.8.0",
+    "tzdata==2026.6"
+  ]
+}

@@ -7,7 +7,7 @@
   "kill_switch": false,
   "daily_spend_usd": {
     "2026-11-23": 0.012239,
-    "2026-11-24": 0.215359
+    "2026-11-24": 0.563141
   },
   "incumbent": {
     "id": "261124-s001-open",
@@ -61,6 +61,23 @@
       "promoted": true,
       "cost_usd": 0.2153586,
       "collected_at": "2026-11-24T04:19:26+00:00"
+    },
+    "261124-s002-open": {
+      "session_id": "261124-s002-open",
+      "job_id": "2026-11-24__13-23-15",
+      "parent_id": "261124-s001-open",
+      "epoch": 1,
+      "dry_session": true,
+      "status": "ok",
+      "submission_valid": true,
+      "v_score": 0.019786686898307364,
+      "v_delta_vs_incumbent": -0.09896382500089869,
+      "gate_passed": false,
+      "t_comp_delta": -0.1002620648539953,
+      "t_ci_low": -0.14901085688089172,
+      "promoted": false,
+      "cost_usd": 0.34778239999999994,
+      "collected_at": "2026-11-24T05:56:41+00:00"
     }
   }
 }
