@@ -149,14 +149,30 @@ def build_task(
     if prev_session_dir and (prev_session_dir / "HANDOFF.md").exists():
         shutil.copyfile(prev_session_dir / "HANDOFF.md", prior_dst / "prev_HANDOFF.md")
 
-    # 4. Current incumbent pipeline (both in /app/incumbent and solution/ for oracle/check)
+    # 4. Current incumbent pipeline (in /app/incumbent, solution/ for oracle, and tests/incumbent for verifier)
+    tests_inc_sub = tests_dst / "incumbent" / "submission"
+    tests_inc_ds = tests_dst / "incumbent" / "datasets"
+    tests_inc_sub.mkdir(parents=True, exist_ok=True)
+    tests_inc_ds.mkdir(parents=True, exist_ok=True)
     for item in sorted(incumbent_dir.iterdir()):
         if item.is_file() and item.name != "__pycache__" and not item.name.endswith(".pyc"):
             shutil.copyfile(item, inc_dst / item.name)
-            if item.name in ("pipeline.py", "requirements.txt"):
+            shutil.copyfile(item, tests_inc_sub / item.name)
+            if item.name in ("pipeline.py", "requirements.txt") or item.suffix == ".py":
                 shutil.copyfile(item, sol_dst / item.name)
     if not (sol_dst / "requirements.txt").exists():
         (sol_dst / "requirements.txt").write_text("")
+    if not (tests_inc_sub / "requirements.txt").exists():
+        (tests_inc_sub / "requirements.txt").write_text("")
+    inc_session_ds = incumbent_dir.parent / "datasets"
+    if incumbent_dir.name == "submission" and inc_session_ds.exists():
+        shutil.copytree(
+            inc_session_ds,
+            tests_inc_ds,
+            dirs_exist_ok=True,
+            symlinks=False,
+            ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+        )
 
     # 5. Optional prior derived datasets (size-capped)
     extra_copy_lines = ""
@@ -238,7 +254,7 @@ def build_task(
         "#!/bin/sh\n"
         "set -eu\n"
         "mkdir -p /app/submission /app/report /app/datasets\n"
-        "cp /solution/pipeline.py /app/submission/pipeline.py\n"
+        "cp /solution/*.py /app/submission/\n"
         "cp /solution/requirements.txt /app/submission/requirements.txt\n"
     )
     os.chmod(solve_sh, 0o755)

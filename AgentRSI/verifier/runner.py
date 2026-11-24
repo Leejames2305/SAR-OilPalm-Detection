@@ -501,6 +501,8 @@ def grade_submission(
     datasets_dir: Path,
     output_dir: Path,
     verifier_cfg: dict | None = None,
+    incumbent_dir: Path | None = None,
+    incumbent_datasets_dir: Path | None = None,
     run_user: str = "runner",
     timeout_override: float | None = None,
 ) -> tuple[dict, dict, dict]:
@@ -541,7 +543,7 @@ def grade_submission(
     pip_timeout = float(rt_cfg["pip_install_timeout_sec"])
     cpus = int(rt_cfg["cpus"])
 
-    # Trusted reference baselines
+    # Trusted reference baselines (dynamic promoted incumbent when staged, else Session-0 starter)
     inc_scores: dict[str, np.ndarray] = {}
     coords_scores: dict[str, np.ndarray] = {}
     for e in estates:
@@ -554,8 +556,49 @@ def grade_submission(
             "scratch_dir": output_dir,
             "cpus": cpus,
         }
-        inc_scores[e] = incumbent_fit_predict(data["labeled"], data["unlabeled"], ctx)
         coords_scores[e] = coords_only_fit_predict(data["labeled"], data["unlabeled"], ctx)
+
+    if incumbent_dir is not None and (incumbent_dir / "pipeline.py").exists():
+        inc_ds = incumbent_datasets_dir if (incumbent_datasets_dir and incumbent_datasets_dir.exists()) else (incumbent_dir / "_empty_datasets")
+        tmp_inc_root = Path(tempfile.mkdtemp(prefix="agentrsi_incumbent_"))
+        try:
+            os.chmod(tmp_inc_root, 0o755)
+            inc_py_bin, _ = install_submission_deps(
+                incumbent_dir / "requirements.txt",
+                tmp_inc_root,
+                run_user=run_user,
+                timeout_sec=pip_timeout,
+            )
+            for e in estates:
+                data = bundle["by_estate"][e]
+                other = {o: bundle["by_estate"][o]["labeled"] for o in estates if o != e}
+                inc_scores[e] = run_estate_isolated(
+                    python_bin=inc_py_bin,
+                    submission_dir=incumbent_dir,
+                    work_root=tmp_inc_root,
+                    estate=e,
+                    labeled_df=data["labeled"],
+                    unlabeled_df=data["unlabeled"],
+                    other_labeled_dfs=other,
+                    datasets_dir=inc_ds,
+                    cpus=cpus,
+                    timeout_sec=estate_timeout,
+                    run_user=run_user,
+                )
+        finally:
+            shutil.rmtree(tmp_inc_root, ignore_errors=True)
+    else:
+        for e in estates:
+            data = bundle["by_estate"][e]
+            other = {o: bundle["by_estate"][o]["labeled"] for o in estates if o != e}
+            ctx = {
+                "estate": e,
+                "datasets_dir": datasets_dir,
+                "other_labeled": other,
+                "scratch_dir": output_dir,
+                "cpus": cpus,
+            }
+            inc_scores[e] = incumbent_fit_predict(data["labeled"], data["unlabeled"], ctx)
 
     datasets_audit = validate_datasets(datasets_dir, bundle["expected_keys"], float(rt_cfg["max_datasets_mb"]))
 
@@ -631,6 +674,7 @@ def grade_submission(
         per_estate_deltas={e: float(d["delta"]) for e, d in t_res["boot_inc"]["per_estate"].items()},
         effect_floor=float(gate_cfg["effect_floor"]),
         non_degradation_floor=float(gate_cfg["non_degradation_floor"]),
+        min_improved_estates=int(gate_cfg.get("min_improved_estates", 2)),
     )
     if not valid:
         gate["passed"] = False

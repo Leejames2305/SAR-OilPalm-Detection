@@ -12,6 +12,8 @@ def main() -> None:
     ap.add_argument("--sealed-dir", type=Path, default=Path("/sealed"))
     ap.add_argument("--submission-dir", type=Path, default=Path("/app/submission"))
     ap.add_argument("--datasets-dir", type=Path, default=Path("/app/datasets"))
+    ap.add_argument("--incumbent-dir", type=Path, default=None)
+    ap.add_argument("--incumbent-datasets-dir", type=Path, default=None)
     ap.add_argument("--output-dir", type=Path, default=Path("/logs/verifier"))
     ap.add_argument("--run-user", type=str, default="runner")
     args = ap.parse_args()
@@ -21,6 +23,8 @@ def main() -> None:
         submission_dir=args.submission_dir,
         datasets_dir=args.datasets_dir,
         output_dir=args.output_dir,
+        incumbent_dir=args.incumbent_dir,
+        incumbent_datasets_dir=args.incumbent_datasets_dir,
         run_user=args.run_user,
     )
     print(

@@ -77,7 +77,7 @@ def scan_for_secrets(roots: list[Path], secret_literals: list[str]) -> list[str]
 
 
 PROMPT_ECHO_RE = re.compile(
-    r"access or clone [`'\"]?https://github\.com/Leejames2305/SAR-OilPalm-Detection[`'\"]?",
+    r"(?:never\s+)?access(?:,\s*query,)?(?:\s+or\s+clone)?\s+[`'\"]?https://github\.com/Leejames2305/SAR-OilPalm-Detection[`'\"]?",
     re.IGNORECASE,
 )
 

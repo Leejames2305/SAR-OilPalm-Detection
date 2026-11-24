@@ -11,6 +11,7 @@ gate:
   effect_floor: 0.03
   bootstrap_ci_percentile: 5.0
   non_degradation_floor: -0.03
+  min_improved_estates: 2
   t_attempt_budget: 20
   bootstrap_B: 1000
   bootstrap_seed: 20261120

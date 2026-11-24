@@ -209,18 +209,24 @@ def evaluate_gate(
     per_estate_deltas: dict[str, float],
     effect_floor: float = 0.03,
     non_degradation_floor: float = -0.03,
+    min_improved_estates: int = 2,
 ) -> dict:
     """Apply the pre-registered certification gate to T deltas."""
     if not per_estate_deltas:
         raise ValueError("per_estate_deltas cannot be empty")
     worst_estate = min(per_estate_deltas, key=lambda e: per_estate_deltas[e])
     worst_delta = float(per_estate_deltas[worst_estate])
+    n_improved = int(sum(1 for delta in per_estate_deltas.values() if float(delta) > 0.0))
 
     failed_reasons: list[str] = []
     if not (comp_ci_low > 0.0):
         failed_reasons.append(f"composite CI lower bound {comp_ci_low:+.6f} <= 0.0")
     if not (comp_delta >= effect_floor):
         failed_reasons.append(f"composite delta {comp_delta:+.6f} < effect floor {effect_floor:+.4f}")
+    if n_improved < min_improved_estates:
+        failed_reasons.append(
+            f"improved estates {n_improved} < min_improved_estates {min_improved_estates}"
+        )
     for estate, delta in per_estate_deltas.items():
         if delta < non_degradation_floor:
             failed_reasons.append(
@@ -233,6 +239,8 @@ def evaluate_gate(
         "comp_ci_low": float(comp_ci_low),
         "effect_floor": float(effect_floor),
         "non_degradation_floor": float(non_degradation_floor),
+        "min_improved_estates": int(min_improved_estates),
+        "n_improved_estates": n_improved,
         "worst_estate": worst_estate,
         "worst_estate_delta": worst_delta,
         "failed_reasons": failed_reasons,

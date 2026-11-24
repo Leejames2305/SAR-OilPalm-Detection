@@ -52,10 +52,11 @@ Primary objective is **composite PR-AUC lift**: the unweighted mean across `AirH
 
 Secondary triage diagnostics tracked alongside PR-AUC lift are tie-averaged `Recall@top-25%`, `Enrichment@top-10%` (`Recall@top-10% / 0.10`), and `ROC-AUC`.
 
-A viable improvement must satisfy three scientific criteria on held-out 80 m spatial blocks:
+A viable improvement must satisfy four scientific criteria on held-out 80 m spatial blocks:
 1. Deliver a statistically consistent composite PR-AUC lift gain over `/app/incumbent/pipeline.py` across spatial blocks.
-2. Avoid materially degrading any individual estate (`AirHitam`, `Palong`, or `Serting`).
-3. Disentangle true disease signal from pure spatial smoothness — predictions are benchmarked against both `/app/incumbent/pipeline.py` and a coordinates-only spatial prior (distance-weighted 15-NN on standardized `Long`, `Lat`).
+2. Improve at least two of the three estates (`AirHitam`, `Palong`, `Serting`) over `/app/incumbent/pipeline.py` — single-estate wins that leave the other two estates flat or worse are insufficient.
+3. Avoid materially degrading any individual estate (`AirHitam`, `Palong`, or `Serting`).
+4. Disentangle true disease signal from pure spatial smoothness — predictions are benchmarked against both `/app/incumbent/pipeline.py` and a coordinates-only spatial prior (distance-weighted 15-NN on standardized `Long`, `Lat`).
 
 **Spatial-validation warning:** `L_labelled.csv` and `unlabelled.csv` are split on 80 m square blocks (`floor(x/80) * 100000 + floor(y/80)` in local metres). Random K-fold splits and same-block leave-one-out spatial neighbors severely overestimate generalization because adjacent palms are ~9 m apart, whereas held-out blocks sit across 80 m boundaries. Construct any out-of-fold spatial priors, pseudo-labels, or stacked features using block-disjoint folds so training feature distributions match held-out blocks, and test far-field robustness (e.g., quadrant/region holdouts or repeated spatial-block seeds) before trusting large spatial gains.
 
@@ -111,6 +112,8 @@ Every `features.parquet` / `features.csv` must satisfy:
 
 - During this session you have public internet access for remote-sensing / plant-pathology literature, PyPI packages, and Google Earth Engine (`agentrsi gcp-init`).
 - You have full modeling latitude: multi-date SAR polarimetry/change, window/texture statistics, optical/terrain/moisture covariates via GEE, semi-supervised or transductive learning over `labeled` + `unlabeled`, `Middle`-class ordinal/spatial signals, cross-estate transfer via `ctx["other_labeled"]`, and probability/rank calibration — provided `fit_predict()` stays offline and self-contained.
+- **Research depth & persistence:** Treat the session budget as an iterative multi-hypothesis research campaign, not a stop-at-first-pass benchmark. Once you establish a working candidate that beats `/app/incumbent/pipeline.py`, checkpoint it and keep pushing across at least 3–4 orthogonal scientific directions (for example: multi-date ALOS-2 `261014` vs `260610` change, Yamaguchi dB decomposition and multi-scale `winstats` from `/app/rasters/`, Sentinel-2 red-edge/SWIR/topography/moisture covariates via GEE, block-honest spatial/semi-supervised/`Middle`-class signals, and disciplined ablations) until you observe clear diminishing returns or approach the final checkpoint window.
+- **Generalizable recipe design:** Prefer data-driven per-estate model selection (e.g., choosing regularization or feature complexity via inner 80 m spatial-block CV on `labeled`) over hardcoding estate-name branches (`ctx["estate"] == ...`), so the training recipe generalizes cleanly to unseen estates.
 - **Checkpointing:** Write a valid, self-checked nominee in `/app/submission/` early and refresh `/app/submission/` and `/app/report/HANDOFF.md` at least hourly so a timeout preserves your strongest verified work.
 - **Pre-exit verification:** Before finishing, run `agentrsi selfcheck --submission /app/submission` and `agentrsi cv --submission /app/submission`, and verify that every non-base import in `/app/submission/pipeline.py` is pinned in `/app/submission/requirements.txt`.
 

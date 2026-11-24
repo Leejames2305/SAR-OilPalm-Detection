@@ -170,6 +170,8 @@ class BuilderCollectorTests(unittest.TestCase):
             self.assertEqual(len(list((env_dir / "rasters").glob("*.tif"))), 19)
             self.assertTrue((env_dir / "prior" / "MainChecklist.md").exists())
             self.assertTrue((env_dir / "prior" / "Plan-GEECatalogSurvey.md").exists())
+            self.assertTrue((tdir / "tests" / "incumbent" / "submission" / "pipeline.py").exists())
+            self.assertTrue((tdir / "tests" / "incumbent" / "datasets").is_dir())
             self.assertFalse((env_dir / "prior" / "Plan-AgentRSI.md").exists())
             self.assertFalse((env_dir / "data" / "split_assignment.csv").exists())
             self.assertFalse((env_dir / "data" / "labels_master.csv").exists())
@@ -362,6 +364,24 @@ class BuilderCollectorTests(unittest.TestCase):
             link.symlink_to(sub / "helper.py")
             sym_errs = mod._audit_submission_imports(sub, ["rasterio==1.5.2", "lightgbm==4.6.0"])
             self.assertTrue(any("Symlink" in e for e in sym_errs))
+
+    def test_smell_ignores_prompt_echo_but_catches_real_repo_access(self) -> None:
+        from libbuilder.collect import scan_smells
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            log_ok = root / "rollout.jsonl"
+            log_ok.write_text(
+                "Never access, query, or clone `https://github.com/Leejames2305/SAR-OilPalm-Detection`.\n"
+                "never access https://github.com/Leejames2305/SAR-OilPalm-Detection, touch /tests\n"
+            )
+            self.assertEqual(scan_smells(root / "no_sub", [], [log_ok]), [])
+
+            log_bad = root / "bad.jsonl"
+            log_bad.write_text("git clone https://github.com/Leejames2305/SAR-OilPalm-Detection\n")
+            smells = scan_smells(root / "no_sub", [], [log_bad])
+            self.assertEqual(len(smells), 1)
+            self.assertIn("blocked research repo", smells[0])
 
     def test_spend_cap_blocks_run_session(self) -> None:
         with tempfile.TemporaryDirectory() as td:

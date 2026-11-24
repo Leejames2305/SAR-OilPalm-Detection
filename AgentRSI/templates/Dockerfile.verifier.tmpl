@@ -1,4 +1,5 @@
 FROM {{SEALED_BASE_IMAGE}}
 COPY test.sh /tests/test.sh
-RUN chmod +x /tests/test.sh
+COPY incumbent/ /tests/incumbent/
+RUN chmod +x /tests/test.sh && chmod -R a+rX /tests/incumbent
 WORKDIR /tests

@@ -107,6 +107,13 @@ class MetricsUnitTests(unittest.TestCase):
         res_deg = evaluate_gate(0.05, 0.01, {"AirHitam": 0.09, "Palong": 0.09, "Serting": -0.031}, 0.03, -0.03)
         self.assertFalse(res_deg["passed"])
         self.assertEqual(res_deg["worst_estate"], "Serting")
+        # Single-estate dominance fails breadth rule (only 1 of 3 improved)
+        res_dom = evaluate_gate(
+            0.043, 0.01, {"AirHitam": -0.01, "Palong": 0.15, "Serting": -0.01}, 0.03, -0.03, min_improved_estates=2
+        )
+        self.assertFalse(res_dom["passed"])
+        self.assertEqual(res_dom["n_improved_estates"], 1)
+        self.assertTrue(any("min_improved_estates" in r for r in res_dom["failed_reasons"]))
 
     def test_validate_requirements(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -279,6 +286,39 @@ class HostGradingIntegrationTests(unittest.TestCase):
             self.assertEqual(v_rep["status"], "failed")
             self.assertEqual(reward["submission_valid"], 0)
             self.assertIn("Symlink", v_rep["error"])
+
+    def test_dynamic_promoted_incumbent_zero_delta_on_self(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            inc_sub = root / "incumbent_sub"
+            inc_sub.mkdir()
+            # Custom non-starter incumbent using NDVI + Long
+            (inc_sub / "pipeline.py").write_text(
+                "import numpy as np\n"
+                "from sklearn.linear_model import LogisticRegression\n"
+                "from sklearn.pipeline import make_pipeline\n"
+                "from sklearn.preprocessing import StandardScaler\n"
+                "def fit_predict(labeled, unlabeled, ctx):\n"
+                "    tr = labeled[labeled['label'].isin(['Healthy', 'Unhealthy'])]\n"
+                "    y = (tr['label'] == 'Unhealthy').astype(int).to_numpy()\n"
+                "    m = make_pipeline(StandardScaler(), LogisticRegression(class_weight='balanced', max_iter=500))\n"
+                "    m.fit(tr[['NDVI', 'Long']].to_numpy(float), y)\n"
+                "    return np.asarray(m.decision_function(unlabeled[['NDVI', 'Long']].to_numpy(float)), dtype=np.float64)\n"
+            )
+            (inc_sub / "requirements.txt").write_text("")
+            reward, v_rep, cert = grade_submission(
+                sealed_dir=self.sealed_dir,
+                submission_dir=inc_sub,
+                datasets_dir=root / "empty_ds",
+                output_dir=root / "verifier",
+                verifier_cfg=self.verifier_cfg,
+                incumbent_dir=inc_sub,
+                incumbent_datasets_dir=root / "empty_inc_ds",
+            )
+            self.assertEqual(reward["submission_valid"], 1)
+            self.assertEqual(reward["v_delta_vs_incumbent"], 0.0)
+            self.assertEqual(cert["composite"]["comp_delta"], 0.0)
+            self.assertFalse(cert["gate_passed"])
 
 
 if __name__ == "__main__":
