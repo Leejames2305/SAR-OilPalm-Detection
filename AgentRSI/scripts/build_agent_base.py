@@ -35,9 +35,38 @@ RUN pip install --no-cache-dir \\
     lightgbm \\
     geopandas
 
+RUN apt-get update && apt-get install -y --no-install-recommends \\
+        ripgrep \\
+        procps \\
+        xz-utils \\
+    && rm -rf /var/lib/apt/lists/*
+
+RUN set -eux; \\
+    arch="$(uname -m)"; \\
+    case "$arch" in \\
+      x86_64) node_arch="x64" ;; \\
+      aarch64|arm64) node_arch="arm64" ;; \\
+      *) echo "Unsupported arch: $arch" >&2; exit 1 ;; \\
+    esac; \\
+    curl -fsSL https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt -o /tmp/SHASUMS256.txt; \\
+    tarball="$(grep -E "node-v22\\.[0-9]+\\.[0-9]+-linux-${node_arch}\\.tar\\.xz$" /tmp/SHASUMS256.txt | head -n 1 | awk '{print $2}')"; \\
+    test -n "$tarball"; \\
+    curl -fsSL "https://nodejs.org/dist/latest-v22.x/${tarball}" -o "/tmp/${tarball}"; \\
+    (cd /tmp && grep " ${tarball}$" SHASUMS256.txt | sha256sum -c -); \\
+    tar -xJf "/tmp/${tarball}" -C /usr/local --strip-components=1 --no-same-owner; \\
+    rm -f /tmp/SHASUMS256.txt "/tmp/${tarball}"; \\
+    npm install -g @openai/codex@latest; \\
+    npm cache clean --force
+
+RUN set -eux; \\
+    curl -fsSL https://downloads.claude.ai/claude-code-releases/bootstrap.sh | bash -s -- latest; \\
+    if [ -x /root/.local/bin/claude ]; then ln -sf /root/.local/bin/claude /usr/local/bin/claude; fi; \\
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> /root/.bashrc
+
 COPY agentrsi_cli.py /usr/local/bin/agentrsi
 RUN chmod +x /usr/local/bin/agentrsi && \\
-    mkdir -p /app/data /app/rasters /app/prior /app/incumbent /app/submission /app/report /app/datasets
+    mkdir -p /app/data /app/rasters /app/prior /app/incumbent /app/submission /app/report /app/datasets && \\
+    node -v && npm -v && codex --version && claude --version && rg --version && agentrsi --help
 
 WORKDIR /app
 """
