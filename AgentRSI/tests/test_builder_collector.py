@@ -173,9 +173,15 @@ class BuilderCollectorTests(unittest.TestCase):
             self.assertFalse((env_dir / "prior" / "Plan-AgentRSI.md").exists())
             self.assertFalse((env_dir / "data" / "split_assignment.csv").exists())
             self.assertFalse((env_dir / "data" / "labels_master.csv").exists())
-            instr = (tdir / "instruction.md").read_text().lower()
+            raw_instr = (tdir / "instruction.md").read_text()
+            instr = raw_instr.lower()
             self.assertNotIn("gate_passed", instr)
             self.assertNotIn("certification", instr)
+            self.assertNotRegex(raw_instr, r"\{\{[A-Z0-9_]+\}\}")
+            self.assertIn("You have 600 seconds to complete this task.", raw_instr)
+            self.assertIn("`Pd` (double-bounce), 2: `Pv` (volume), 3: `Ps` (surface), 4: `Pc` (helix)", raw_instr)
+            self.assertIn("`xgboost`, `lightgbm`, `geopandas`, or `rasterio`", raw_instr)
+            self.assertIn("4 CPUs, 4096 MB RAM, 300 s per estate", raw_instr)
 
     def test_yymmdd_session_naming_lens_inference_and_seq(self) -> None:
         lenses_dir = AGENT_ROOT / "templates" / "lenses"

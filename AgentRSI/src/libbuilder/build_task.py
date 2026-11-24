@@ -200,7 +200,15 @@ def build_task(
             (templates_dir / "instruction_base.md").read_text(),
             {
                 "SESSION_ID": session_id,
+                "AGENT_TIMEOUT_SEC": str(agent_timeout),
                 "AGENT_CPUS": str(agent_cpus),
+                "AGENT_MEMORY_MB": str(int(session_cfg["agent_memory_mb"])),
+                "VERIFIER_CPUS": str(int(verifier_cfg["runtime"]["cpus"])),
+                "VERIFIER_MEMORY_MB": str(int(session_cfg["verifier_memory_mb"])),
+                "PER_ESTATE_TIMEOUT_SEC": str(int(verifier_cfg["runtime"]["per_estate_timeout_sec"])),
+                "PIP_INSTALL_TIMEOUT_SEC": str(int(verifier_cfg["runtime"]["pip_install_timeout_sec"])),
+                "MAX_DATASETS_MB": str(int(verifier_cfg["runtime"]["max_datasets_mb"])),
+                "PRIOR_DATASETS_MAX_MB": str(int(max_ds_mb)),
                 "FOCUS_LENS_SECTION": lens_path.read_text().strip(),
                 "HANDOFF_SECTION": handoff_md.strip(),
             },
@@ -235,9 +243,14 @@ def build_task(
     )
     os.chmod(solve_sh, 0o755)
 
-    # Canary verification: zero T markers in instruction/task.toml, and 002-CheckLeaks PASS
+    # Canary verification: zero unreplaced placeholders, zero T markers, and 002-CheckLeaks PASS
+    unreplaced_re = re.compile(r"\{\{[A-Z0-9_]+\}\}")
     for doc in (task_dir / "instruction.md", task_dir / "task.toml"):
-        txt_lc = doc.read_text().lower()
+        raw_txt = doc.read_text()
+        leftovers = unreplaced_re.findall(raw_txt)
+        if leftovers:
+            raise RuntimeError(f"Unreplaced template placeholder(s) {leftovers} found in {doc}")
+        txt_lc = raw_txt.lower()
         for forbidden in ("gate_passed", "certification"):
             if forbidden in txt_lc:
                 raise RuntimeError(f"T-leak canary triggered: {forbidden!r} found in {doc}")
