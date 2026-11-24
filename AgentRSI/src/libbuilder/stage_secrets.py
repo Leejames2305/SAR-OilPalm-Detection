@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import tempfile
 from pathlib import Path
 
 DEFAULT_STAGE_DIR = Path("/mnt/wsl/agentrsi")
@@ -17,8 +18,16 @@ def stage_gcp_sa(sa_key_path: Path, stage_dir: Path = DEFAULT_STAGE_DIR) -> tupl
     stage_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
     os.chmod(stage_dir, 0o700)
     dst = stage_dir / "gcp-sa.json"
-    shutil.copyfile(sa_key_path, dst)
-    os.chmod(dst, 0o600)
+    fd, tmp_name = tempfile.mkstemp(prefix=".gcp-sa.", dir=str(stage_dir))
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "wb") as out_fh, open(sa_key_path, "rb") as in_fh:
+            shutil.copyfileobj(in_fh, out_fh)
+        os.replace(tmp_name, dst)
+    except Exception:
+        if os.path.exists(tmp_name):
+            os.unlink(tmp_name)
+        raise
 
     mounts = json.dumps([
         {

@@ -29,6 +29,10 @@ def main() -> None:
         help="Optional session ID whose datasets/ directory to carry into /app/datasets/",
     )
     ap.add_argument("--timeout", type=int, default=None, help="Override agent timeout_sec")
+    ap.add_argument("--agent-cpus", type=int, default=None, help="Override agent container CPUs")
+    ap.add_argument("--agent-memory-mb", type=int, default=None, help="Override agent container memory (MB)")
+    ap.add_argument("--verifier-cpus", type=int, default=None, help="Override verifier container CPUs")
+    ap.add_argument("--verifier-memory-mb", type=int, default=None, help="Override verifier container memory (MB)")
     ap.add_argument("--output-root", type=Path, default=None, help="Override tasks output root")
     args = ap.parse_args()
 
@@ -54,6 +58,10 @@ def main() -> None:
         parent_session=args.parent,
         datasets_from=args.datasets_from,
         timeout_override=args.timeout,
+        agent_cpus_override=args.agent_cpus,
+        agent_memory_mb_override=args.agent_memory_mb,
+        verifier_cpus_override=args.verifier_cpus,
+        verifier_memory_mb_override=args.verifier_memory_mb,
         output_root=args.output_root,
     )
     print(f"Built task: {task_dir}")

@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -162,6 +163,17 @@ def run_session(
     jobs_out_dir = (jobs_root or (agent_root / "jobs")) / session_id
     jobs_out_dir.mkdir(parents=True, exist_ok=True)
 
+    task_agent_cpus = int(session_cfg["agent_cpus"])
+    task_toml_path = task_dir / "task.toml"
+    if task_toml_path.exists():
+        try:
+            task_meta = tomllib.loads(task_toml_path.read_text())
+            env_cpus = (task_meta.get("environment") or {}).get("cpus")
+            if env_cpus is not None:
+                task_agent_cpus = int(env_cpus)
+        except Exception:
+            pass
+
     cmd = build_harbor_command(
         task_dir=task_dir,
         jobs_out_dir=jobs_out_dir,
@@ -171,7 +183,7 @@ def run_session(
         env_type=use_env,
         mounts_json=mounts_json,
         gcp_project=gcp_project,
-        agent_cpus=int(session_cfg["agent_cpus"]),
+        agent_cpus=task_agent_cpus,
         reasoning_effort=use_effort,
         max_turns=use_turns,
         max_budget_usd=use_budget,

@@ -75,6 +75,10 @@ def build_task(
     parent_session: str | None = None,
     datasets_from: str | None = None,
     timeout_override: int | None = None,
+    agent_cpus_override: int | None = None,
+    agent_memory_mb_override: int | None = None,
+    verifier_cpus_override: int | None = None,
+    verifier_memory_mb_override: int | None = None,
     output_root: Path | None = None,
     agent_root: Path = AGENT_ROOT,
     repo_root: Path = REPO_ROOT,
@@ -211,7 +215,10 @@ def build_task(
             extra_copy_lines = "COPY datasets/ /app/datasets/"
 
     agent_timeout = int(timeout_override or session_cfg["agent_timeout_sec"])
-    agent_cpus = int(session_cfg["agent_cpus"])
+    agent_cpus = int(agent_cpus_override or session_cfg["agent_cpus"])
+    agent_memory_mb = int(agent_memory_mb_override or session_cfg["agent_memory_mb"])
+    verifier_cpus = int(verifier_cpus_override or session_cfg["verifier_cpus"])
+    verifier_memory_mb = int(verifier_memory_mb_override or session_cfg["verifier_memory_mb"])
     handoff_md = render_handoff_section(prev_session_dir, lineage)
 
     # Render templates (avoid doubling -<lens> when session_id already ends with -<lens>)
@@ -223,11 +230,11 @@ def build_task(
                 "TASK_NAME": task_name,
                 "AGENT_TIMEOUT_SEC": str(float(agent_timeout)),
                 "AGENT_CPUS": str(agent_cpus),
-                "AGENT_MEMORY_MB": str(int(session_cfg["agent_memory_mb"])),
+                "AGENT_MEMORY_MB": str(agent_memory_mb),
                 "AGENT_STORAGE_MB": str(int(session_cfg["agent_storage_mb"])),
                 "VERIFIER_TIMEOUT_SEC": str(int(session_cfg["verifier_timeout_sec"])),
-                "VERIFIER_CPUS": str(int(session_cfg["verifier_cpus"])),
-                "VERIFIER_MEMORY_MB": str(int(session_cfg["verifier_memory_mb"])),
+                "VERIFIER_CPUS": str(verifier_cpus),
+                "VERIFIER_MEMORY_MB": str(verifier_memory_mb),
             },
         )
     )
@@ -238,9 +245,9 @@ def build_task(
                 "SESSION_ID": session_id,
                 "AGENT_TIMEOUT_SEC": str(agent_timeout),
                 "AGENT_CPUS": str(agent_cpus),
-                "AGENT_MEMORY_MB": str(int(session_cfg["agent_memory_mb"])),
-                "VERIFIER_CPUS": str(int(verifier_cfg["runtime"]["cpus"])),
-                "VERIFIER_MEMORY_MB": str(int(session_cfg["verifier_memory_mb"])),
+                "AGENT_MEMORY_MB": str(agent_memory_mb),
+                "VERIFIER_CPUS": str(verifier_cpus),
+                "VERIFIER_MEMORY_MB": str(verifier_memory_mb),
                 "PER_ESTATE_TIMEOUT_SEC": str(int(verifier_cfg["runtime"]["per_estate_timeout_sec"])),
                 "PIP_INSTALL_TIMEOUT_SEC": str(int(verifier_cfg["runtime"]["pip_install_timeout_sec"])),
                 "MAX_DATASETS_MB": str(int(verifier_cfg["runtime"]["max_datasets_mb"])),
