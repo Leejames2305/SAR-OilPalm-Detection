@@ -1,0 +1,21 @@
+{
+  "session_id": "261124-s001-open",
+  "job_id": "2026-11-24__12-01-29",
+  "trial_name": "261124-s001-open__er3RuZL",
+  "parent_id": "starter",
+  "dry_session": false,
+  "agent": "codex",
+  "model": "gpt-6.1-terra",
+  "started_at": "2026-11-24T04:01:35.280043Z",
+  "finished_at": "2026-11-24T04:19:10.041295Z",
+  "cost_usd": 0.2153586,
+  "n_input_tokens": 1254700,
+  "n_cache_tokens": 1162112,
+  "n_output_tokens": 12933,
+  "exception_info": null,
+  "smells": [
+    "rollout-2026-11-24T04-05-26-01a20bba-dfd6-7eb3-9f83-4b86fa4cd55f.jsonl: references blocked research repo",
+    "trajectory.json: references blocked research repo"
+  ],
+  "handoff_missing_sections": []
+}

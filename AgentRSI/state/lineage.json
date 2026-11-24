@@ -2,21 +2,22 @@
   "schema_version": 1,
   "epoch": 1,
   "split_sha256": "26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed",
-  "t_attempts_used": 0,
+  "t_attempts_used": 1,
   "t_attempt_budget": 20,
   "kill_switch": false,
   "daily_spend_usd": {
-    "2026-11-23": 0.012239
+    "2026-11-23": 0.012239,
+    "2026-11-24": 0.215359
   },
   "incumbent": {
-    "id": "starter",
-    "source_dir": "starter",
+    "id": "261124-s001-open",
+    "source_dir": "sessions/261124-s001-open/submission",
     "epoch": 1,
-    "v_score": 0.05446945305942965,
+    "v_score": 0.11875051189920605,
     "per_estate_v_lift": {
-      "AirHitam": 0.046744654198282894,
-      "Palong": 0.04264048377897063,
-      "Serting": 0.07402322120103541
+      "AirHitam": 0.03702768808911442,
+      "Palong": 0.2533059847191584,
+      "Serting": 0.06591786288934534
     }
   },
   "epochs": [
@@ -43,6 +44,23 @@
       "promoted": false,
       "cost_usd": 0.012238754999999999,
       "collected_at": "2026-11-23T05:29:04+00:00"
+    },
+    "261124-s001-open": {
+      "session_id": "261124-s001-open",
+      "job_id": "2026-11-24__12-01-29",
+      "parent_id": "starter",
+      "epoch": 1,
+      "dry_session": false,
+      "status": "ok",
+      "submission_valid": true,
+      "v_score": 0.11875051189920605,
+      "v_delta_vs_incumbent": 0.0642810588397764,
+      "gate_passed": true,
+      "t_comp_delta": 0.07343817301122775,
+      "t_ci_low": 0.03670478347569852,
+      "promoted": true,
+      "cost_usd": 0.2153586,
+      "collected_at": "2026-11-24T04:19:26+00:00"
     }
   }
 }
