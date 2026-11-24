@@ -14,7 +14,7 @@ import yaml
 
 from libbuilder.env_utils import AGENT_ROOT, REPO_ROOT
 from libbuilder.lineage import load_lineage
-from libbuilder.render_handoff import render_handoff_section
+from libbuilder.render_handoff import find_latest_handoff_path, render_handoff_section
 
 SESSION_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 SESSION_SEQ_RE = re.compile(r"(?:^|-)s(\d+)(?:-|$)")
@@ -73,6 +73,7 @@ def build_task(
     *,
     focus_lens: str | None = None,
     parent_session: str | None = None,
+    datasets_from: str | None = None,
     timeout_override: int | None = None,
     output_root: Path | None = None,
     agent_root: Path = AGENT_ROOT,
@@ -146,8 +147,9 @@ def build_task(
         doc_src = repo_root / "docs" / "AgentPlan" / doc_name
         if doc_src.exists():
             shutil.copyfile(doc_src, prior_dst / doc_name)
-    if prev_session_dir and (prev_session_dir / "HANDOFF.md").exists():
-        shutil.copyfile(prev_session_dir / "HANDOFF.md", prior_dst / "prev_HANDOFF.md")
+    handoff_fallback = find_latest_handoff_path(prev_session_dir, lineage)
+    if handoff_fallback is not None:
+        shutil.copyfile(handoff_fallback[1], prior_dst / "prev_HANDOFF.md")
 
     # 4. Current incumbent pipeline (in /app/incumbent, solution/ for oracle, and tests/incumbent for verifier)
     tests_inc_sub = tests_dst / "incumbent" / "submission"
@@ -174,21 +176,39 @@ def build_task(
             ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
         )
 
-    # 5. Optional prior derived datasets (size-capped)
+    # 5. Optional prior derived datasets (size-capped; --datasets-from overrides default carry-over)
     extra_copy_lines = ""
     max_ds_mb = float(session_cfg.get("prior_datasets_max_mb", 128))
-    if prev_session_dir and (prev_session_dir / "datasets").exists():
-        prev_ds = prev_session_dir / "datasets"
-        if _dir_size_bytes(prev_ds) <= max_ds_mb * 1024 * 1024:
-            ds_dst = env_dir / "datasets"
-            shutil.copytree(
-                prev_ds,
-                ds_dst,
-                symlinks=False,
-                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
-            )
-            if any(ds_dst.rglob("*")):
-                extra_copy_lines = "COPY datasets/ /app/datasets/"
+    ds_sources: list[Path] = []
+    if datasets_from is not None:
+        explicit_ds = agent_root / "sessions" / datasets_from / "datasets"
+        if not explicit_ds.exists():
+            raise FileNotFoundError(f"Requested --datasets-from directory missing: {explicit_ds}")
+        ds_sources.append(explicit_ds)
+    else:
+        if incumbent_dir.name == "submission" and (incumbent_dir.parent / "datasets").exists():
+            ds_sources.append(incumbent_dir.parent / "datasets")
+        if prev_session_dir and (prev_session_dir / "datasets").exists():
+            pds = prev_session_dir / "datasets"
+            if pds not in ds_sources:
+                ds_sources.append(pds)
+
+    if ds_sources:
+        ds_dst = env_dir / "datasets"
+        staged_bytes = 0
+        for src_ds in ds_sources:
+            src_bytes = _dir_size_bytes(src_ds)
+            if staged_bytes + src_bytes <= max_ds_mb * 1024 * 1024:
+                shutil.copytree(
+                    src_ds,
+                    ds_dst,
+                    dirs_exist_ok=True,
+                    symlinks=False,
+                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+                )
+                staged_bytes = _dir_size_bytes(ds_dst)
+        if ds_dst.exists() and any(ds_dst.rglob("*")):
+            extra_copy_lines = "COPY datasets/ /app/datasets/"
 
     agent_timeout = int(timeout_override or session_cfg["agent_timeout_sec"])
     agent_cpus = int(session_cfg["agent_cpus"])

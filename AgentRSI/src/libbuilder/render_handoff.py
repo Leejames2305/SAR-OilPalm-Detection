@@ -1,4 +1,4 @@
-"""Handoff validation and verified-V rendering for the next session's instruction.md."""
+"""Handoff validation, ancestor fallback, and verified-V rendering for the next session's instruction.md."""
 from __future__ import annotations
 
 import json
@@ -26,8 +26,48 @@ def validate_handoff(text: str) -> list[str]:
     return [sec for sec in REQUIRED_SECTIONS if sec.lower() not in headings]
 
 
+def find_latest_handoff_path(
+    prev_session_dir: Path | None,
+    lineage: dict[str, Any],
+) -> tuple[str, Path] | None:
+    """Return `(session_id, HANDOFF.md path)` for `prev_session_dir`, or walk ancestors on crash/missing."""
+    if prev_session_dir is None or not prev_session_dir.exists():
+        return None
+
+    direct = prev_session_dir / "HANDOFF.md"
+    if direct.exists():
+        return prev_session_dir.name, direct
+
+    sessions_root = prev_session_dir.parent
+    sessions_meta = lineage.get("sessions") or {}
+    visited = {prev_session_dir.name}
+    cur_id = str(sessions_meta.get(prev_session_dir.name, {}).get("parent_id") or "")
+
+    while cur_id and cur_id != "starter" and cur_id not in visited:
+        visited.add(cur_id)
+        cand = sessions_root / cur_id / "HANDOFF.md"
+        if cand.exists():
+            return cur_id, cand
+        cur_id = str(sessions_meta.get(cur_id, {}).get("parent_id") or "")
+
+    inc_id = str((lineage.get("incumbent") or {}).get("id") or "")
+    if inc_id and inc_id != "starter" and inc_id not in visited:
+        cand = sessions_root / inc_id / "HANDOFF.md"
+        if cand.exists():
+            return inc_id, cand
+
+    return None
+
+
+def _trim_handoff(text: str, limit: int = 12000) -> str:
+    trimmed = text.strip()
+    if len(trimmed) > limit:
+        return trimmed[:limit] + "\n\n... [truncated]"
+    return trimmed
+
+
 def render_handoff_section(prev_session_dir: Path | None, lineage: dict[str, Any]) -> str:
-    """Render verifier-backed V summary + previous HANDOFF.md (never reads certification.json!)."""
+    """Render verifier-backed V summary + previous/ancestor HANDOFF.md (never reads certification.json!)."""
     inc = lineage.get("incumbent", {})
     inc_id = inc.get("id", "starter")
     inc_v = float(inc.get("v_score", 0.0))
@@ -43,12 +83,26 @@ def render_handoff_section(prev_session_dir: Path | None, lineage: dict[str, Any
 
     reward_path = prev_session_dir / "reward.json"
     v_rep_path = prev_session_dir / "v_report.json"
+    meta_path = prev_session_dir / "meta.json"
     handoff_path = prev_session_dir / "HANDOFF.md"
     prev_id = prev_session_dir.name
     prev_meta = lineage.get("sessions", {}).get(prev_id, {})
     was_promoted = bool(prev_meta.get("promoted"))
 
     lines.append(f"- **Previous session (`{prev_id}`):** promoted = `{was_promoted}`")
+    if meta_path.exists():
+        try:
+            meta = json.loads(meta_path.read_text())
+            exc_info = meta.get("exception_info")
+            if isinstance(exc_info, dict) and exc_info.get("exception_type"):
+                lines.append(
+                    f"- **Previous session interruption:** exited early with `{exc_info['exception_type']}` "
+                    "(scores below may reflect an unfinished mid-experiment checkpoint rather than a concluded result)."
+                )
+        except Exception:
+            pass
+
+    reward: dict[str, Any] | None = None
     if reward_path.exists() and v_rep_path.exists():
         reward = json.loads(reward_path.read_text())
         v_rep = json.loads(v_rep_path.read_text())
@@ -66,12 +120,23 @@ def render_handoff_section(prev_session_dir: Path | None, lineage: dict[str, Any
         ])
         if v_rep.get("error"):
             lines.append(f"  - Verifier error: `{v_rep['error']}`")
+        ds_info = (v_rep.get("datasets_audit") or {}).get("datasets") or {}
+        if ds_info:
+            ds_desc = ", ".join(
+                f"`/app/datasets/{name}/{info.get('file', 'features.parquet')}` "
+                f"({info.get('rows', '?')} rows × {info.get('cols', '?')} cols)"
+                for name, info in sorted(ds_info.items())
+            )
+            lines.append(f"- **Derived datasets carried over from `{prev_id}`:** {ds_desc}")
+    else:
+        lines.append("- **Verifier-verified V score:** missing `reward.json`/`v_report.json` in previous session.")
 
-        if handoff_path.exists():
-            handoff_text = handoff_path.read_text()
-            missing = validate_handoff(handoff_text)
-            if missing:
-                lines.append(f"- **Handoff schema note:** missing sections `{missing}`")
+    if handoff_path.exists():
+        handoff_text = handoff_path.read_text()
+        missing = validate_handoff(handoff_text)
+        if missing:
+            lines.append(f"- **Handoff schema note:** missing sections `{missing}`")
+        if reward is not None:
             disagreements = []
             for m in SCORE_CLAIM_RE.finditer(handoff_text):
                 claimed = float(m.group(1))
@@ -83,11 +148,20 @@ def render_handoff_section(prev_session_dir: Path | None, lineage: dict[str, Any
                     + "; ".join(disagreements)
                     + " — always trust verifier numbers above."
                 )
-            trimmed = handoff_text.strip()
-            if len(trimmed) > 12000:
-                trimmed = trimmed[:12000] + "\n\n... [truncated]"
-            lines.extend(["", "### Previous HANDOFF.md", "", trimmed])
+        lines.extend(["", "### Previous HANDOFF.md", "", _trim_handoff(handoff_text)])
     else:
-        lines.append("- **Verifier-verified V score:** missing `reward.json`/`v_report.json` in previous session.")
+        lines.append(
+            f"- **Handoff note:** `{prev_id}` did not produce `HANDOFF.md` before exiting."
+        )
+        fallback = find_latest_handoff_path(prev_session_dir, lineage)
+        if fallback is not None:
+            anc_id, anc_path = fallback
+            lines.extend([
+                f"- **Fallback handoff:** loaded most recent surviving handoff from ancestor `{anc_id}`.",
+                "",
+                f"### Last Available HANDOFF.md (from `{anc_id}`)",
+                "",
+                _trim_handoff(anc_path.read_text()),
+            ])
 
     return "\n".join(lines) + "\n"

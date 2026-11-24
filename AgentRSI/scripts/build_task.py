@@ -23,6 +23,11 @@ def main() -> None:
     ap.add_argument("--date", default=None, help="Optional YYMMDD date override when using --next")
     ap.add_argument("--focus", default=None, help="Focus lens name under templates/lenses/")
     ap.add_argument("--parent", default=None, help="Previous session ID whose HANDOFF.md to inject")
+    ap.add_argument(
+        "--datasets-from",
+        default=None,
+        help="Optional session ID whose datasets/ directory to carry into /app/datasets/",
+    )
     ap.add_argument("--timeout", type=int, default=None, help="Override agent timeout_sec")
     ap.add_argument("--output-root", type=Path, default=None, help="Override tasks output root")
     args = ap.parse_args()
@@ -47,6 +52,7 @@ def main() -> None:
         session_id,
         focus_lens=args.focus,
         parent_session=args.parent,
+        datasets_from=args.datasets_from,
         timeout_override=args.timeout,
         output_root=args.output_root,
     )

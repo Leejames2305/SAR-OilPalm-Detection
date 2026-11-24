@@ -240,6 +240,37 @@ class BuilderCollectorTests(unittest.TestCase):
             self.assertNotIn("certification", rendered.lower())
             self.assertEqual(validate_handoff((sdir / "HANDOFF.md").read_text()), [])
 
+            # Ancestor fallback when immediate parent crashed without writing HANDOFF.md
+            s2dir = Path(td) / "s002"
+            s2dir.mkdir()
+            (s2dir / "reward.json").write_text(
+                json.dumps({
+                    "score": 0.02,
+                    "v_lift_AirHitam": 0.0,
+                    "v_lift_Palong": 0.03,
+                    "v_lift_Serting": 0.03,
+                    "v_delta_vs_incumbent": -0.035,
+                    "v_delta_vs_coords": -0.02,
+                    "submission_valid": 1,
+                })
+            )
+            (s2dir / "v_report.json").write_text(
+                json.dumps({
+                    "status": "ok",
+                    "datasets_audit": {"datasets": {"alos_winstats": {"file": "features.parquet", "rows": 7220, "cols": 403}}},
+                })
+            )
+            (s2dir / "meta.json").write_text(
+                json.dumps({"exception_info": {"exception_type": "NonZeroAgentExitCodeError"}})
+            )
+            lin["sessions"]["s002"] = {"parent_id": "s001", "promoted": False}
+            fb = render_handoff_section(s2dir, lin)
+            self.assertIn("NonZeroAgentExitCodeError", fb)
+            self.assertIn("/app/datasets/alos_winstats/features.parquet", fb)
+            self.assertIn("Last Available HANDOFF.md (from `s001`)", fb)
+            self.assertIn("## Open leads, ranked", fb)
+            self.assertNotIn("0.999", fb)
+
     def test_collect_secret_scan_smells_idempotency_and_promotion(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
