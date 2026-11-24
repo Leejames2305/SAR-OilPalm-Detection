@@ -68,6 +68,115 @@ def _render_template(text: str, mapping: dict[str, str]) -> str:
     return out
 
 
+def _copy_incumbent_bundle(
+    incumbent_dir: Path,
+    dst_submission: Path,
+    dst_datasets: Path,
+    *,
+    copy_solution_to: Path | None = None,
+    touch_empty_datasets_keep: bool = False,
+) -> None:
+    """Copy incumbent submission files and optional prior datasets to target dirs."""
+    dst_submission.mkdir(parents=True, exist_ok=True)
+    dst_datasets.mkdir(parents=True, exist_ok=True)
+    for item in sorted(incumbent_dir.iterdir()):
+        if item.is_file() and item.name != "__pycache__" and not item.name.endswith(".pyc"):
+            shutil.copyfile(item, dst_submission / item.name)
+            if copy_solution_to is not None and (
+                item.name in ("pipeline.py", "requirements.txt") or item.suffix == ".py"
+            ):
+                shutil.copyfile(item, copy_solution_to / item.name)
+    if not (dst_submission / "requirements.txt").exists():
+        (dst_submission / "requirements.txt").write_text("")
+    if copy_solution_to is not None and not (copy_solution_to / "requirements.txt").exists():
+        (copy_solution_to / "requirements.txt").write_text("")
+
+    inc_session_ds = incumbent_dir.parent / "datasets"
+    if incumbent_dir.name == "submission" and inc_session_ds.exists():
+        shutil.copytree(
+            inc_session_ds,
+            dst_datasets,
+            dirs_exist_ok=True,
+            symlinks=False,
+            ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+        )
+    if touch_empty_datasets_keep and not any(dst_datasets.iterdir()):
+        (dst_datasets / ".keep").write_text("")
+
+
+def _render_mcp_servers_toml(*, inrun_enabled: bool, inrun_port: int, colab_enabled: bool) -> str:
+    """Render `[[environment.mcp_servers]]` TOML blocks for enabled M7/M8 MCP servers."""
+    blocks: list[str] = []
+    if inrun_enabled:
+        blocks.append(
+            "\n".join([
+                "[[environment.mcp_servers]]",
+                'name = "agentrsi-verifier"',
+                'transport = "streamable-http"',
+                f'url = "http://verifier-sidecar:{inrun_port}/mcp"',
+                "",
+                "[environment.mcp_servers.headers]",
+                'Authorization = "Bearer ${AGENTRSI_VERIFIER_MCP_TOKEN}"',
+            ])
+        )
+    if colab_enabled:
+        blocks.append(
+            "\n".join([
+                "[[environment.mcp_servers]]",
+                'name = "agentrsi-colab"',
+                'transport = "stdio"',
+                'command = "python3"',
+                'args = ["/usr/local/bin/agentrsi_mcp_relay.py", "--socket", "/run/agentrsi/colab-mcp.sock"]',
+            ])
+        )
+    if not blocks:
+        return ""
+    return "\n" + "\n\n".join(blocks) + "\n"
+
+
+def _render_mcp_tools_section(
+    *,
+    inrun_enabled: bool,
+    inrun_cfg: dict[str, Any],
+    colab_enabled: bool,
+    colab_cfg: dict[str, Any],
+    allow_a100: bool,
+) -> str:
+    """Render conditional `### MCP Tools` documentation for `instruction.md`."""
+    if not inrun_enabled and not colab_enabled:
+        return ""
+    parts: list[str] = ["\n### MCP Tools\n"]
+    if inrun_enabled:
+        max_q = int(inrun_cfg.get("max_queries", 15))
+        sigma = float(inrun_cfg.get("noise_sigma", 0.005))
+        parts.append(
+            "\n".join([
+                "#### `agentrsi-verifier` (In-Run V-Split Scorer)",
+                f"- Sidecar MCP server exposing `score_v`, `verifier_budget`, and `verifier_health` (query budget: `{max_q}` evaluations; additive Gaussian noise $\\sigma = {sigma}$ cached per submission content hash).",
+                "- Returns noisy validation-split (`V`) composite and per-estate PR-AUC lift plus deltas vs incumbent and coords-only baseline.",
+                "- Stage larger submissions or derived datasets under `/shared/<subdir>/` (e.g., `/shared/sub_01/pipeline.py`, `/shared/sub_01/requirements.txt`, and optional `/shared/ds_01/`) and pass `shared_submission_dir` / `shared_datasets_dir` to `score_v(...)`, or pass inline `pipeline_code` + `requirements_txt` for small candidates.",
+                "- `verifier_budget` and `verifier_health` do not consume query budget.",
+            ])
+        )
+    if colab_enabled:
+        gpus = [str(g) for g in (colab_cfg.get("allowed_gpus") or ["T4", "L4"])]
+        if allow_a100 and "A100" not in gpus:
+            gpus.append("A100")
+        gpus_text = ", ".join(f"`{g}`" for g in gpus)
+        max_job_min = int(colab_cfg.get("max_job_timeout_min", 30))
+        max_sess_min = int(colab_cfg.get("max_session_gpu_min", 60))
+        parts.append(
+            "\n".join([
+                "#### `agentrsi-colab` (Remote GPU Offload Broker)",
+                "- Host-managed MCP server exposing `colab_run`, `colab_status`, `colab_fetch`, and `colab_stop` for GPU-accelerated training or feature extraction.",
+                f"- Allowed GPUs: {gpus_text}; per-job timeout cap: `{max_job_min}` min; session GPU cap: `{max_sess_min}` min. At most **1 active Colab VM/job** may run at a time.",
+                "- Stage inputs under `/run/agentrsi/colab-io/in/` and pass relative paths in `staged_inputs`; outputs are downloaded to `/run/agentrsi/colab-io/out/<job_id>/` (copy reusable features into `/app/datasets/<name>/`).",
+                "- Final `/app/submission/pipeline.py` still executes **CPU-only and offline** during grading; call `colab_stop` when GPU work finishes.",
+            ])
+        )
+    return "\n".join(parts) + "\n"
+
+
 def build_task(
     session_id: str,
     *,
@@ -79,6 +188,9 @@ def build_task(
     agent_memory_mb_override: int | None = None,
     verifier_cpus_override: int | None = None,
     verifier_memory_mb_override: int | None = None,
+    enable_inrun_verifier: bool | None = None,
+    enable_colab: bool | None = None,
+    colab_allow_a100: bool | None = None,
     output_root: Path | None = None,
     agent_root: Path = AGENT_ROOT,
     repo_root: Path = REPO_ROOT,
@@ -156,29 +268,78 @@ def build_task(
         shutil.copyfile(handoff_fallback[1], prior_dst / "prev_HANDOFF.md")
 
     # 4. Current incumbent pipeline (in /app/incumbent, solution/ for oracle, and tests/incumbent for verifier)
-    tests_inc_sub = tests_dst / "incumbent" / "submission"
-    tests_inc_ds = tests_dst / "incumbent" / "datasets"
-    tests_inc_sub.mkdir(parents=True, exist_ok=True)
-    tests_inc_ds.mkdir(parents=True, exist_ok=True)
     for item in sorted(incumbent_dir.iterdir()):
         if item.is_file() and item.name != "__pycache__" and not item.name.endswith(".pyc"):
             shutil.copyfile(item, inc_dst / item.name)
-            shutil.copyfile(item, tests_inc_sub / item.name)
-            if item.name in ("pipeline.py", "requirements.txt") or item.suffix == ".py":
-                shutil.copyfile(item, sol_dst / item.name)
-    if not (sol_dst / "requirements.txt").exists():
-        (sol_dst / "requirements.txt").write_text("")
-    if not (tests_inc_sub / "requirements.txt").exists():
-        (tests_inc_sub / "requirements.txt").write_text("")
-    inc_session_ds = incumbent_dir.parent / "datasets"
-    if incumbent_dir.name == "submission" and inc_session_ds.exists():
-        shutil.copytree(
-            inc_session_ds,
-            tests_inc_ds,
-            dirs_exist_ok=True,
-            symlinks=False,
-            ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+    _copy_incumbent_bundle(
+        incumbent_dir,
+        tests_dst / "incumbent" / "submission",
+        tests_dst / "incumbent" / "datasets",
+        copy_solution_to=sol_dst,
+    )
+
+    # Resolve M7/M8 toggles against session.yaml defaults
+    inrun_cfg = verifier_cfg.get("inrun") or {}
+    colab_cfg = session_cfg.get("colab_broker") or {}
+    inrun_enabled = (
+        bool(session_cfg.get("inrun_verifier", False))
+        if enable_inrun_verifier is None
+        else bool(enable_inrun_verifier)
+    )
+    colab_enabled = (
+        bool(colab_cfg.get("enabled", False))
+        if enable_colab is None
+        else bool(enable_colab)
+    )
+    allow_a100 = (
+        bool(colab_cfg.get("allow_a100", False))
+        if colab_allow_a100 is None
+        else bool(colab_allow_a100)
+    )
+    inrun_port = int(inrun_cfg.get("port", 8765))
+
+    if inrun_enabled:
+        sidecar_dir = env_dir / "sidecar"
+        _copy_incumbent_bundle(
+            incumbent_dir,
+            sidecar_dir / "incumbent" / "submission",
+            sidecar_dir / "incumbent" / "datasets",
+            touch_empty_datasets_keep=True,
         )
+        (sidecar_dir / "Dockerfile").write_text(
+            _render_template(
+                (templates_dir / "Dockerfile.sidecar.tmpl").read_text(),
+                {"SEALED_BASE_IMAGE": str(verifier_cfg["sealed_base_image"])},
+            )
+        )
+        (env_dir / "docker-compose.yaml").write_text(
+            _render_template(
+                (templates_dir / "docker-compose.inrun.yaml.tmpl").read_text(),
+                {
+                    "INRUN_PORT": str(inrun_port),
+                    "SIDECAR_CPUS": str(inrun_cfg.get("sidecar_cpus", 2)),
+                    "SIDECAR_MEMORY_MB": str(int(inrun_cfg.get("sidecar_memory_mb", 2048))),
+                },
+            )
+        )
+
+    extra_artifacts_toml = (
+        ', { source = "/var/log/agentrsi-verifier/queries.jsonl", destination = "sidecar/queries.jsonl", service = "verifier-sidecar" }'
+        if inrun_enabled
+        else ""
+    )
+    mcp_servers_toml = _render_mcp_servers_toml(
+        inrun_enabled=inrun_enabled,
+        inrun_port=inrun_port,
+        colab_enabled=colab_enabled,
+    )
+    mcp_tools_section = _render_mcp_tools_section(
+        inrun_enabled=inrun_enabled,
+        inrun_cfg=inrun_cfg,
+        colab_enabled=colab_enabled,
+        colab_cfg=colab_cfg,
+        allow_a100=allow_a100,
+    )
 
     # 5. Optional prior derived datasets (size-capped; --datasets-from overrides default carry-over)
     extra_copy_lines = ""
@@ -228,10 +389,12 @@ def build_task(
             (templates_dir / "task.toml.tmpl").read_text(),
             {
                 "TASK_NAME": task_name,
+                "EXTRA_ARTIFACTS_TOML": extra_artifacts_toml,
                 "AGENT_TIMEOUT_SEC": str(float(agent_timeout)),
                 "AGENT_CPUS": str(agent_cpus),
                 "AGENT_MEMORY_MB": str(agent_memory_mb),
                 "AGENT_STORAGE_MB": str(int(session_cfg["agent_storage_mb"])),
+                "MCP_SERVERS_TOML": mcp_servers_toml,
                 "VERIFIER_TIMEOUT_SEC": str(int(session_cfg["verifier_timeout_sec"])),
                 "VERIFIER_CPUS": str(verifier_cpus),
                 "VERIFIER_MEMORY_MB": str(verifier_memory_mb),
@@ -252,6 +415,7 @@ def build_task(
                 "PIP_INSTALL_TIMEOUT_SEC": str(int(verifier_cfg["runtime"]["pip_install_timeout_sec"])),
                 "MAX_DATASETS_MB": str(int(verifier_cfg["runtime"]["max_datasets_mb"])),
                 "PRIOR_DATASETS_MAX_MB": str(int(max_ds_mb)),
+                "MCP_TOOLS_SECTION": mcp_tools_section,
                 "FOCUS_LENS_SECTION": lens_path.read_text().strip(),
                 "HANDOFF_SECTION": handoff_md.strip(),
             },

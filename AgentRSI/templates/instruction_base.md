@@ -45,7 +45,7 @@ All 19 ROI-masked GeoTIFFs carry **no embedded band descriptions and `nodata=Non
   - `agentrsi cv [--submission /app/submission]` — 5-fold 80 m spatial-block `GroupKFold` CV on `/app/data/L_labelled.csv` against the NDVI baseline.
   - `agentrsi selfcheck [--submission /app/submission]` — validates `/app/submission/requirements.txt` pins, audits non-base third-party imports and symlinks, and runs `fit_predict()` on all three estates.
   - `agentrsi gcp-init` — verifies Earth Engine access using `$GOOGLE_APPLICATION_CREDENTIALS` (`/run/secrets/gcp-sa.json`) and `$GCP_PROJECT`.
-
+{{MCP_TOOLS_SECTION}}
 ## Evaluation Metrics & Validation Discipline
 
 Primary objective is **composite PR-AUC lift**: the unweighted mean across `AirHitam`, `Palong`, and `Serting` of `AP(y, s) - prevalence`, evaluated on spatially held-out 80 m blocks where `y` is 1 for `Unhealthy` and 0 for `Healthy` (`Middle` rows excluded prior to scoring), `prevalence = mean(y)`, and `AP(y, s)` is tie-aware step-function average precision matching `sklearn.metrics.average_precision_score` (constant scores yield `0.0` lift).

@@ -1,0 +1,5 @@
+FROM {{SEALED_BASE_IMAGE}}
+
+RUN mkdir -p /var/log/agentrsi-verifier && touch /var/log/agentrsi-verifier/queries.jsonl
+COPY incumbent/ /opt/agentrsi/incumbent/
+RUN chown -R root:root /opt/agentrsi/incumbent /var/log/agentrsi-verifier && chmod -R a+rX /opt/agentrsi/incumbent

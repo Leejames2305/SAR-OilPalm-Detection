@@ -22,3 +22,10 @@ runtime:
   max_datasets_mb: 512
   cpus: 4
 sealed_base_image: "localhost/agentrsi-sealed:epoch1"
+inrun:
+  max_queries: 15
+  noise_sigma: 0.005
+  port: 8765
+  per_estate_timeout_sec: 180
+  sidecar_cpus: 2
+  sidecar_memory_mb: 2048

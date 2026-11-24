@@ -32,6 +32,11 @@ RUN pip install --no-cache-dir \\
     pyyaml==6.0.3 \\
     pyarrow==26.0.1
 
+RUN python3 -m venv --system-site-packages /opt/agentrsi/sidecar-venv \\
+    && /opt/agentrsi/sidecar-venv/bin/pip install --no-cache-dir \\
+       mcp==2.3.0 \\
+       uvicorn==0.54.0
+
 RUN useradd --uid 10001 --create-home --shell /bin/bash runner
 
 COPY sealed/ /sealed/
@@ -39,7 +44,10 @@ RUN chown -R root:root /sealed && chmod 700 /sealed && chmod 600 /sealed/*
 
 COPY verifier/ /opt/agentrsi/verifier/
 COPY starter/ /opt/agentrsi/starter/
-RUN chown -R root:root /opt/agentrsi && chmod -R a+rX /opt/agentrsi
+RUN chown -R root:root /opt/agentrsi \\
+    && chmod 755 /opt/agentrsi \\
+    && chmod -R a+rX /opt/agentrsi/verifier /opt/agentrsi/starter \\
+    && chmod -R go-rwx /opt/agentrsi/sidecar-venv
 
 ENV PYTHONPATH=/opt/agentrsi
 """

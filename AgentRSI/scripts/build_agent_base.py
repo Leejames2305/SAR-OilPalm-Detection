@@ -64,9 +64,11 @@ RUN set -eux; \\
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> /root/.bashrc
 
 COPY agentrsi_cli.py /usr/local/bin/agentrsi
-RUN chmod +x /usr/local/bin/agentrsi && \\
+COPY agentrsi_mcp_relay.py /usr/local/bin/agentrsi_mcp_relay.py
+RUN chmod +x /usr/local/bin/agentrsi /usr/local/bin/agentrsi_mcp_relay.py && \\
     mkdir -p /app/data /app/rasters /app/prior /app/incumbent /app/submission /app/report /app/datasets && \\
-    node -v && npm -v && codex --version && claude --version && rg --version && agentrsi --help
+    node -v && npm -v && codex --version && claude --version && rg --version && agentrsi --help && \\
+    python3 /usr/local/bin/agentrsi_mcp_relay.py --help
 
 WORKDIR /app
 """
@@ -92,10 +94,14 @@ def build_agent_base() -> str:
     cli_src = TEMPLATES_DIR / "agentrsi_cli.py"
     if not cli_src.exists():
         raise FileNotFoundError(cli_src)
+    relay_src = TEMPLATES_DIR / "agentrsi_mcp_relay.py"
+    if not relay_src.exists():
+        raise FileNotFoundError(relay_src)
 
     with tempfile.TemporaryDirectory(prefix="agentrsi_agent_base_") as td:
         ctx = Path(td)
         shutil.copyfile(cli_src, ctx / "agentrsi_cli.py")
+        shutil.copyfile(relay_src, ctx / "agentrsi_mcp_relay.py")
         (ctx / "Dockerfile").write_text(AGENT_DOCKERFILE)
         cmd = ["podman", "build", "-t", image_tag, str(ctx)]
         print("Running:", " ".join(cmd), flush=True)

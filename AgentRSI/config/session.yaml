@@ -13,3 +13,13 @@ max_budget_usd: 5.0
 max_turns: 120
 agent_base_image: "localhost/agentrsi-agent-base:latest"
 prior_datasets_max_mb: 128
+inrun_verifier: false
+colab_broker:
+  enabled: false
+  allowed_gpus: ["T4", "L4"]
+  allow_a100: false
+  max_job_timeout_min: 30
+  max_session_gpu_min: 60
+  idle_teardown_sec: 300
+  max_upload_mb: 256
+  max_download_mb: 128

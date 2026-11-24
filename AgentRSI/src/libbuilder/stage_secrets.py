@@ -9,6 +9,42 @@ from pathlib import Path
 
 DEFAULT_STAGE_DIR = Path("/mnt/wsl/agentrsi")
 CONTAINER_SECRET_PATH = "/run/secrets/gcp-sa.json"
+CONTAINER_COLAB_SOCKET_PATH = "/run/agentrsi/colab-mcp.sock"
+CONTAINER_COLAB_IO_DIR = "/run/agentrsi/colab-io"
+
+
+def build_mounts_json(
+    gcp_sa_dst: Path,
+    *,
+    colab_socket_path: Path | None = None,
+    colab_io_dir: Path | None = None,
+) -> str:
+    """Build Harbor `--mounts` JSON array for GCP credentials and optional Colab broker paths."""
+    mounts: list[dict[str, object]] = [
+        {
+            "type": "bind",
+            "source": str(gcp_sa_dst),
+            "target": CONTAINER_SECRET_PATH,
+            "read_only": True,
+        }
+    ]
+    if colab_io_dir is not None:
+        mounts.append(
+            {
+                "type": "bind",
+                "source": str(colab_io_dir),
+                "target": CONTAINER_COLAB_IO_DIR,
+            }
+        )
+    if colab_socket_path is not None:
+        mounts.append(
+            {
+                "type": "bind",
+                "source": str(colab_socket_path),
+                "target": CONTAINER_COLAB_SOCKET_PATH,
+            }
+        )
+    return json.dumps(mounts)
 
 
 def stage_gcp_sa(sa_key_path: Path, stage_dir: Path = DEFAULT_STAGE_DIR) -> tuple[Path, str]:
@@ -29,12 +65,4 @@ def stage_gcp_sa(sa_key_path: Path, stage_dir: Path = DEFAULT_STAGE_DIR) -> tupl
             os.unlink(tmp_name)
         raise
 
-    mounts = json.dumps([
-        {
-            "type": "bind",
-            "source": str(dst),
-            "target": CONTAINER_SECRET_PATH,
-            "read_only": True,
-        }
-    ])
-    return dst, mounts
+    return dst, build_mounts_json(dst)

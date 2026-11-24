@@ -21,6 +21,8 @@ def main() -> None:
     ap.add_argument("--max-turns", type=int, default=None, help="Override max_turns (claude-code)")
     ap.add_argument("--max-budget-usd", type=float, default=None, help="Override max_budget_usd (claude-code)")
     ap.add_argument("--dry-run", action="store_true", help="Pass --dry-run to harbor run")
+    ap.add_argument("--colab-mock", action="store_true", help="Use MockColabBackend for M8 Colab broker")
+    ap.add_argument("--colab-allow-a100", action="store_true", help="Allow A100 GPU selection in M8 Colab broker")
     args = ap.parse_args()
 
     rc = run_session(
@@ -30,6 +32,8 @@ def main() -> None:
         max_turns=args.max_turns,
         max_budget_usd=args.max_budget_usd,
         dry_run=args.dry_run,
+        colab_mock=args.colab_mock,
+        colab_allow_a100=args.colab_allow_a100,
     )
     sys.exit(rc)
 

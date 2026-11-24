@@ -28,6 +28,9 @@ NET_CALL_RE = re.compile(
     r"\b(urllib|requests|httpx|aiohttp|curl|wget|earthengine|socket)\b|\bimport\s+ee\b|\bfrom\s+ee\b"
 )
 BLOCKED_REPO_RE = re.compile(r"SAR-OilPalm-Detection|Leejames2305", re.IGNORECASE)
+VERIFIER_TOKEN_LEAK_RE = re.compile(
+    r"AGENTRSI_VERIFIER_MCP_TOKEN\s*[:=]\s*['\"]?[0-9a-fA-F]{32,}"
+)
 
 
 def _is_binary(p: Path) -> bool:
@@ -73,6 +76,9 @@ def scan_for_secrets(roots: list[Path], secret_literals: list[str]) -> list[str]
                 if tok and tok in text:
                     findings.append(f"{f.name}: matched secret token")
                     break
+            else:
+                if VERIFIER_TOKEN_LEAK_RE.search(text):
+                    findings.append(f"{f.name}: matched AGENTRSI_VERIFIER_MCP_TOKEN literal")
     return findings
 
 
@@ -227,6 +233,16 @@ def collect_session(
     if ds_src and any(ds_src.iterdir()):
         shutil.copytree(ds_src, session_dir / "datasets", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
 
+    inrun_queries_used: int | None = None
+    for q_cand in (
+        artifacts_root / "sidecar" / "queries.jsonl",
+        artifacts_root / "var" / "log" / "agentrsi-verifier" / "queries.jsonl",
+    ):
+        if q_cand.is_file():
+            shutil.copyfile(q_cand, session_dir / "sidecar_queries.jsonl")
+            inrun_queries_used = sum(1 for ln in q_cand.read_text(errors="replace").splitlines() if ln.strip())
+            break
+
     # Smell scan (submission network/URLs + blocked repo in artifacts/agent logs)
     artifact_files = [p for p in sorted(artifacts_root.rglob("*")) if p.is_file()] if artifacts_root.exists() else []
     agent_dir = trial_dir / "agent"
@@ -250,6 +266,7 @@ def collect_session(
         "exception_info": trial_result.get("exception_info"),
         "smells": smells,
         "handoff_missing_sections": handoff_missing,
+        "inrun_queries_used": inrun_queries_used,
     }
     (session_dir / "meta.json").write_text(json.dumps(meta, indent=2) + "\n")
 

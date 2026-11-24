@@ -33,6 +33,41 @@ def main() -> None:
     ap.add_argument("--agent-memory-mb", type=int, default=None, help="Override agent container memory (MB)")
     ap.add_argument("--verifier-cpus", type=int, default=None, help="Override verifier container CPUs")
     ap.add_argument("--verifier-memory-mb", type=int, default=None, help="Override verifier container memory (MB)")
+    inrun_grp = ap.add_mutually_exclusive_group()
+    inrun_grp.add_argument(
+        "--enable-inrun-verifier",
+        dest="enable_inrun_verifier",
+        action="store_true",
+        default=None,
+        help="Enable M7 in-run verifier v2 sidecar MCP server",
+    )
+    inrun_grp.add_argument(
+        "--disable-inrun-verifier",
+        dest="enable_inrun_verifier",
+        action="store_false",
+        help="Disable M7 in-run verifier v2 sidecar MCP server",
+    )
+    colab_grp = ap.add_mutually_exclusive_group()
+    colab_grp.add_argument(
+        "--enable-colab",
+        dest="enable_colab",
+        action="store_true",
+        default=None,
+        help="Enable M8 Colab GPU offload MCP broker",
+    )
+    colab_grp.add_argument(
+        "--disable-colab",
+        dest="enable_colab",
+        action="store_false",
+        help="Disable M8 Colab GPU offload MCP broker",
+    )
+    ap.add_argument(
+        "--colab-allow-a100",
+        dest="colab_allow_a100",
+        action="store_true",
+        default=None,
+        help="Allow A100 GPU selection in M8 Colab broker",
+    )
     ap.add_argument("--output-root", type=Path, default=None, help="Override tasks output root")
     args = ap.parse_args()
 
@@ -62,6 +97,9 @@ def main() -> None:
         agent_memory_mb_override=args.agent_memory_mb,
         verifier_cpus_override=args.verifier_cpus,
         verifier_memory_mb_override=args.verifier_memory_mb,
+        enable_inrun_verifier=args.enable_inrun_verifier,
+        enable_colab=args.enable_colab,
+        colab_allow_a100=args.colab_allow_a100,
         output_root=args.output_root,
     )
     print(f"Built task: {task_dir}")

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import secrets
 import shutil
 import subprocess
 import sys
@@ -14,7 +15,7 @@ import yaml
 from libbuilder.env_utils import AGENT_ROOT, load_dotenv, podman_env, resolve_gateway
 from libbuilder.events import append_event
 from libbuilder.lineage import check_budget_guard, load_lineage
-from libbuilder.stage_secrets import CONTAINER_SECRET_PATH, stage_gcp_sa
+from libbuilder.stage_secrets import CONTAINER_SECRET_PATH, build_mounts_json, stage_gcp_sa
 
 
 def _harbor_bin() -> str:
@@ -47,6 +48,7 @@ def build_harbor_command(
     cmd = [
         _harbor_bin(),
         "run",
+        "--yes",
         "-p",
         str(task_dir),
         "-a",
@@ -92,6 +94,8 @@ def run_session(
     max_turns: int | None = None,
     max_budget_usd: float | None = None,
     dry_run: bool = False,
+    colab_mock: bool = False,
+    colab_allow_a100: bool = False,
     tasks_root: Path | None = None,
     jobs_root: Path | None = None,
     env_path: Path | None = None,
@@ -158,21 +162,69 @@ def run_session(
         sa_key_path = (agent_root / sa_key_path).resolve()
 
     gateway = resolve_gateway(use_agent, env_map)
-    _, mounts_json = stage_gcp_sa(sa_key_path, stage_dir=stage_dir)
+    gcp_sa_dst, mounts_json = stage_gcp_sa(sa_key_path, stage_dir=stage_dir)
 
     jobs_out_dir = (jobs_root or (agent_root / "jobs")) / session_id
     jobs_out_dir.mkdir(parents=True, exist_ok=True)
 
     task_agent_cpus = int(session_cfg["agent_cpus"])
+    mcp_server_names: set[str] = set()
     task_toml_path = task_dir / "task.toml"
     if task_toml_path.exists():
         try:
             task_meta = tomllib.loads(task_toml_path.read_text())
-            env_cpus = (task_meta.get("environment") or {}).get("cpus")
+            env_tbl = task_meta.get("environment") or {}
+            env_cpus = env_tbl.get("cpus")
             if env_cpus is not None:
                 task_agent_cpus = int(env_cpus)
+            for srv in env_tbl.get("mcp_servers") or []:
+                if isinstance(srv, dict) and srv.get("name"):
+                    mcp_server_names.add(str(srv["name"]))
         except Exception:
             pass
+
+    extra_child_env: dict[str, str] = {gateway["api_key_name"]: api_key}
+    if "agentrsi-verifier" in mcp_server_names:
+        # Ephemeral per-session token: held in child_env only, never written to disk or logged.
+        extra_child_env["AGENTRSI_VERIFIER_MCP_TOKEN"] = secrets.token_hex(32)
+
+    broker: Any = None
+    if "agentrsi-colab" in mcp_server_names:
+        from colab_broker.backend import CliColabBackend, MockColabBackend
+        from colab_broker.config import ColabBrokerConfig
+        from colab_broker.server import ColabBrokerServer
+
+        if colab_mock:
+            backend: Any = MockColabBackend()
+        else:
+            backend = CliColabBackend()
+            auth_ok, auth_msg = backend.check_auth_ready()
+            if not auth_ok:
+                raise RuntimeError(f"Colab broker auth check failed: {auth_msg}")
+
+        colab_cfg = session_cfg.get("colab_broker") or {}
+        colab_socket_path = stage_dir / f"colab-{session_id}.sock"
+        colab_io_dir = stage_dir / f"colab-io-{session_id}"
+        broker_cfg = ColabBrokerConfig(
+            socket_path=colab_socket_path,
+            io_dir=colab_io_dir,
+            session_id=session_id,
+            allowed_gpus=tuple(str(g) for g in (colab_cfg.get("allowed_gpus") or ["T4", "L4"])),
+            allow_a100=bool(colab_allow_a100 or colab_cfg.get("allow_a100", False)),
+            max_job_timeout_min=float(colab_cfg.get("max_job_timeout_min", 30.0)),
+            max_session_gpu_min=float(colab_cfg.get("max_session_gpu_min", 60.0)),
+            idle_teardown_sec=float(colab_cfg.get("idle_teardown_sec", 300.0)),
+            max_upload_mb=float(colab_cfg.get("max_upload_mb", 256.0)),
+            max_download_mb=float(colab_cfg.get("max_download_mb", 128.0)),
+            events_path=None if dry_run else ep,
+            epoch=epoch,
+        )
+        mounts_json = build_mounts_json(
+            gcp_sa_dst,
+            colab_socket_path=colab_socket_path,
+            colab_io_dir=colab_io_dir,
+        )
+        broker = ColabBrokerServer(broker_cfg, backend=backend)
 
     cmd = build_harbor_command(
         task_dir=task_dir,
@@ -190,7 +242,7 @@ def run_session(
         dry_run=dry_run,
     )
 
-    child_env = podman_env(agent_root, extra={gateway["api_key_name"]: api_key})
+    child_env = podman_env(agent_root, extra=extra_child_env)
     if not dry_run:
         append_event(
             ep,
@@ -203,7 +255,15 @@ def run_session(
             dedup_id=f"{session_id}:start",
         )
 
-    res = subprocess.run(cmd, env=child_env, check=False)
+    try:
+        if broker is not None:
+            broker.start_background()
+            broker.wait_ready(timeout=5.0)
+        res = subprocess.run(cmd, env=child_env, check=False)
+    finally:
+        if broker is not None:
+            broker.shutdown()
+
     if not dry_run:
         if res.returncode == 0:
             append_event(

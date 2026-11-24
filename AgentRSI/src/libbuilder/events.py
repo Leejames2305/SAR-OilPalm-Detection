@@ -18,6 +18,10 @@ VALID_TYPES = frozenset({
     "budget_alert",
     "spend_cap",
     "run_error",
+    "colab_vm_start",
+    "colab_vm_stop",
+    "colab_job_run",
+    "colab_blocked",
 })
 
 

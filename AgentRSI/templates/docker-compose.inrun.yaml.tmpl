@@ -1,0 +1,48 @@
+services:
+  verifier-sidecar:
+    build:
+      context: ./sidecar
+    cpus: {{SIDECAR_CPUS}}
+    mem_limit: {{SIDECAR_MEMORY_MB}}m
+    command:
+      - /opt/agentrsi/sidecar-venv/bin/python
+      - -m
+      - verifier.inrun_server
+      - --host
+      - 0.0.0.0
+      - --port
+      - "{{INRUN_PORT}}"
+      - --sealed-dir
+      - /sealed
+      - --incumbent-dir
+      - /opt/agentrsi/incumbent/submission
+      - --incumbent-datasets-dir
+      - /opt/agentrsi/incumbent/datasets
+      - --shared-dir
+      - /shared
+      - --log-path
+      - /var/log/agentrsi-verifier/queries.jsonl
+    environment:
+      AGENTRSI_VERIFIER_MCP_TOKEN: "${AGENTRSI_VERIFIER_MCP_TOKEN}"
+    volumes:
+      - "agentrsi_share:/shared:ro"
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:{{INRUN_PORT}}/health', timeout=2).read()"
+      interval: 2s
+      timeout: 3s
+      retries: 15
+      start_period: 3s
+
+  main:
+    volumes:
+      - "agentrsi_share:/shared:rw"
+    depends_on:
+      verifier-sidecar:
+        condition: service_healthy
+
+volumes:
+  agentrsi_share: {}
