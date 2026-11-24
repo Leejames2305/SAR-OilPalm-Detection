@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import ast
+import importlib.metadata
 import json
 import os
 import re
@@ -24,6 +26,11 @@ DATASETS_DIR = Path("/app/datasets")
 BLOCK_M = 80
 PINNED_REQ_RE = re.compile(
     r"^[A-Za-z0-9][A-Za-z0-9._-]*(\[[A-Za-z0-9.,_-]+\])?==[^\s;#]+(\s*;.*)?$"
+)
+REQ_NAME_RE = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)")
+VERIFIER_BASE_DISTS = frozenset({"numpy", "pandas", "scipy", "scikit-learn", "pyarrow", "pyyaml"})
+VERIFIER_BASE_MODULES = frozenset(
+    {"numpy", "pandas", "scipy", "sklearn", "pyarrow", "yaml", "joblib", "threadpoolctl", "dateutil", "pytz", "tzdata"}
 )
 
 
@@ -52,6 +59,145 @@ def _validate_requirements(req_path: Path) -> list[str]:
     return lines
 
 
+def _normalize_dist(name: str) -> str:
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def _req_dist_name(req_line: str) -> str:
+    m = REQ_NAME_RE.match(req_line.strip())
+    return _normalize_dist(m.group(1)) if m else ""
+
+
+def _is_type_checking_guard(test: ast.expr) -> bool:
+    if isinstance(test, ast.Name) and test.id == "TYPE_CHECKING":
+        return True
+    if isinstance(test, ast.Attribute) and test.attr == "TYPE_CHECKING":
+        return True
+    return False
+
+
+def _catches_import_error(handlers: list[ast.ExceptHandler]) -> bool:
+    for h in handlers:
+        if h.type is None:
+            return True
+        targets = h.type.elts if isinstance(h.type, ast.Tuple) else [h.type]
+        for t in targets:
+            name = t.id if isinstance(t, ast.Name) else (t.attr if isinstance(t, ast.Attribute) else "")
+            if name in ("ImportError", "ModuleNotFoundError", "Exception", "BaseException"):
+                return True
+    return False
+
+
+def _collect_ast_imports(py_path: Path) -> set[str]:
+    tree = ast.parse(py_path.read_text(encoding="utf-8"), filename=str(py_path))
+    found: set[str] = set()
+
+    def visit(node: ast.AST) -> None:
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                found.add(alias.name.split(".")[0])
+            return
+        if isinstance(node, ast.ImportFrom):
+            if node.level == 0 and node.module:
+                found.add(node.module.split(".")[0])
+            return
+        if isinstance(node, ast.If) and _is_type_checking_guard(node.test):
+            for stmt in node.orelse:
+                visit(stmt)
+            return
+        if isinstance(node, ast.Try) and _catches_import_error(node.handlers):
+            for h in node.handlers:
+                for stmt in h.body:
+                    visit(stmt)
+            for stmt in (*node.orelse, *node.finalbody):
+                visit(stmt)
+            return
+        for child in ast.iter_child_nodes(node):
+            visit(child)
+
+    visit(tree)
+    return found
+
+
+def _expand_allowed_dists(seed_dists: set[str]) -> set[str]:
+    allowed = {_normalize_dist(d) for d in seed_dists if d}
+    queue = list(allowed)
+    while queue:
+        cur = queue.pop()
+        try:
+            reqs = importlib.metadata.requires(cur) or []
+        except importlib.metadata.PackageNotFoundError:
+            continue
+        for spec in reqs:
+            if "extra ==" in spec or "extra==" in spec:
+                continue
+            dep = _req_dist_name(spec)
+            if dep and dep not in allowed:
+                allowed.add(dep)
+                queue.append(dep)
+    return allowed
+
+
+def _audit_submission_imports(submission_dir: Path, reqs: list[str]) -> list[str]:
+    """Audit submission for symlinks and third-party imports missing from requirements.txt."""
+    errors: list[str] = []
+    for p in sorted(submission_dir.rglob("*")):
+        if p.is_symlink():
+            errors.append(f"Symlink not permitted in submission/: {p.name}")
+
+    py_files = [
+        p for p in sorted(submission_dir.rglob("*.py"))
+        if "__pycache__" not in p.parts and not p.is_symlink()
+    ]
+    if not py_files:
+        return errors
+
+    local_mods = {p.stem for p in submission_dir.glob("*.py")}
+    local_mods |= {
+        d.name for d in submission_dir.iterdir()
+        if d.is_dir() and d.name != "__pycache__" and any(d.glob("*.py"))
+    }
+    stdlib_mods = set(sys.stdlib_module_names) | set(sys.builtin_module_names) | {"__future__"}
+
+    pinned_dists = {_req_dist_name(r) for r in reqs}
+    allowed_dists = _expand_allowed_dists(set(VERIFIER_BASE_DISTS) | pinned_dists)
+    pkg_to_dists = importlib.metadata.packages_distributions()
+
+    imported: dict[str, set[str]] = {}
+    for py_path in py_files:
+        try:
+            mods = _collect_ast_imports(py_path)
+        except SyntaxError as exc:
+            errors.append(f"SyntaxError in {py_path.name}:{exc.lineno}: {exc.msg}")
+            continue
+        rel = str(py_path.relative_to(submission_dir))
+        for mod in mods:
+            imported.setdefault(mod, set()).add(rel)
+
+    for mod in sorted(imported):
+        if mod in stdlib_mods or mod in local_mods or mod in VERIFIER_BASE_MODULES:
+            continue
+        if _normalize_dist(mod) in allowed_dists:
+            continue
+        dists = pkg_to_dists.get(mod, [])
+        if any(_normalize_dist(d) in allowed_dists for d in dists):
+            continue
+        files_str = ", ".join(sorted(imported[mod]))
+        hint = ""
+        if dists:
+            try:
+                ver = importlib.metadata.version(dists[0])
+                hint = f" (pin e.g. '{dists[0]}=={ver}' in requirements.txt)"
+            except importlib.metadata.PackageNotFoundError:
+                hint = f" (pin '{dists[0]}==<version>' in requirements.txt)"
+        else:
+            hint = f" (pin '{mod}==<version>' in requirements.txt)"
+        errors.append(
+            f"Unpinned third-party import '{mod}' in {files_str}: not preinstalled in verifier{hint}"
+        )
+    return errors
+
+
 def _load_pipeline(submission_dir: Path):
     if not (submission_dir / "pipeline.py").exists():
         raise FileNotFoundError(f"Missing {submission_dir / 'pipeline.py'}")
@@ -65,6 +211,10 @@ def cmd_selfcheck(args: argparse.Namespace) -> None:
     sub = args.submission
     reqs = _validate_requirements(sub / "requirements.txt")
     print(f"requirements.txt: {len(reqs)} pinned package(s)")
+    import_errors = _audit_submission_imports(sub, reqs)
+    if import_errors:
+        raise SystemExit("FAIL submission audit:\n  - " + "\n  - ".join(import_errors))
+    print("import-pin audit: OK")
     pipeline = _load_pipeline(sub)
 
     l_all = pd.read_csv(DATA_DIR / "L_labelled.csv")

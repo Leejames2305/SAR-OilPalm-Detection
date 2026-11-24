@@ -311,6 +311,58 @@ class BuilderCollectorTests(unittest.TestCase):
             self.assertEqual(lin_second["t_attempts_used"], 1)
             self.assertAlmostEqual(lin_second["daily_spend_usd"]["2026-11-23"], 0.42, places=6)
 
+    def test_agentrsi_selfcheck_import_pin_audit(self) -> None:
+        import importlib.util
+
+        cli_path = AGENT_ROOT / "templates" / "agentrsi_cli.py"
+        spec = importlib.util.spec_from_file_location("agentrsi_cli_mod", cli_path)
+        assert spec and spec.loader
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+
+        with tempfile.TemporaryDirectory() as td:
+            sub = Path(td) / "submission"
+            sub.mkdir()
+            (sub / "helper.py").write_text("import math\nimport numpy as np\nimport sklearn\n")
+            (sub / "pipeline.py").write_text(
+                "from typing import TYPE_CHECKING\n"
+                "import helper\n"
+                "import pandas as pd\n"
+                "import yaml\n"
+                "if TYPE_CHECKING:\n"
+                "    import geopandas\n"
+                "try:\n"
+                "    import xgboost\n"
+                "except ImportError:\n"
+                "    xgboost = None\n"
+                "def fit_predict(l, u, ctx): return [0.0]*len(u)\n"
+            )
+            # Base + stdlib + local + guarded optional imports pass with empty requirements
+            self.assertEqual(mod._audit_submission_imports(sub, []), [])
+
+            # Unpinned third-party import fails with actionable pin hint
+            (sub / "pipeline.py").write_text(
+                "import rasterio\n"
+                "import lightgbm as lgb\n"
+                "def fit_predict(l, u, ctx): return [0.0]*len(u)\n"
+            )
+            errs = mod._audit_submission_imports(sub, [])
+            self.assertEqual(len(errs), 2)
+            self.assertTrue(any("rasterio" in e and "rasterio==" in e for e in errs))
+            self.assertTrue(any("lightgbm" in e for e in errs))
+
+            # Pinning both packages clears the audit
+            self.assertEqual(
+                mod._audit_submission_imports(sub, ["rasterio==1.5.2", "lightgbm==4.6.0"]),
+                [],
+            )
+
+            # Symlinks inside submission/ are rejected
+            link = sub / "bad_link.py"
+            link.symlink_to(sub / "helper.py")
+            sym_errs = mod._audit_submission_imports(sub, ["rasterio==1.5.2", "lightgbm==4.6.0"])
+            self.assertTrue(any("Symlink" in e for e in sym_errs))
+
     def test_spend_cap_blocks_run_session(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)

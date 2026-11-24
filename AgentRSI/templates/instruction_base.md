@@ -43,7 +43,7 @@ All 19 ROI-masked GeoTIFFs carry **no embedded band descriptions and `nodata=Non
 - `/app/prior/prev_HANDOFF.md` — previous session handoff (present when continuing from a prior session).
 - `agentrsi` CLI:
   - `agentrsi cv [--submission /app/submission]` — 5-fold 80 m spatial-block `GroupKFold` CV on `/app/data/L_labelled.csv` against the NDVI baseline.
-  - `agentrsi selfcheck [--submission /app/submission]` — validates `/app/submission/requirements.txt` pins and runs `fit_predict()` on all three estates.
+  - `agentrsi selfcheck [--submission /app/submission]` — validates `/app/submission/requirements.txt` pins, audits non-base third-party imports and symlinks, and runs `fit_predict()` on all three estates.
   - `agentrsi gcp-init` — verifies Earth Engine access using `$GOOGLE_APPLICATION_CREDENTIALS` (`/run/secrets/gcp-sa.json`) and `$GCP_PROJECT`.
 
 ## Evaluation Metrics & Validation Discipline
