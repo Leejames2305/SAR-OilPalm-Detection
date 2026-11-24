@@ -1,0 +1,18 @@
+{
+  "session_id": "261124-s005-ablation",
+  "job_id": "2026-11-24__14-35-23",
+  "trial_name": "261124-s005-ablation__DwESHZL",
+  "parent_id": "261124-s001-open",
+  "dry_session": true,
+  "agent": "codex",
+  "model": "gpt-6.1-terra",
+  "started_at": "2026-11-24T06:35:28.996637Z",
+  "finished_at": "2026-11-24T06:50:10.982488Z",
+  "cost_usd": 0.2838724,
+  "n_input_tokens": 1054614,
+  "n_cache_tokens": 860928,
+  "n_output_tokens": 9428,
+  "exception_info": null,
+  "smells": [],
+  "handoff_missing_sections": []
+}

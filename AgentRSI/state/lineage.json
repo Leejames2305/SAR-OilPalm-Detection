@@ -7,7 +7,7 @@
   "kill_switch": false,
   "daily_spend_usd": {
     "2026-11-23": 0.012239,
-    "2026-11-24": 0.563141
+    "2026-11-24": 1.386185
   },
   "incumbent": {
     "id": "261124-s001-open",
@@ -78,6 +78,57 @@
       "promoted": false,
       "cost_usd": 0.34778239999999994,
       "collected_at": "2026-11-24T05:56:41+00:00"
+    },
+    "261124-s003-data-expansion": {
+      "session_id": "261124-s003-data-expansion",
+      "job_id": "2026-11-24__14-33-33",
+      "parent_id": "261124-s002-open",
+      "epoch": 1,
+      "dry_session": true,
+      "status": "ok",
+      "submission_valid": true,
+      "v_score": 0.11875051189920605,
+      "v_delta_vs_incumbent": 0.0,
+      "gate_passed": false,
+      "t_comp_delta": 0.0,
+      "t_ci_low": 0.0,
+      "promoted": false,
+      "cost_usd": 0.30315939999999997,
+      "collected_at": "2026-11-24T06:56:17+00:00"
+    },
+    "261124-s004-literature": {
+      "session_id": "261124-s004-literature",
+      "job_id": "2026-11-24__14-34-37",
+      "parent_id": "261124-s001-open",
+      "epoch": 1,
+      "dry_session": true,
+      "status": "ok",
+      "submission_valid": true,
+      "v_score": 0.11875051189920605,
+      "v_delta_vs_incumbent": 0.0,
+      "gate_passed": false,
+      "t_comp_delta": 0.0,
+      "t_ci_low": 0.0,
+      "promoted": false,
+      "cost_usd": 0.23601339999999998,
+      "collected_at": "2026-11-24T06:56:18+00:00"
+    },
+    "261124-s005-ablation": {
+      "session_id": "261124-s005-ablation",
+      "job_id": "2026-11-24__14-35-23",
+      "parent_id": "261124-s001-open",
+      "epoch": 1,
+      "dry_session": true,
+      "status": "ok",
+      "submission_valid": true,
+      "v_score": 0.11875051189920605,
+      "v_delta_vs_incumbent": 0.0,
+      "gate_passed": false,
+      "t_comp_delta": 0.0,
+      "t_ci_low": 0.0,
+      "promoted": false,
+      "cost_usd": 0.2838724,
+      "collected_at": "2026-11-24T06:56:18+00:00"
     }
   }
 }

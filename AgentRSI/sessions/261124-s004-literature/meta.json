@@ -1,0 +1,18 @@
+{
+  "session_id": "261124-s004-literature",
+  "job_id": "2026-11-24__14-34-37",
+  "trial_name": "261124-s004-literature__H5k2JaT",
+  "parent_id": "261124-s001-open",
+  "dry_session": true,
+  "agent": "codex",
+  "model": "gpt-6.1-terra",
+  "started_at": "2026-11-24T06:34:43.566346Z",
+  "finished_at": "2026-11-24T06:49:44.371888Z",
+  "cost_usd": 0.23601339999999998,
+  "n_input_tokens": 1090825,
+  "n_cache_tokens": 956928,
+  "n_output_tokens": 10854,
+  "exception_info": null,
+  "smells": [],
+  "handoff_missing_sections": []
+}

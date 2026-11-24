@@ -1,0 +1,18 @@
+{
+  "session_id": "261124-s003-data-expansion",
+  "job_id": "2026-11-24__14-33-33",
+  "trial_name": "261124-s003-data-expansion__zGcWk7M",
+  "parent_id": "261124-s002-open",
+  "dry_session": true,
+  "agent": "codex",
+  "model": "gpt-6.1-terra",
+  "started_at": "2026-11-24T06:33:40.060004Z",
+  "finished_at": "2026-11-24T06:50:05.985432Z",
+  "cost_usd": 0.30315939999999997,
+  "n_input_tokens": 1285923,
+  "n_cache_tokens": 1103488,
+  "n_output_tokens": 13110,
+  "exception_info": null,
+  "smells": [],
+  "handoff_missing_sections": []
+}

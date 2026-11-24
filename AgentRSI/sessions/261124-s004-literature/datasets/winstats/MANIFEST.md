@@ -1,0 +1,2 @@
+# Winstats derived covariates
+Extracted 2026-11-24 from ROI-masked ALOS-2 rasters in `/app/rasters/`. For each tree coordinate, reprojected EPSG:4326 to raster CRS and summarized each 3x3 pixel window for all 2 dates, using positional band order from the data specification. `spk` and HAlpha values mask nonfinite and <=0; Yamaguchi dB values mask only nonfinite. Features are mean, standard deviation, minimum, maximum, and IQR (75th-25th percentile). Keys are exact estate/Long/Lat values from both CSVs; no labels or block IDs included.
