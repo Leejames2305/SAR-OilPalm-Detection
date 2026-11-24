@@ -1,10 +1,10 @@
 # AgentRSI Plan
 
-**Version:** 2.6 (24 Nov 2026) | **Phase:** M0–M4 closed (Harbor `0.27.0`, TB-Science-aligned templates) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
+**Version:** 2.7 (24 Nov 2026) | **Phase:** M5 in progress (S1 `261124-s001-open` completed & promoted; reviewing gaps before M5 exit) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
 
 **Goal.** Turn this project into an RSI4EO-style loop. A coding agent builds the oil-palm triage model in a sandbox, a sealed verifier scores it, and each day's session starts from what the last one found. Humans design the harness and verifier. Agents build the models.
 
-**Where we are.** M0, M1, M2, M3, and M4 are closed. Harbor + Podman gateways pass (M0); the data pipeline, frozen 80 m split, multi-date SAR + NDVI tables, GEE-only SA, leak checks, and resampled gate calibration pass (M1); Verifier v1 passes end to end (M2); Builder, Runner, Collector, `localhost/agentrsi-agent-base:latest`, `agentrsi` CLI, spend/T-budget guards, idempotent collection, and live `s000-dry` dry session pass end to end (M3); and the zero-dependency offline Dashboard (`scripts/dashboard.py`, `src/libbuilder/dashboard.py`, auto-refresh in `collect.py`, scripted exact-number diff) passes end to end (M4). **M5 (First real session S1) is next and waits for go-ahead.**
+**Where we are.** M0–M4 are closed, and **M5 (S1 `261124-s001-open`, 1 h test run)** completed cleanly in `17m 34s` (`$0.215`), passed certification on T (`+0.0734` composite ΔPR-AUC, 90% CI `[+0.0367, +0.1098]`), and promoted to the new incumbent. Forensic audit of S1 confirmed the Palong NDVI×spatial synergy is real (survives 4-quadrant LORO) while surfacing concrete harness/verifier/template gaps (notably static `starter` incumbent in the verifier, early stopping before SAR/GEE exploration, single-estate dominance, and prompt-echo smell) to resolve before closing M5 and launching S2.
 
 Evidence tags: **[V]** read in Harbor docs or source | **[T]** tested on this machine | **[S]** simulation on the real estate tables | **[?]** unverified.
 
@@ -112,7 +112,7 @@ AgentRSI/
                              lineage, events, dashboard) (M3–M4)
   verifier/                  scoring + gate library baked into every tests/ image (unit-tested) (M2)
   starter/                   session-0 pipeline (NDVI-only balanced LogReg incumbent) (M2)
-  scripts/                   thin CLIs: build_task  run_session  collect  regrade  dashboard  daily
+  scripts/                   thin CLIs: build_task  run_session  collect  regrade  dashboard
   state/lineage.json         incumbent, scores, epochs, spend ledger, T-attempt counter (committed)
   state/events.jsonl         append-only event log (committed)
   sessions/<session_id>/     COLLECTED (YYMMDD-sXXX-lens): REPORT.md HANDOFF.md submission/ datasets/ reward.json
@@ -260,8 +260,8 @@ Each has an exit test.
 - **M2 — Verifier v1** · *closed 23 Nov 2026.* `verifier/` scoring, baselines (`incumbent_fit_predict`, `coords_only_fit_predict`), isolated `runner` subprocess + pinned PyPI `pip install`, `config/verifier.yaml`, `starter/`, local sealed base image (`localhost/agentrsi-sealed:epoch1` via `scripts/build_verifier_base.py`), 11 unit tests, Harbor Oracle/Nop integration trials (`spike/m2-verifier`), and 5 container adversarial/pip checks. *Exit:* all checks green in Progress.
 - **M3 — Builder, runner, collector** · *closed 23 Nov 2026.* Prebuilt `localhost/agentrsi-agent-base:latest` (`scripts/build_agent_base.py`) with in-container `agentrsi` CLI (`selfcheck`, `cv`, `gcp-init`), `config/session.yaml`, `templates/`, `src/libbuilder/` (`build_task`, `run_session`, `collect`, `render_handoff`, `stage_secrets`, `lineage`, `events`, `env_utils`), `scripts/{build_task,run_session,collect,regrade}.py`, 5 builder/collector unit tests, and end-to-end `s000-dry` session (`claude-code` / `claude-haiku-5-5`). *Exit:* all checks green in Progress (`harbor check` waived on `-e podman`: empirically confirmed still broken in Harbor `0.27.0` because `_wait_until_compose_exec_ready()` runs before `_upload_environment_dir_after_start()` on `crun`).
 - **M4 — Dashboard** · *closed 23 Nov 2026.* `src/libbuilder/dashboard.py` + thin CLI `scripts/dashboard.py` (`--verify`) + auto-refresh in `collect.py`, writing self-contained offline `dashboard/index.html` with separate V (search signal) and T (certified + CI + `+0.03` floor) SVG charts broken at epoch boundaries, sessions table, events ledger, and inline `HANDOFF.md`/`REPORT.md` context inspector. *Exit:* all checks green in Progress (20/20 unit tests, `0` mismatches on scripted diff against `s000-dry` and multi-epoch fixtures).
-- **M5 — First real session (S1, 8 h, spend-capped).** *Exit:* you review the report and dashboard; we tune the templates.
-- **M6 — Iteration and schedule.** S2 generated from S1, gate works, resume is frictionless. Then Windows Task Scheduler or cron runs `daily.sh` (collect, dashboard, ledger, kill switch).
+- **M5 — First real session (S1, 1 h pilot, spend-capped) · *in progress (24 Nov 2026).*** S1 (`261124-s001-open`) completed, collected, and promoted. *Exit:* finish S1 audit, decide & apply harness/verifier/template fixes (dynamic promoted incumbent in verifier, persistence/non-hardcoding template tuning, prompt-echo smell fix, gate-bar review), and plan S2.
+- **M6 — Fast startup & S2 iteration (manual kickoff, no scheduler).** Bake key agent CLIs & runtimes (`nodejs`, `npm`, Node 22, `ripgrep`, `@openai/codex`, `@anthropic-ai/claude-code`) into `localhost/agentrsi-agent-base:latest` so session startup drops from ~3–4 min to seconds. Generate S2 from S1 (`--parent 261124-s001-open`), verify dynamic promoted-incumbent grading works end to end, and confirm manual build → run → collect → dashboard iteration is frictionless. *(Cron / Windows Task Scheduler / `daily.sh` dropped by user decision — sessions are launched manually.)*
 - **M7 — In-run verifier (v2).** Multi-container sidecar, MCP score tool, query budget covering all three estates, noise added to returned V scores.
 - **M8 — Optional Colab GPU offload (MCP broker).** Host-side WSL MCP broker (`src/colab_broker/`) wrapping `google-colab-cli` over `/mnt/wsl/agentrsi/colab-mcp.sock` via Harbor `[[environment.mcp_servers]]`, with GPU allowlist, max-1-VM cap, idle/exit auto-teardown, and blocked `colab auth` / Drive mount. *Exit:* agent extracts a small GPU test artifact on a Colab T4 via MCP, VM is auto-deleted on exit, and neither the agent container nor the Colab VM can read `sar-oilpalm` or any host Google token.
 - **Later:** more focus lenses, split-refresh epochs, extra estates as folds, remote sandboxes.
@@ -331,9 +331,20 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 | Multi-epoch charts, CI bars & no-drift unit tests | **Pass.** 4/4 dashboard tests pass (20/20 total suite): real `s000-dry`, 2-epoch 5-session fixture (disjoint per-epoch `<polyline>` elements, `.epoch-band`/`.epoch-boundary`, `.ci-bar` + `+0.03` floor, zero `REPORT.md`/`HANDOFF.md` number bleed, HTML/XSS escaping), empty state, and `collect_session()` auto-regeneration. **[T]** | `tests/test_dashboard.py`, `src/libbuilder/collect.py` |
 | Offline & T-isolation checks | **Pass.** Zero external HTTP(S) `<script>`/`<link>`/`url(...)` refs; `dashboard/index.html` confirmed gitignored; `AgentRSI/tasks/` holds zero `certification.json`, `dashboard/`, or T numbers; `002-CheckLeaks.py` passes across `tasks/`, `jobs/`, `sessions/`, and `docs/AgentPlan/`. **[T]** | `.gitignore`, `tasks/`, `002-CheckLeaks.py` |
 
+### M5 observations — S1 (`261124-s001-open`, 24 Nov 2026)
+
+| Check / Finding | Result | Evidence |
+|---|---|---|
+| Live S1 run (`codex` / `gpt-6.1-terra`, 1 h cap) | **Pass & Promoted.** `17m 34s` total (`5.03s` verifier), `$0.215`, `0` exceptions, `0` missing HANDOFF sections, `0` leak findings, `0` dashboard mismatches. Composite V `+0.118751` (`+0.064281` vs starter, `+0.052289` vs coords); Composite T Δ `+0.073438` (CI `[+0.036705, +0.109823]`, Δ vs coords `+0.084491`; AirHitam `-0.0174`, Palong `+0.2101`, Serting `+0.0276`). **[T]** | `sessions/261124-s001-open/`, `dashboard/index.html` |
+| Signal forensic audit (on L only) | **Real synergy, not a fluke.** In Palong, `NDVI_lin` (`+0.030`), `NDVI_poly2` (`+0.030`), and `XY_poly2_no_NDVI` (`+0.097`) are all far below `NDVI_XY_poly2` (`+0.259` 80 m block CV, `+0.260` 4-quadrant far-field LORO): spatial terms detrend estate-wide background NDVI so within-locality NDVI becomes strongly predictive. **[T]** | S1 audit (`L_labelled.csv`) |
+| Gap 1 — Static verifier incumbent (**CRITICAL**) | **Bug caught before S2.** `verifier/baselines.py` hardcodes `starter` (NDVI-only LogReg) inside `localhost/agentrsi-sealed:epoch1`. Without loading the actual promoted incumbent (`S1`), S2 would be graded against `starter` instead of `S1`. Must fix before launching S2. **[V]** | `verifier/runner.py:557`, `verifier/baselines.py` |
+| Gap 2 — Early stopping & estate branching | Codex exited after ~13 min of active work upon finding one strong winner (zero SAR `261014-260610`, Yamaguchi, `winstats`, `Middle`, or GEE tests) and branched on `ctx.get("estate") != "AirHitam"` instead of inner spatial-CV selection. **[T]** | `sessions/261124-s001-open/submission/pipeline.py`, `HANDOFF.md` |
+| Gap 3 — Single-estate dominance on gate | `Palong` (`+0.2101`) accounted for 95% of S1's composite T delta while `AirHitam` was `-0.0174` and `Serting` (`+0.0276`) CI crossed zero; warrants review of whether to keep current gate once incumbent rises to S1 or tighten breadth/non-degradation. **[T]** | `sessions/261124-s001-open/certification.json` |
+| Gap 4 — False-positive smell & slow CLI setup | `collect.py` flagged `rollout-*.jsonl` / `trajectory.json` for our own `instruction.md` repo-block line echoed into logs (0 actual accesses); Harbor spent ~3 min installing Node 22 + `@openai/codex` at startup (bake into `agentrsi-agent-base:latest` in M6). **[T]** | `sessions/261124-s001-open/meta.json`, `jobs/261124-s001-open/` |
+
 ### Next actions
 
-**M5 (First real session S1, 8 h, spend-capped) is next and has not started. It waits for your go-ahead.**
+**Finish M5 audit decisions with user (dynamic verifier incumbent fix, gate bar decision, template persistence tuning, smell fix), close M5, then bake agent CLIs into `agentrsi-agent-base:latest` and launch S2 (M6).**
 
 **Parked items for upcoming milestones**
 - **Deferred:** Yamaguchi SAR in the base table (dB-like values; deferred until a conversion rule is chosen, raw scenes already exposed to agents in `rasters/`).
@@ -443,7 +454,7 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 | Rootful engine containment | No privileged mode, no extra caps, no host mounts except read-only secret, `harbor lint`. |
 | Cost runaway on third-party gateway | `max_budget_usd`, `max_turns`, spend-capped key, daily cap ledger + kill switch (enforced in M3). |
 | Podman/Harbor instability (harbor#398) | Pinned `harbor==0.27.0`, `docker-compose` provider, Docker Desktop fallback (only `-e` changes). |
-| Resource contention on 12-core / 15 GiB WSL box | One session at a time, enforced rootful limits, schedule only after M6. |
+| Resource contention on 12-core / 15 GiB WSL box | One session at a time, enforced rootful limits, manual session launches (no cron/scheduler). |
 
 ---
 
@@ -451,6 +462,7 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 
 | Version | Date | Change |
 |---|---|---|
+| 2.7 | 24 Nov 2026 | Recorded M5 S1 (`261124-s001-open`, 1 h pilot, promoted at T `+0.0734`, V `+0.1188`, `$0.215`) and forensic audit findings (Palong NDVI×spatial synergy verified on 4-quadrant LORO; caught critical static-incumbent verifier bug, early stopping, single-estate dominance, and prompt-echo smell). Updated M6 to bake `nodejs`/`npm`/Node 22/`ripgrep`/`@openai/codex`/`@anthropic-ai/claude-code` into `agentrsi-agent-base:latest` and dropped cron / Task Scheduler / `daily.sh` in favour of manual session launches. |
 | 2.6 | 24 Nov 2026 | Overhauled `templates/instruction_base.md`, `templates/lenses/*.md`, and `src/libbuilder/build_task.py` against `docs/AgentPlan/AGENTS.md` and `harbor-framework/terminal-bench-science` standards (`rubrics/task-implementation.toml`, `CONTRIBUTING.md`, merged Earth/Ecology/ML tasks): added operational triage context & outdated-POC parity warning, authoritative GeoTIFF band-order/CRS/dB-Yamaguchi/T3 specs, explicit agent-vs-verifier package/runtime divergence, block-honest spatial-CV & non-degradation discipline, dynamic timeout/cap placeholders with unreplaced-placeholder guard, and canonical timeout closing line; 22/22 unit tests, 4-lens `harbor lint`, and leak checks pass. |
 | 2.5 | 23 Nov 2026 | M4 closed (Dashboard) & added `AgentRSI/README.md`: built `src/libbuilder/dashboard.py`, `scripts/dashboard.py --verify`, and `collect.py` auto-refresh generating self-contained offline `dashboard/index.html` (separate V/T SVG charts, epoch boundary breaks, bootstrap CI bars, `+0.03` floor, events + `HANDOFF.md`/`REPORT.md` inspector); 20/20 unit tests and leak checks pass. |
 | 2.4 | 23 Nov 2026 | Upgraded pinned Harbor `0.25.0 -> 0.27.0` and refreshed `uv.lock` (147 packages). Re-verified 16/16 unit tests, `harbor lint`, `run_session.py --dry-run`, M2 `oracle` separate-verifier trial (score `0.054469`), and leak checks. Empirically confirmed upstream `harbor check -e podman` `crun: chdir to /app` failure persists in `0.27.0` (`_wait_until_compose_exec_ready()` still precedes `_upload_environment_dir_after_start()`). |
