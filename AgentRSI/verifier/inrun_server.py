@@ -321,6 +321,17 @@ def _chmod_datasets_for_runner(datasets_dir: Path) -> None:
                 os.chmod(fp, 0o644)
 
 
+def _stage_datasets_for_runner(src_datasets_dir: Path, dst_datasets_dir: Path) -> Path:
+    """Copy staged datasets into writable work_root and normalize permissions for `runner`.
+
+    Avoids `os.chmod` on read-only `/shared` mounts (`EROFS`) and snapshots inputs
+    against concurrent edits while `fit_predict()` executes.
+    """
+    shutil.copytree(src_datasets_dir, dst_datasets_dir, symlinks=False)
+    _chmod_datasets_for_runner(dst_datasets_dir)
+    return dst_datasets_dir
+
+
 class InRunVerifierState:
     """Thread-safe V-only budgeted verifier state with cached per-content Gaussian noise."""
 
@@ -407,12 +418,13 @@ class InRunVerifierState:
                 self._coords_v_lift[e] = float(coords_m["pr_auc_lift"])
 
             if self.incumbent_dir is not None and (self.incumbent_dir / "pipeline.py").exists():
-                inc_ds = (
-                    self.incumbent_datasets_dir
-                    if (self.incumbent_datasets_dir is not None and self.incumbent_datasets_dir.exists())
-                    else empty_ds
-                )
-                _chmod_datasets_for_runner(inc_ds)
+                if self.incumbent_datasets_dir is not None and self.incumbent_datasets_dir.exists():
+                    inc_ds = _stage_datasets_for_runner(
+                        self.incumbent_datasets_dir,
+                        tmp_ref / "_incumbent_datasets",
+                    )
+                else:
+                    inc_ds = empty_ds
                 inc_py, _ = _install_submission_deps_isolated(
                     self.incumbent_dir / "requirements.txt",
                     tmp_ref,
@@ -665,8 +677,7 @@ class InRunVerifierState:
             try:
                 os.chmod(tmp_root, 0o755)
                 if ds_dir is not None:
-                    _chmod_datasets_for_runner(ds_dir)
-                    run_ds_dir = ds_dir
+                    run_ds_dir = _stage_datasets_for_runner(ds_dir, tmp_root / "_datasets")
                 else:
                     run_ds_dir = tmp_root / "_empty_datasets"
                     run_ds_dir.mkdir(parents=True, exist_ok=True)

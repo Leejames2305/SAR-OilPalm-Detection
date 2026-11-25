@@ -1,6 +1,7 @@
 """Host unit and ASGI tests for AgentRSI In-Run Verifier v2 sidecar MCP server."""
 from __future__ import annotations
 
+import errno
 import json
 import os
 import subprocess
@@ -353,6 +354,67 @@ class InRunVerifierUnitTests(unittest.TestCase):
                 self.assertEqual(r_adv["queries_used"], 2)
             finally:
                 os.chmod(locked_secret, 0o600)
+
+    def test_readonly_shared_datasets_never_chmodded(self) -> None:
+        """Regression test for s007 EROFS: root sidecar must not chmod /shared:ro."""
+        l_df = pd.read_csv(self.sealed_dir / "L_labelled.csv", usecols=["estate", "Long", "Lat"])
+        u_df = pd.read_csv(self.sealed_dir / "unlabelled.csv", usecols=["estate", "Long", "Lat"])
+        all_coords = pd.concat([l_df, u_df], ignore_index=True)
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            shared = root / "shared"
+            sub_ds = shared / "sub_ds"
+            sub_ds.mkdir(parents=True)
+            (sub_ds / "pipeline.py").write_text(
+                "from pathlib import Path\n"
+                "import numpy as np\n"
+                "import pandas as pd\n"
+                "def fit_predict(labeled, unlabeled, ctx):\n"
+                "    ds = pd.read_csv(Path(ctx['datasets_dir']) / 'extra' / 'features.csv')\n"
+                "    assert len(ds) == 7220\n"
+                "    return -unlabeled['NDVI'].to_numpy(dtype=np.float64)\n"
+            )
+            (sub_ds / "requirements.txt").write_text("")
+
+            ds_ok = shared / "ds_ok" / "extra"
+            ds_ok.mkdir(parents=True)
+            ok_df = all_coords.copy()
+            ok_df["extra_feat"] = 1.0
+            ok_df.to_csv(ds_ok / "features.csv", index=False)
+
+            state = InRunVerifierState(
+                sealed_dir=self.sealed_dir,
+                shared_dir=shared,
+                log_path=root / "queries.jsonl",
+                max_queries=3,
+                noise_sigma=0.0,
+                verifier_cfg=self.verifier_cfg,
+            )
+
+            real_chmod = os.chmod
+            shared_resolved = shared.resolve()
+
+            def _guarded_chmod(path, mode, *args, **kwargs):  # noqa: ANN001, ANN002, ANN003, ANN202
+                p = Path(path).resolve()
+                if p == shared_resolved or p.is_relative_to(shared_resolved):
+                    raise OSError(errno.EROFS, "Read-only file system", str(path))
+                return real_chmod(path, mode, *args, **kwargs)
+
+            with (
+                mock.patch("verifier.inrun_server.os.geteuid", return_value=0),
+                mock.patch("verifier.runner._resolve_uid_gid", return_value=(None, None)),
+                mock.patch("verifier.inrun_server.os.chmod", side_effect=_guarded_chmod),
+            ):
+                res = state.score_v(
+                    shared_submission_dir="sub_ds",
+                    shared_datasets_dir="ds_ok",
+                    note="ro-shared-datasets",
+                )
+            self.assertTrue(res["ok"], res)
+            self.assertTrue(res["submission_valid"])
+            self.assertIn("extra", res["datasets_audit"]["datasets"])
+            self.assertEqual(res["queries_used"], 1)
 
     def test_custom_incumbent_dir_precomputation(self) -> None:
         with tempfile.TemporaryDirectory() as td:
