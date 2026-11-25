@@ -1,0 +1,157 @@
+{
+  "epoch": 1,
+  "split_sha256": "26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed",
+  "status": "ok",
+  "submission_valid": true,
+  "error": null,
+  "runtime_sec": 12.063,
+  "composite": {
+    "score": 0.17678980795530883,
+    "delta_vs_incumbent": {
+      "comp_delta": 0.05803929605610277,
+      "ci_low": 0.014175744728670538,
+      "ci_high": 0.08800625163689546,
+      "n_valid_draws": 1000,
+      "n_requested_draws": 1000
+    },
+    "delta_vs_coords": {
+      "comp_delta": 0.11032796198046844,
+      "ci_low": 0.0377166701509517,
+      "ci_high": 0.2005635303463245,
+      "n_valid_draws": 1000,
+      "n_requested_draws": 1000
+    }
+  },
+  "estates": {
+    "AirHitam": {
+      "pr_auc": 0.11756767240134762,
+      "prevalence": 0.052054794520547946,
+      "pr_auc_lift": 0.06551287788079968,
+      "recall_at_25": 0.3157894736842105,
+      "enrichment_top10": 2.1052631578947367,
+      "roc_auc": 0.6135533921508974,
+      "n_scored": 730,
+      "n_pos": 38,
+      "delta_vs_incumbent": {
+        "delta": 0.028485189791685253,
+        "ci_low": 0.002685403428640786,
+        "ci_high": 0.06666224263323461
+      },
+      "delta_vs_coords": {
+        "delta": 0.025721079294974775,
+        "ci_low": -0.09862576408152553,
+        "ci_high": 0.14347001808459076
+      },
+      "incumbent_v_pr_auc": 0.08908248260966237,
+      "coords_v_pr_auc": 0.09184659310637285
+    },
+    "Palong": {
+      "pr_auc": 0.3524463527395285,
+      "prevalence": 0.0759493670886076,
+      "pr_auc_lift": 0.2764969856509209,
+      "recall_at_25": 0.8148148148148148,
+      "enrichment_top10": 4.444444444444444,
+      "roc_auc": 0.8408309374823835,
+      "n_scored": 711,
+      "n_pos": 54,
+      "delta_vs_incumbent": {
+        "delta": 0.023191000931762518,
+        "ci_low": -0.01362752390746269,
+        "ci_high": 0.10093320051377752
+      },
+      "delta_vs_coords": {
+        "delta": 0.14868989200868532,
+        "ci_low": 0.0619691921039739,
+        "ci_high": 0.23247511984298017
+      },
+      "incumbent_v_pr_auc": 0.329255351807766,
+      "coords_v_pr_auc": 0.2037564607308432
+    },
+    "Serting": {
+      "pr_auc": 0.2774464200224019,
+      "prevalence": 0.08908685968819599,
+      "pr_auc_lift": 0.1883595603342059,
+      "recall_at_25": 0.675,
+      "enrichment_top10": 3.4999999999999996,
+      "roc_auc": 0.7594132029339853,
+      "n_scored": 449,
+      "n_pos": 40,
+      "delta_vs_incumbent": {
+        "delta": 0.12244169744486055,
+        "ci_low": 0.012169306962977949,
+        "ci_high": 0.18730868030863168
+      },
+      "delta_vs_coords": {
+        "delta": 0.15657291463774523,
+        "ci_low": 0.0015979159487106986,
+        "ci_high": 0.3936340148005032
+      },
+      "incumbent_v_pr_auc": 0.15500472257754133,
+      "coords_v_pr_auc": 0.12087350538465666
+    }
+  },
+  "datasets_audit": {
+    "exists": true,
+    "valid": true,
+    "total_mb": 15.314,
+    "datasets": {
+      "alphaearth": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 387,
+        "nans": 0
+      },
+      "gee_canopy": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 49,
+        "nans": 0
+      },
+      "gee_quality": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 20,
+        "nans": 0
+      },
+      "gee_s2_stress": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 54,
+        "nans": 0
+      },
+      "optical_aligned": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 7,
+        "nans": 0
+      },
+      "optical_jitter": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 7,
+        "nans": 0
+      },
+      "optical_texture": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 15,
+        "nans": 0
+      }
+    },
+    "errors": []
+  },
+  "pip_freeze": [
+    "cloudpickle==3.1.3",
+    "joblib==1.6.0",
+    "narwhals==2.29.0",
+    "numpy==2.5.5",
+    "pandas==3.1.1",
+    "pyarrow==26.0.1",
+    "python-dateutil==4.0.0",
+    "PyYAML==6.0.3",
+    "scikit-learn==1.9.1",
+    "scipy==1.18.1",
+    "threadpoolctl==3.8.0",
+    "tzdata==2026.6"
+  ]
+}
