@@ -1,10 +1,10 @@
 # AgentRSI Plan
 
-**Version:** 3.0 (24 Nov 2026) | **Phase:** M0–M8 closed (all planned core & MCP milestones live-verified end-to-end) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
+**Version:** 3.1 (25 Nov 2026) | **Phase:** M0–M8 closed (all planned core & MCP milestones live-verified end-to-end) | **Paper:** `docs/Reference/...RSI4EO_2610.18845v2.pdf`
 
 **Goal.** Turn this project into an RSI4EO-style loop. A coding agent builds the oil-palm triage model in a sandbox, a sealed verifier scores it, and each day's session starts from what the last one found. Humans design the harness and verifier. Agents build the models.
 
-**Where we are.** **M0–M8 are closed.** All four focus lenses (`open`, `data-expansion`, `literature`, `ablation`) have been validated end-to-end (including concurrent 3-lens runs with per-task CPU/RAM overrides), archiving three clean covariate stacks (`alos_winstats`, `gee_s2_stress`, `gee_topo`; `15.99 MB` total under `sessions/261124-s006-data-expansion/datasets/`). **M7 (In-run verifier v2)** and **M8 (Host Colab GPU offload MCP broker)** are implemented, unit-tested (**54/54 tests OK**), and live-verified together inside a real Harbor `0.27.0` multi-container Podman session (`claude-haiku-5-5`, `$0.0327`, `0` exceptions, `0` leak findings) hitting the `verifier-sidecar` Streamable HTTP MCP server (`score_v`, noisy V lift, query budget `15 → 14`, `sidecar_queries.jsonl` archived) and a real Google Colab **Tesla T4** GPU via host Unix-socket broker + `agentrsi_mcp_relay.py` (`cuda=True`, `sar-oilpalm` blocked, `colab sessions` verified `0` active VMs after auto-teardown). Ready for full-horizon modeling campaigns over all 3 cached covariate stacks with optional M7/M8 MCP tools enabled.
+**Where we are.** **M0–M8 are closed.** All four focus lenses (`open`, `data-expansion`, `literature`, `ablation`) have been validated end-to-end (including concurrent 3-lens runs with per-task CPU/RAM overrides), archiving three clean covariate stacks (`alos_winstats`, `gee_s2_stress`, `gee_topo`; `15.99 MB` total under `sessions/261124-s006-data-expansion/datasets/`). **M7 (In-run verifier v2)** and **M8 (Host Colab GPU offload MCP broker)** are implemented, unit-tested (**55/55 tests OK**), and live-verified together inside a real Harbor `0.27.0` multi-container Podman session (`claude-haiku-5-5`, `$0.0327`, `0` exceptions, `0` leak findings) hitting the `verifier-sidecar` Streamable HTTP MCP server (`score_v`, noisy V lift, query budget `15 → 14`, `sidecar_queries.jsonl` archived) and a real Google Colab **Tesla T4** GPU via host Unix-socket broker + `agentrsi_mcp_relay.py` (`cuda=True`, `sar-oilpalm` blocked, `colab sessions` verified `0` active VMs after auto-teardown). Default session settings (`config/session.yaml`, `.env.example`) are now **4 h (`14400 s`)**, **`$10` cost/daily spend cap**, and **M7 in-run verifier + M8 Colab (`T4`/`L4` allowed, `A100` restricted) enabled by default**, ready for modeling campaigns over all 3 cached covariate stacks.
 
 Evidence tags: **[V]** read in Harbor docs or source | **[T]** tested on this machine | **[S]** simulation on the real estate tables | **[?]** unverified.
 
@@ -18,9 +18,9 @@ Evidence tags: **[V]** read in Harbor docs or source | **[T]** tested on this ma
 | Verifier V (sealed, scores only) | Sealed held-out blocks for all three estates, each with a validation part (V) and a certification part (T). Returns scores, never labels. |
 | Pipeline pi | `submission/`: `fit_predict(labeled, unlabeled, ctx) -> risk scores`, a **training recipe** (the product trains on about 1000 labels in a new field and predicts the rest). |
 | Few-label task | Same shape: a labelled slice (L) per estate, the rest (V + T) merged into one unlabeled pool. |
-| Recursion inside a task | Agent-driven within the 8 h session. Pseudo-labelling on the unlabeled pool is allowed; nothing is prescribed. |
+| Recursion inside a task | Agent-driven within the 4 h session. Pseudo-labelling on the unlabeled pool is allowed; nothing is prescribed. |
 | **Not in the paper:** recursion across tasks | Our addition. Session N+1 is generated from session N's handoff and the incumbent. |
-| 12 h, 4 x GB200, offline | 8 h, CPU-only sandbox, **public internet**, GEE read access (optional Colab GPU offload via host MCP broker in M8). |
+| 12 h, 4 x GB200, offline | 4 h (`$10` cap), CPU-only sandbox, **public internet**, GEE read access, M7 noisy-V verifier sidecar & M8 Colab GPU offload (`T4`/`L4`, `A100` restricted) enabled by default. |
 
 CPU-only is fine: earlier POCs show nonlinear and deep models lose to linear ones at n=160 positives. Ideas and verification are the bottleneck, not compute.
 
@@ -37,14 +37,14 @@ CPU-only is fine: earlier POCs show nonlinear and deep models lose to linear one
 | **Promotion** | One **composite T test** on the same equal weights, plus a per-estate non-degradation check. One nominee per session. Effect floor `d >= 0.03`, T-attempt budget 20. | Confirmed 20 Nov; re-verified over 120 resampled 80 m splits (23 Nov). |
 | **Non-degradation** | An estate fails if its T ΔPR-AUC against the incumbent is below `-0.03` (pre-registered 19 Nov, confirmed 20 Nov). Blocks adoption only. Tested at `-0.02`, `-0.03`, `-0.04` on resampled splits: adoption is identical on synthetic arms. | Confirmed at `-0.03`. Open: real-candidate cost. |
 | **Dashboard** | Static self-contained HTML inside `AgentRSI/`: `AgentRSI/scripts/dashboard.py` writes `AgentRSI/dashboard/index.html`. Numbers come from verifier and collector files only; agent reports supply event context only. | Your call (17 Nov). Design in Design › Dashboard. |
-| **Verifier phases** | v1 grades once at session end. v2 (`--enable-inrun-verifier`, **M7**, closed 24 Nov **[T]**) adds a multi-container `verifier-sidecar` Streamable HTTP MCP tool (`score_v`, `verifier_budget`, `verifier_health`) with V-only stripped labels, query budget (`15`), and content-hash-cached CSPRNG Gaussian noise (`σ = 0.005`). | |
+| **Verifier phases** | v1 grades once at session end. v2 (`inrun_verifier: true` by default in `config/session.yaml`; opt out via `--disable-inrun-verifier`; **M7**, closed 24 Nov **[T]**) adds a multi-container `verifier-sidecar` Streamable HTTP MCP tool (`score_v`, `verifier_budget`, `verifier_health`) with V-only stripped labels, query budget (`15`), and content-hash-cached CSPRNG Gaussian noise (`σ = 0.005`). | |
 | **Agents** | Claude Code and Codex through a third-party gateway. Agent, model, base URL and key name are run-time parameters. Current default: Codex, `gpt-6.1-terra`, OpenAI Responses. | |
-| **Budget and network** | 8 h agent timeout. Agent has public internet, with one blocked site: this research repo, `https://github.com/Leejames2305/SAR-OilPalm-Detection`. **Verifier network is fully public** (throwaway container). Label protection is the unprivileged subprocess plus root-only label files, not the network. | Your calls (11 Nov, 20 Nov). Block covers the agent only; verifier stays unblocked. |
+| **Budget and network** | **4 h (`14400 s`)** default agent timeout and **`$10`** default cost/daily spend cap (`max_budget_usd: 10.0`, `DAILY_SPEND_CAP_USD=10`). Agent has public internet, with one blocked site: this research repo, `https://github.com/Leejames2305/SAR-OilPalm-Detection`. **Verifier network is fully public** (throwaway container). Label protection is the unprivileged subprocess plus root-only label files, not the network. | Your calls (11 Nov, 20 Nov, 25 Nov). Block covers the agent only; verifier stays unblocked. |
 | **Packages** | The agent ships a pinned `requirements.txt` and the verifier installs it from PyPI. No allowlist, no approval flow. | Your call (11 Nov). |
 | **Runtime** | Rootful Podman from WSL, Docker Desktop as fallback. Harbor pinned at `0.27.0`. | Rootless cannot enforce CPU or memory limits. |
 | **Focus** | Open-ended research, explicitly including data expansion. Optional lenses (`literature`, `data-expansion`, `ablation`) bias the instruction. | |
 | **Data egress & GEE SA** | ROI-masked ALOS-2, tree coordinates and labels go to the inference provider. A **GEE-only** service-account key (`Keys_SAEarthEngine.json`, Earth Engine viewer only — **no GCS bucket access**) is mounted read-only into the agent sandbox. Verified live (23 Nov): GEE Sentinel-2 queries succeed while GCS `sar-oilpalm` (metadata/list/read) and IAM all return HTTP 403. **[T]** | Your calls (11 Nov, 23 Nov): least-privilege GEE-only SA protects the `sar-oilpalm` bucket holding ground-truth labels. |
-| **Optional Colab GPU offload** | **Host-side WSL MCP broker** (`src/colab_broker/`, **M8**, closed 24 Nov **[T]**) wrapping `google-colab-cli` over a per-session Unix socket + container `stdio` relay (`agentrsi_mcp_relay.py`), never passing Google OAuth/ADC tokens into containers. | `google-colab-cli` requires `https://www.googleapis.com/auth/cloud-platform` scope, which would grant full personal GCP access (including `sar-oilpalm` truth labels) if passed into the container. |
+| **Colab GPU offload** | **Host-side WSL MCP broker** (`src/colab_broker/`, **M8**, closed 24 Nov **[T]**, **enabled by default** in `config/session.yaml` with `T4`/`L4` allowed and `A100` restricted; opt out via `--disable-colab`) wrapping `google-colab-cli` over a per-session Unix socket + container `stdio` relay (`agentrsi_mcp_relay.py`), never passing Google OAuth/ADC tokens into containers. | `google-colab-cli` requires `https://www.googleapis.com/auth/cloud-platform` scope, which would grant full personal GCP access (including `sar-oilpalm` truth labels) if passed into the container. |
 | **Layout & naming** | Everything AgentRSI builds, runs or generates lives under `AgentRSI/`, the dashboard included. Sessions use **`YYMMDD-sXXX-<lens>`** (e.g., `261123-s001-open`, `261123-s002-data-expansion`; verified end-to-end on Harbor `0.27.0` + Podman **[T]**; historical dry run stays `s000-dry`). Generated tasks live in `AgentRSI/tasks/<session_id>/`. Harbor's file is `instruction.md` (singular) **[V]**. | Chronological sorting across long runs; `build_task.py` infers `--focus` from `-<lens>` and avoids doubling it in `task.toml`. |
 | **Split sizes** | Proportional: each estate's trees go to L / V / T at about 40 / 30 / 30 % (±10 pt tolerance, minimums 50 L / 35 V / 35 T Unhealthy). Scales to any estate size. | Your call (17 Nov). Accepts L < 1000 for the two smaller estates so Serting clears 35 V / 35 T positives. |
 | **Block size** | **80 m** spatial blocks, frozen in `config/split.yaml` (epoch 1, single source of truth read by `common.py`). | 220 m is infeasible for Serting; 165 m fails Serting's ±10 pt tree-share cap (~13 expected redraws). 80 m gives 70 / 47 / 29 blocks (2.0 / 2.0 / 6.2 expected draws). |
@@ -74,7 +74,7 @@ state/lineage.json + sessions/<prev_session>/HANDOFF.md
         |  build_task.py   (templates + agent_view + rasters + prior knowledge)
         v
 tasks/YYMMDD-sXXX-lens/  --run_session.py-->  stage secrets -> harbor run -p ... -a <agent> -m <model> --base-url ... -e podman
-        |                                     agent (8 h, public internet, GEE) writes /app/{submission,report,datasets}
+        |                                     agent (4 h, public internet, GEE, M7 sidecar, M8 Colab T4/L4) writes /app/{submission,report,datasets}
         |                                     agent sandbox ends -> declared artifacts copied out -> separate verifier grades
         v
 jobs/YYMMDD-sXXX-lens/   --collect.py-->      secret scan -> sessions/YYMMDD-sXXX-lens/ , lineage.json (certify T, promote or not),
@@ -132,7 +132,7 @@ schema_version = "1.4"
 artifacts = ["/app/submission", "/app/report", "/app/datasets"]
 
 [task]            name = "agentrsi/261123-s001-open"
-[agent]           timeout_sec = 28800.0            network_mode = "public"
+[agent]           timeout_sec = 14400.0            network_mode = "public"
 [environment]     network_mode = "public"          cpus = 6   memory_mb = 6144   storage_mb = 20480
 [verifier]        environment_mode = "separate"    timeout_sec = 3600
 [verifier.environment]
@@ -245,9 +245,9 @@ On-demand GPU VMs via `google-colab-cli` can accelerate offline feature/embeddin
 
 ### Runtime and cost
 
-- **Sizing.** The engine has 15.2 GiB and 12 CPUs, shared with WSL and Windows. One session at a time (`6 + 4 GiB` agent + verifier). Limits are enforced only on the **rootful** engine.
+- **Sizing.** The engine has 15.2 GiB and 12 CPUs, shared with WSL and Windows. One default session at a time (`6 + 2 GiB` / `6 + 2 CPUs` for agent + M7 `verifier-sidecar` during the agent phase, then `4 GiB` / `4 CPUs` for the separate verifier). Limits are enforced only on the **rootful** engine.
 - **Runner environment.** `run_session.py` sets `PATH` (Linux binaries first), `XDG_RUNTIME_DIR`, `CONTAINER_HOST`, `DOCKER_HOST`, `PODMAN_COMPOSE_WARNING_LOGS=false`, picks `BASE_URL` by agent, strips inline `# ...` comments from `.env`, and exports `API_KEY` under `API_KEY_NAME`.
-- **Spend guards.** `max_budget_usd` / `max_turns` (for `claude-code`; Codex rejects those kwargs **[V]/[T]**), a dedicated spend-capped key, and `state/lineage.json` enforcing `DAILY_SPEND_CAP_USD`, `t_attempt_budget`, and `kill_switch` inside `run_session.py`.
+- **Spend guards.** Default `$10` cost cap: `max_budget_usd: 10.0` / `max_turns` (for `claude-code`; Codex rejects those kwargs **[V]/[T]**), a dedicated spend-capped key, and `state/lineage.json` enforcing `DAILY_SPEND_CAP_USD=10`, `t_attempt_budget`, and `kill_switch` inside `run_session.py`.
 
 ---
 
@@ -375,7 +375,7 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 
 ### Next actions
 
-**M0–M8 are all closed (54/54 unit tests, live Harbor M7+M8+T4 verified, `002-CheckLeaks.py` `PASS`). Next: commit M7/M8 + docs updates on `dev`, then run full modeling sessions over all 3 archived covariate stacks (`alos_winstats`, `gee_s2_stress`, `gee_topo`) with optional `--enable-inrun-verifier` and/or `--enable-colab`.**
+**M0–M8 are all closed (55/55 unit tests, live Harbor M7+M8+T4 verified, `002-CheckLeaks.py` `PASS`). Next: run 4 h default modeling sessions (M7 in-run verifier + M8 Colab `T4`/`L4` enabled by default, `$10` spend cap) over all 3 archived covariate stacks (`alos_winstats`, `gee_s2_stress`, `gee_topo`).**
 
 **Parked items for upcoming milestones**
 - **Deferred:** Yamaguchi SAR in the base table (dB-like values; deferred until a conversion rule is chosen, raw scenes already exposed to agents in `rasters/`).
@@ -494,6 +494,7 @@ Tooling lives in `AgentRSI/` (gitignored `.venv/`, `.tools/`).
 
 | Version | Date | Change |
 |---|---|---|
+| 3.1 | 25 Nov 2026 | Updated default session profile (`config/session.yaml`, `.env.example`, `run_session.py`, `AgentRSI/README.md`, `tests/test_mcp_wiring.py`): `4 h` agent timeout (`14400 s`, down from `8 h`), M7 in-run verifier enabled by default (`inrun_verifier: true`), M8 Colab GPU broker enabled by default (`colab_broker.enabled: true`, `T4`/`L4` allowed, `A100` restricted), and `$10` cost/daily spend cap (`max_budget_usd: 10.0`, `DAILY_SPEND_CAP_USD=10`). Verified 55/55 host unit tests and `002-CheckLeaks.py` `PASS`. |
 | 3.0 | 24 Nov 2026 | Closed M7 (In-run verifier v2 MCP sidecar) & M8 (Host Colab GPU offload MCP broker), and recorded 4-lens runs (`s003`–`s006`, archiving `alos_winstats` + `gee_s2_stress` + `gee_topo`). Built `verifier/inrun_server.py` (`/opt/agentrsi/sidecar-venv` isolated), `src/colab_broker/`, `templates/agentrsi_mcp_relay.py`, and full Harbor/Compose/runner/collector wiring (`--yes`, `colab exec --timeout`, `~/.local/bin` fallback); verified 54/54 unit tests, live Podman M7+M8 smoke tests, real Colab Tesla T4 execution + `sar-oilpalm` isolation + VM auto-teardown, `002-CheckLeaks.py` `PASS`, and updated `AgentRSI/README.md`. |
 | 2.9 | 24 Nov 2026 | Closed M6: verified exact prebaked startup speedup (`agent_setup` `203.4s → 0.8s`, 254×; total cold start `224.1s → 25.2s`), collected `261124-s002-open` with `--dry-session` (archived validated `14.1 MB` `alos_winstats` `7,220 × 403` dataset, kept `t_attempts_used = 1 / 20` and incumbent `261124-s001-open`, confirmed `smells = []`, `dashboard.py --verify` `0 mismatches`, `002-CheckLeaks.py` `PASS`). |
 | 2.8 | 24 Nov 2026 | Closed M5 (all 4 audit fixes live-verified via S2-from-S1 `oracle` + 25/25 unit tests). Started M6: prebaked SHA-256-verified Node `v22.23.5`, `npm 10.9.9`, `ripgrep 13.0.0`, `codex-cli 0.172.0`, and `claude 2.1.331` into `localhost/agentrsi-agent-base:latest` (Harbor `is_requested_version_installed()` fast-path skipped reinstall completely; cold start to `codex exec` dropped from `224s` in S1 to `~31s` in S2) and launched live S2 (`261124-s002-open`, `--parent 261124-s001-open`, 1 h). |
