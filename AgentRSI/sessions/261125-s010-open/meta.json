@@ -1,0 +1,19 @@
+{
+  "session_id": "261125-s010-open",
+  "job_id": "2026-11-25__17-16-54",
+  "trial_name": "261125-s010-open__z7pX9YS",
+  "parent_id": "261125-s009-open",
+  "dry_session": false,
+  "agent": "codex",
+  "model": "gpt-6.1-sol",
+  "started_at": "2026-11-25T09:16:59.715990Z",
+  "finished_at": "2026-11-25T09:45:56.075469Z",
+  "cost_usd": 1.9659123999999997,
+  "n_input_tokens": 6044576,
+  "n_cache_tokens": 5696384,
+  "n_output_tokens": 69989,
+  "exception_info": null,
+  "smells": [],
+  "handoff_missing_sections": [],
+  "inrun_queries_used": 6
+}
