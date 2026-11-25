@@ -1,0 +1,140 @@
+{
+  "shape": [
+    7220,
+    611
+  ],
+  "nan_total": 0,
+  "nan_by_estate": {
+    "AirHitam": 0,
+    "Palong": 0,
+    "Serting": 0
+  },
+  "raster_support": [
+    {
+      "estate": "AirHitam",
+      "date": "260610",
+      "family": "power",
+      "supported_pixels": 161811,
+      "total_pixels": 161811
+    },
+    {
+      "estate": "AirHitam",
+      "date": "260610",
+      "family": "ha",
+      "supported_pixels": 161811,
+      "total_pixels": 161811
+    },
+    {
+      "estate": "AirHitam",
+      "date": "260610",
+      "family": "yam",
+      "supported_pixels": 161811,
+      "total_pixels": 161811
+    },
+    {
+      "estate": "AirHitam",
+      "date": "261014",
+      "family": "power",
+      "supported_pixels": 161460,
+      "total_pixels": 161460
+    },
+    {
+      "estate": "AirHitam",
+      "date": "261014",
+      "family": "ha",
+      "supported_pixels": 161460,
+      "total_pixels": 161460
+    },
+    {
+      "estate": "AirHitam",
+      "date": "261014",
+      "family": "yam",
+      "supported_pixels": 161460,
+      "total_pixels": 161460
+    },
+    {
+      "estate": "Palong",
+      "date": "260610",
+      "family": "power",
+      "supported_pixels": 157036,
+      "total_pixels": 157036
+    },
+    {
+      "estate": "Palong",
+      "date": "260610",
+      "family": "ha",
+      "supported_pixels": 157036,
+      "total_pixels": 157036
+    },
+    {
+      "estate": "Palong",
+      "date": "260610",
+      "family": "yam",
+      "supported_pixels": 157036,
+      "total_pixels": 157036
+    },
+    {
+      "estate": "Palong",
+      "date": "261014",
+      "family": "power",
+      "supported_pixels": 157036,
+      "total_pixels": 157036
+    },
+    {
+      "estate": "Palong",
+      "date": "261014",
+      "family": "ha",
+      "supported_pixels": 157036,
+      "total_pixels": 157036
+    },
+    {
+      "estate": "Palong",
+      "date": "261014",
+      "family": "yam",
+      "supported_pixels": 157036,
+      "total_pixels": 157036
+    },
+    {
+      "estate": "Serting",
+      "date": "260610",
+      "family": "power",
+      "supported_pixels": 145275,
+      "total_pixels": 145275
+    },
+    {
+      "estate": "Serting",
+      "date": "260610",
+      "family": "ha",
+      "supported_pixels": 145275,
+      "total_pixels": 145275
+    },
+    {
+      "estate": "Serting",
+      "date": "260610",
+      "family": "yam",
+      "supported_pixels": 145275,
+      "total_pixels": 145275
+    },
+    {
+      "estate": "Serting",
+      "date": "261014",
+      "family": "power",
+      "supported_pixels": 145275,
+      "total_pixels": 145275
+    },
+    {
+      "estate": "Serting",
+      "date": "261014",
+      "family": "ha",
+      "supported_pixels": 145275,
+      "total_pixels": 145275
+    },
+    {
+      "estate": "Serting",
+      "date": "261014",
+      "family": "yam",
+      "supported_pixels": 145275,
+      "total_pixels": 145275
+    }
+  ]
+}
