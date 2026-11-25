@@ -17,6 +17,7 @@ from colab_broker.backend import CliColabBackend, ColabBackend
 from colab_broker.config import ColabBrokerConfig
 from colab_broker.guardrails import (
     resolve_staged_inputs,
+    sanitize_cli_output,
     scan_script,
     validate_gpu,
     validate_output_paths,
@@ -33,7 +34,10 @@ _TOOLS_SPEC: list[dict[str, Any]] = [
         "description": (
             "Run a Python script on an ephemeral/session Colab GPU VM. "
             "Inputs must be staged under /run/agentrsi/colab-io/in and requested outputs "
-            "are downloaded to /run/agentrsi/colab-io/out/<job_id>/."
+            "are downloaded to /run/agentrsi/colab-io/out/<job_id>/. "
+            "If execution exceeds wait_sec (default 180s, capped below MCP client timeouts), "
+            "returns status='running' with job_id so you can poll colab_status(job_id), "
+            "retrieve outputs with colab_fetch(job_id), or cancel via colab_stop()."
         ),
         "inputSchema": {
             "type": "object",
@@ -44,6 +48,10 @@ _TOOLS_SPEC: list[dict[str, Any]] = [
                     "type": "number",
                     "default": 15.0,
                     "description": "Execution timeout in minutes (clamped by broker policy).",
+                },
+                "wait_sec": {
+                    "type": "number",
+                    "description": "Optional max seconds to wait inline before returning status='running' (clamped to broker sync_wait_sec, default 180s).",
                 },
                 "staged_inputs": {
                     "type": "array",
@@ -150,6 +158,9 @@ class ColabBrokerServer:
         self._shutdown_done = False
 
         self._job_running = False
+        self._active_job_id: str | None = None
+        self._active_job_thread: threading.Thread | None = None
+        self._active_job_done: threading.Event | None = None
         self._active_vm_name: str | None = None
         self._active_vm_gpu: str | None = None
         self._vm_started_at: float | None = None
@@ -328,6 +339,15 @@ class ColabBrokerServer:
         for t in threads:
             if t.is_alive() and t is not cur:
                 t.join(timeout=1.0)
+
+        with self._state_lock:
+            job_thread = self._active_job_thread
+        if job_thread is not None and job_thread.is_alive() and job_thread is not cur:
+            try:
+                self.backend.cancel_active_exec()
+            except Exception:
+                pass
+            job_thread.join(timeout=5.0)
 
         with self._vm_lock:
             self._stop_active_vm_under_vm_lock(reason="broker_shutdown")
@@ -515,6 +535,7 @@ class ColabBrokerServer:
                     {
                         "ok": False,
                         "error": "VM_BUSY",
+                        "active_job_id": self._active_job_id,
                         "message": "Another Colab job is currently active (max 1 active VM/job at a time)",
                     },
                     is_error=True,
@@ -522,10 +543,12 @@ class ColabBrokerServer:
             self._job_running = True
             self._last_activity_at = time.monotonic()
 
+        worker_started = False
         try:
             script = args.get("script")
             gpu_raw = args.get("gpu", "T4")
             timeout_min_raw = args.get("timeout_min", 15.0)
+            wait_sec_raw = args.get("wait_sec")
             staged_inputs_raw = args.get("staged_inputs")
             output_paths_raw = args.get("output_paths")
             pip_packages_raw = args.get("pip_packages")
@@ -584,34 +607,146 @@ class ColabBrokerServer:
                     is_error=True,
                 )
 
-            max_budget_sec = float(self.cfg.max_session_gpu_min) * 60.0
-            with self._vm_lock:
-                used_sec = self._gpu_seconds_used()
-                remaining_sec = max_budget_sec - used_sec
-                if remaining_sec <= 0:
-                    self._stop_active_vm_under_vm_lock(reason="gpu_budget_exhausted")
-                    self._emit_event(
-                        "colab_blocked",
-                        "Blocked colab_run: session GPU wall-clock budget exhausted",
-                        values={"reason": "gpu_budget_exhausted", "gpu_seconds_used": round(used_sec, 3)},
-                    )
+            if wait_sec_raw is None:
+                wait_sec = float(self.cfg.sync_wait_sec)
+            else:
+                try:
+                    req_wait_sec = float(wait_sec_raw)
+                except (TypeError, ValueError):
                     return _tool_result(
-                        {
-                            "ok": False,
-                            "error": "GPU_BUDGET_EXHAUSTED",
-                            "gpu_seconds_used": round(used_sec, 3),
-                            "max_session_gpu_min": self.cfg.max_session_gpu_min,
-                            "message": "Session GPU wall-clock budget exhausted",
-                        },
+                        {"ok": False, "error": "INVALID_ARGUMENT", "message": "wait_sec must be a non-negative number"},
                         is_error=True,
                     )
+                if req_wait_sec < 0:
+                    return _tool_result(
+                        {"ok": False, "error": "INVALID_ARGUMENT", "message": "wait_sec must be >= 0"},
+                        is_error=True,
+                    )
+                wait_sec = min(req_wait_sec, float(self.cfg.sync_wait_sec))
 
-                effective_timeout_sec = min(
-                    req_timeout_min * 60.0,
-                    float(self.cfg.max_job_timeout_min) * 60.0,
-                    remaining_sec,
+            max_budget_sec = float(self.cfg.max_session_gpu_min) * 60.0
+            used_sec = self._gpu_seconds_used()
+            remaining_sec = max_budget_sec - used_sec
+            if remaining_sec <= 0:
+                with self._vm_lock:
+                    self._stop_active_vm_under_vm_lock(reason="gpu_budget_exhausted")
+                self._emit_event(
+                    "colab_blocked",
+                    "Blocked colab_run: session GPU wall-clock budget exhausted",
+                    values={"reason": "gpu_budget_exhausted", "gpu_seconds_used": round(used_sec, 3)},
+                )
+                return _tool_result(
+                    {
+                        "ok": False,
+                        "error": "GPU_BUDGET_EXHAUSTED",
+                        "gpu_seconds_used": round(used_sec, 3),
+                        "max_session_gpu_min": self.cfg.max_session_gpu_min,
+                        "message": "Session GPU wall-clock budget exhausted",
+                    },
+                    is_error=True,
                 )
 
+            effective_timeout_sec = min(
+                req_timeout_min * 60.0,
+                float(self.cfg.max_job_timeout_min) * 60.0,
+                remaining_sec,
+            )
+
+            created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            started_mono = time.monotonic()
+            done_event = threading.Event()
+            staged_rel_list = list(staged_inputs_raw or [])
+
+            with self._state_lock:
+                self._job_seq += 1
+                job_id = f"job-{self._job_seq:04d}-{uuid.uuid4().hex[:6]}"
+                self._active_job_id = job_id
+                self._active_job_done = done_event
+                self._jobs[job_id] = {
+                    "ok": True,
+                    "job_id": job_id,
+                    "vm_name": self._active_vm_name or _sanitize_vm_name(self.cfg.session_id),
+                    "gpu": gpu,
+                    "status": "running",
+                    "returncode": None,
+                    "timed_out": False,
+                    "duration_sec": 0.0,
+                    "effective_timeout_sec": round(effective_timeout_sec, 3),
+                    "stdout": "",
+                    "stderr": "",
+                    "outputs": [],
+                    "created_at": created_at,
+                    "finished_at": None,
+                    "gpu_seconds_used": round(used_sec, 3),
+                    "gpu_seconds_remaining": round(max(0.0, remaining_sec), 3),
+                }
+
+            worker = threading.Thread(
+                target=self._run_job_worker,
+                args=(
+                    job_id,
+                    str(script),
+                    gpu,
+                    effective_timeout_sec,
+                    staged_rel_list,
+                    resolved_inputs,
+                    output_paths,
+                    pip_packages,
+                    created_at,
+                    started_mono,
+                    done_event,
+                ),
+                name=f"colab-job-{job_id}",
+                daemon=True,
+            )
+            with self._state_lock:
+                self._active_job_thread = worker
+            worker_started = True
+            worker.start()
+
+            if done_event.wait(timeout=wait_sec):
+                with self._state_lock:
+                    final_record = dict(self._jobs[job_id])
+                return _tool_result(final_record, is_error=not final_record.get("ok", False))
+
+            with self._state_lock:
+                snap = dict(self._jobs[job_id])
+                used_now = self._gpu_seconds_used_locked()
+            snap["duration_sec"] = round(max(0.0, time.monotonic() - started_mono), 3)
+            snap["gpu_seconds_used"] = round(used_now, 3)
+            snap["gpu_seconds_remaining"] = round(max(0.0, max_budget_sec - used_now), 3)
+            snap["message"] = (
+                f"Job {job_id} is still running on Colab ({gpu}) after {wait_sec:.0f}s inline wait. "
+                "Poll colab_status(job_id), fetch outputs with colab_fetch(job_id) once completed, "
+                "or cancel immediately with colab_stop()."
+            )
+            return _tool_result(snap, is_error=False)
+        finally:
+            if not worker_started:
+                with self._state_lock:
+                    self._job_running = False
+                    self._active_job_id = None
+                    self._active_job_thread = None
+                    self._active_job_done = None
+                    self._last_activity_at = time.monotonic()
+
+    def _run_job_worker(
+        self,
+        job_id: str,
+        script: str,
+        gpu: str,
+        effective_timeout_sec: float,
+        staged_rel_list: list[str],
+        resolved_inputs: list[Path],
+        output_paths: list[str],
+        pip_packages: list[str],
+        created_at: str,
+        started_mono: float,
+        done_event: threading.Event,
+    ) -> None:
+        max_budget_sec = float(self.cfg.max_session_gpu_min) * 60.0
+        try:
+            with self._vm_lock:
                 with self._state_lock:
                     cur_vm = self._active_vm_name
                     cur_gpu = self._active_vm_gpu
@@ -624,10 +759,30 @@ class ColabBrokerServer:
                     try:
                         self.backend.start_vm(vm_name, gpu)
                     except Exception as exc:
-                        return _tool_result(
-                            {"ok": False, "error": "VM_START_FAILED", "message": str(exc)},
-                            is_error=True,
-                        )
+                        used_now = self._gpu_seconds_used()
+                        err_rec = {
+                            "ok": False,
+                            "job_id": job_id,
+                            "vm_name": vm_name,
+                            "gpu": gpu,
+                            "status": "failed",
+                            "error": "VM_START_FAILED",
+                            "message": sanitize_cli_output(str(exc)),
+                            "returncode": 1,
+                            "timed_out": False,
+                            "duration_sec": round(max(0.0, time.monotonic() - started_mono), 3),
+                            "effective_timeout_sec": round(effective_timeout_sec, 3),
+                            "stdout": "",
+                            "stderr": sanitize_cli_output(str(exc)),
+                            "outputs": [],
+                            "created_at": created_at,
+                            "finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                            "gpu_seconds_used": round(used_now, 3),
+                            "gpu_seconds_remaining": round(max(0.0, max_budget_sec - used_now), 3),
+                        }
+                        with self._state_lock:
+                            self._jobs[job_id] = err_rec
+                        return
                     with self._state_lock:
                         self._active_vm_name = vm_name
                         self._active_vm_gpu = gpu
@@ -641,22 +796,36 @@ class ColabBrokerServer:
                 else:
                     vm_name = cur_vm
 
-                with self._state_lock:
-                    self._job_seq += 1
-                    job_id = f"job-{self._job_seq:04d}-{uuid.uuid4().hex[:6]}"
-                created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
-
                 # Upload staged inputs
-                staged_rel_list = list(staged_inputs_raw or [])
                 try:
                     for rel_path, host_path in zip(staged_rel_list, resolved_inputs):
                         remote_dst = str(PurePosixPath("/content") / PurePosixPath(rel_path))
                         self.backend.upload_file(vm_name, host_path, remote_dst)
                 except Exception as exc:
-                    return _tool_result(
-                        {"ok": False, "error": "UPLOAD_FAILED", "job_id": job_id, "message": str(exc)},
-                        is_error=True,
-                    )
+                    used_now = self._gpu_seconds_used()
+                    err_rec = {
+                        "ok": False,
+                        "job_id": job_id,
+                        "vm_name": vm_name,
+                        "gpu": gpu,
+                        "status": "failed",
+                        "error": "UPLOAD_FAILED",
+                        "message": sanitize_cli_output(str(exc)),
+                        "returncode": 1,
+                        "timed_out": False,
+                        "duration_sec": round(max(0.0, time.monotonic() - started_mono), 3),
+                        "effective_timeout_sec": round(effective_timeout_sec, 3),
+                        "stdout": "",
+                        "stderr": sanitize_cli_output(str(exc)),
+                        "outputs": [],
+                        "created_at": created_at,
+                        "finished_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                        "gpu_seconds_used": round(used_now, 3),
+                        "gpu_seconds_remaining": round(max(0.0, max_budget_sec - used_now), 3),
+                    }
+                    with self._state_lock:
+                        self._jobs[job_id] = err_rec
+                    return
 
                 run_res = self.backend.exec_script(
                     vm_name,
@@ -667,7 +836,7 @@ class ColabBrokerServer:
 
                 outputs_meta: list[dict[str, Any]] = []
                 download_err: str | None = None
-                if run_res.returncode == 0 and not run_res.timed_out and output_paths:
+                if run_res.returncode == 0 and not run_res.timed_out and not run_res.cancelled and output_paths:
                     out_job_dir = self.cfg.io_dir / "out" / job_id
                     out_job_dir.mkdir(mode=0o755, parents=True, exist_ok=True)
                     os.chmod(out_job_dir, 0o755)
@@ -684,10 +853,12 @@ class ColabBrokerServer:
                             job_id,
                         )
                     except Exception as exc:
-                        download_err = str(exc)
+                        download_err = sanitize_cli_output(str(exc))
 
                 finished_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
-                if run_res.timed_out:
+                if run_res.cancelled:
+                    status = "cancelled"
+                elif run_res.timed_out:
                     status = "timed_out"
                 elif run_res.returncode != 0:
                     status = "failed"
@@ -721,7 +892,10 @@ class ColabBrokerServer:
                     "gpu_seconds_used": round(used_after, 3),
                     "gpu_seconds_remaining": round(max(0.0, max_budget_sec - used_after), 3),
                 }
-                if download_err is not None:
+                if run_res.cancelled:
+                    job_record["error"] = "JOB_CANCELLED"
+                    job_record["message"] = "Job was cancelled via colab_stop"
+                elif download_err is not None:
                     job_record["error"] = "OUTPUT_DOWNLOAD_FAILED"
                     job_record["message"] = download_err
 
@@ -741,11 +915,15 @@ class ColabBrokerServer:
                         "outputs": len(outputs_meta),
                     },
                 )
-                return _tool_result(job_record, is_error=not ok)
         finally:
             with self._state_lock:
                 self._job_running = False
+                if self._active_job_id == job_id:
+                    self._active_job_id = None
+                    self._active_job_thread = None
+                    self._active_job_done = None
                 self._last_activity_at = time.monotonic()
+            done_event.set()
 
     def _tool_colab_status(self, args: dict[str, Any]) -> dict[str, Any]:
         job_id = args.get("job_id")
@@ -781,6 +959,7 @@ class ColabBrokerServer:
                 "active_vm": self._active_vm_name,
                 "active_gpu": self._active_vm_gpu,
                 "job_running": self._job_running,
+                "active_job_id": self._active_job_id,
                 "ephemeral_vm": self.cfg.ephemeral_vm,
                 "idle_teardown_sec": self.cfg.idle_teardown_sec,
                 "max_session_gpu_min": self.cfg.max_session_gpu_min,
@@ -812,25 +991,26 @@ class ColabBrokerServer:
         return _tool_result(payload, is_error=not payload.get("ok", False))
 
     def _tool_colab_stop(self, args: dict[str, Any]) -> dict[str, Any]:
+        cancelled_job_id: str | None = None
         with self._state_lock:
-            if self._job_running:
-                return _tool_result(
-                    {"ok": False, "error": "VM_BUSY", "message": "Cannot stop VM while a job is actively running"},
-                    is_error=True,
-                )
+            job_running = self._job_running
+            active_job_id = self._active_job_id
+            job_thread = self._active_job_thread
+        if job_running and job_thread is not None:
+            cancelled_job_id = active_job_id
+            try:
+                self.backend.cancel_active_exec()
+            except Exception:
+                pass
+            job_thread.join(timeout=5.0)
         with self._vm_lock:
-            with self._state_lock:
-                if self._job_running:
-                    return _tool_result(
-                        {"ok": False, "error": "VM_BUSY", "message": "Cannot stop VM while a job is actively running"},
-                        is_error=True,
-                    )
             stopped, vm_name = self._stop_active_vm_under_vm_lock(reason="colab_stop")
             used_sec = self._gpu_seconds_used()
         return _tool_result({
             "ok": True,
             "stopped": stopped,
             "vm_name": vm_name,
+            "cancelled_job_id": cancelled_job_id,
             "requested_job_id": args.get("job_id"),
             "gpu_seconds_used": round(used_sec, 3),
         })

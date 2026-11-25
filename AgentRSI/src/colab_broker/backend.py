@@ -3,16 +3,18 @@ from __future__ import annotations
 
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from colab_broker.guardrails import sanitized_colab_env
+from colab_broker.guardrails import sanitize_cli_output, sanitized_colab_env
 
 
 @dataclass
@@ -24,6 +26,7 @@ class ColabRunResult:
     stderr: str
     duration_sec: float
     timed_out: bool = False
+    cancelled: bool = False
 
 
 class ColabBackend(ABC):
@@ -59,6 +62,20 @@ class ColabBackend(ABC):
     def stop_vm(self, vm_name: str) -> None:
         """Terminate and release the Colab VM session."""
 
+    def cancel_active_exec(self) -> bool:
+        """Best-effort preemptive cancellation of any in-flight `exec_script` subprocess."""
+        return False
+
+
+def _kill_process_group(proc: subprocess.Popen[str]) -> None:
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError, OSError):
+        try:
+            proc.kill()
+        except OSError:
+            pass
+
 
 class CliColabBackend(ColabBackend):
     """Host-side wrapper around `google-colab-cli` (`colab`)."""
@@ -75,6 +92,18 @@ class CliColabBackend(ColabBackend):
         self.check_timeout_sec = float(check_timeout_sec)
         self.vm_timeout_sec = float(vm_timeout_sec)
         self.transfer_timeout_sec = float(transfer_timeout_sec)
+        self._proc_lock = threading.Lock()
+        self._active_proc: subprocess.Popen[str] | None = None
+        self._cancel_requested = False
+
+    def cancel_active_exec(self) -> bool:
+        with self._proc_lock:
+            self._cancel_requested = True
+            proc = self._active_proc
+        if proc is not None and proc.poll() is None:
+            _kill_process_group(proc)
+            return True
+        return False
 
     def _resolve_bin(self) -> str | None:
         if "/" in self.colab_bin or "\\" in self.colab_bin:
@@ -176,16 +205,37 @@ class CliColabBackend(ColabBackend):
             timeout_sec=self.vm_timeout_sec,
         )
         if res.returncode != 0:
-            msg = (res.stderr or res.stdout or "").strip()
+            msg = sanitize_cli_output((res.stderr or res.stdout or "").strip())
             raise RuntimeError(f"colab new failed (rc={res.returncode}): {msg[:500]}")
 
+    def _ensure_remote_parent_dir(self, vm_name: str, remote_path: str) -> None:
+        parent = PurePosixPath(remote_path).parent
+        if parent in (PurePosixPath("/content"), PurePosixPath("/"), PurePosixPath(".")):
+            return
+        fd, tmp_name = tempfile.mkstemp(prefix="agentrsi_mkdir_", suffix=".py")
+        tmp_path = Path(tmp_name)
+        try:
+            os.fchmod(fd, 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fh.write(f"import os\nos.makedirs({str(parent)!r}, exist_ok=True)\n")
+            res = self._run_cli(
+                ["exec", "-s", vm_name, "-f", str(tmp_path), "--timeout", "30.0"],
+                timeout_sec=30.0,
+            )
+            if res.returncode != 0:
+                msg = sanitize_cli_output((res.stderr or res.stdout or "").strip())
+                raise RuntimeError(f"colab mkdir failed for {str(parent)!r} (rc={res.returncode}): {msg[:500]}")
+        finally:
+            tmp_path.unlink(missing_ok=True)
+
     def upload_file(self, vm_name: str, local_path: Path, remote_path: str) -> None:
+        self._ensure_remote_parent_dir(vm_name, remote_path)
         res = self._run_cli(
             ["upload", "-s", vm_name, str(local_path), remote_path],
             timeout_sec=self.transfer_timeout_sec,
         )
         if res.returncode != 0:
-            msg = (res.stderr or res.stdout or "").strip()
+            msg = sanitize_cli_output((res.stderr or res.stdout or "").strip())
             raise RuntimeError(f"colab upload failed (rc={res.returncode}): {msg[:500]}")
 
     def exec_script(
@@ -195,6 +245,12 @@ class CliColabBackend(ColabBackend):
         timeout_sec: float,
         pip_packages: list[str] | None = None,
     ) -> ColabRunResult:
+        bin_path = self._resolve_bin()
+        if not bin_path:
+            raise FileNotFoundError(
+                f"Colab CLI '{self.colab_bin}' not found. Install google-colab-cli on host WSL."
+            )
+
         full_script = script_text
         if pip_packages:
             pkg_literal = repr(list(pip_packages))
@@ -207,33 +263,67 @@ class CliColabBackend(ColabBackend):
         fd, tmp_name = tempfile.mkstemp(prefix="agentrsi_colab_", suffix=".py")
         tmp_path = Path(tmp_name)
         t0 = time.monotonic()
+        proc: subprocess.Popen[str] | None = None
         try:
             os.fchmod(fd, 0o600)
             with os.fdopen(fd, "w", encoding="utf-8") as fh:
                 fh.write(full_script)
-            try:
-                res = self._run_cli(
-                    ["exec", "-s", vm_name, "-f", str(tmp_path), "--timeout", str(float(timeout_sec))],
-                    timeout_sec=timeout_sec,
+
+            cmd = [bin_path, "exec", "-s", vm_name, "-f", str(tmp_path), "--timeout", str(float(timeout_sec))]
+            with self._proc_lock:
+                self._cancel_requested = False
+                proc = subprocess.Popen(
+                    cmd,
+                    env=sanitized_colab_env(),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    start_new_session=True,
                 )
+                self._active_proc = proc
+
+            try:
+                stdout, stderr = proc.communicate(timeout=timeout_sec)
+                with self._proc_lock:
+                    was_cancelled = self._cancel_requested
+                if was_cancelled:
+                    return ColabRunResult(
+                        returncode=137,
+                        stdout=sanitize_cli_output(stdout or ""),
+                        stderr=sanitize_cli_output(f"{stderr or ''}\nExecution cancelled by colab_stop".strip()),
+                        duration_sec=time.monotonic() - t0,
+                        timed_out=False,
+                        cancelled=True,
+                    )
                 return ColabRunResult(
-                    returncode=int(res.returncode),
-                    stdout=res.stdout or "",
-                    stderr=res.stderr or "",
+                    returncode=int(proc.returncode if proc.returncode is not None else 1),
+                    stdout=sanitize_cli_output(stdout or ""),
+                    stderr=sanitize_cli_output(stderr or ""),
                     duration_sec=time.monotonic() - t0,
                     timed_out=False,
+                    cancelled=False,
                 )
-            except subprocess.TimeoutExpired as exc:
-                stdout = exc.stdout.decode("utf-8", errors="replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
-                stderr = exc.stderr.decode("utf-8", errors="replace") if isinstance(exc.stderr, bytes) else (exc.stderr or "")
+            except subprocess.TimeoutExpired:
+                _kill_process_group(proc)
+                try:
+                    stdout, stderr = proc.communicate(timeout=5.0)
+                except subprocess.TimeoutExpired:
+                    stdout, stderr = "", ""
                 return ColabRunResult(
                     returncode=124,
-                    stdout=stdout,
-                    stderr=f"{stderr}\nExecution timed out after {timeout_sec:.1f}s".strip(),
+                    stdout=sanitize_cli_output(stdout or ""),
+                    stderr=sanitize_cli_output(
+                        f"{stderr or ''}\nExecution timed out after {timeout_sec:.1f}s".strip()
+                    ),
                     duration_sec=time.monotonic() - t0,
                     timed_out=True,
+                    cancelled=False,
                 )
         finally:
+            with self._proc_lock:
+                if self._active_proc is proc:
+                    self._active_proc = None
+                self._cancel_requested = False
             tmp_path.unlink(missing_ok=True)
 
     def download_file(self, vm_name: str, remote_path: str, local_path: Path) -> None:
@@ -243,7 +333,7 @@ class CliColabBackend(ColabBackend):
             timeout_sec=self.transfer_timeout_sec,
         )
         if res.returncode != 0:
-            msg = (res.stderr or res.stdout or "").strip()
+            msg = sanitize_cli_output((res.stderr or res.stdout or "").strip())
             raise RuntimeError(f"colab download failed (rc={res.returncode}): {msg[:500]}")
 
     def stop_vm(self, vm_name: str) -> None:
@@ -252,7 +342,7 @@ class CliColabBackend(ColabBackend):
             timeout_sec=self.vm_timeout_sec,
         )
         if res.returncode != 0:
-            msg = (res.stderr or res.stdout or "").strip()
+            msg = sanitize_cli_output((res.stderr or res.stdout or "").strip())
             raise RuntimeError(f"colab stop failed (rc={res.returncode}): {msg[:500]}")
 
 
@@ -266,6 +356,18 @@ class MockColabBackend(ColabBackend):
         self.stopped_vms: list[str] = []
         self.active_vms: dict[str, Path] = {}
         self.exec_history: list[dict[str, Any]] = []
+        self._proc_lock = threading.Lock()
+        self._active_proc: subprocess.Popen[str] | None = None
+        self._cancel_requested = False
+
+    def cancel_active_exec(self) -> bool:
+        with self._proc_lock:
+            self._cancel_requested = True
+            proc = self._active_proc
+        if proc is not None and proc.poll() is None:
+            _kill_process_group(proc)
+            return True
+        return False
 
     def check_auth_ready(self) -> tuple[bool, str]:
         if self.auth_ready:
@@ -321,34 +423,61 @@ class MockColabBackend(ColabBackend):
         env["COLAB_MOCK_VM"] = vm_name
         env["COLAB_MOCK_GPU"] = self.started_vm_gpus.get(vm_name, "T4")
         t0 = time.monotonic()
+        proc: subprocess.Popen[str] | None = None
         try:
-            proc = subprocess.run(
-                [sys.executable, str(script_path)],
-                cwd=str(ws),
-                env=env,
-                capture_output=True,
-                text=True,
-                timeout=timeout_sec,
-                check=False,
-            )
-            res = ColabRunResult(
-                returncode=int(proc.returncode),
-                stdout=proc.stdout or "",
-                stderr=proc.stderr or "",
-                duration_sec=time.monotonic() - t0,
-                timed_out=False,
-            )
-        except subprocess.TimeoutExpired as exc:
-            stdout = exc.stdout.decode("utf-8", errors="replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
-            stderr = exc.stderr.decode("utf-8", errors="replace") if isinstance(exc.stderr, bytes) else (exc.stderr or "")
-            res = ColabRunResult(
-                returncode=124,
-                stdout=stdout,
-                stderr=f"{stderr}\nExecution timed out after {timeout_sec:.1f}s".strip(),
-                duration_sec=time.monotonic() - t0,
-                timed_out=True,
-            )
+            with self._proc_lock:
+                self._cancel_requested = False
+                proc = subprocess.Popen(
+                    [sys.executable, str(script_path)],
+                    cwd=str(ws),
+                    env=env,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    start_new_session=True,
+                )
+                self._active_proc = proc
+            try:
+                stdout, stderr = proc.communicate(timeout=timeout_sec)
+                with self._proc_lock:
+                    was_cancelled = self._cancel_requested
+                if was_cancelled:
+                    res = ColabRunResult(
+                        returncode=137,
+                        stdout=stdout or "",
+                        stderr=f"{stderr or ''}\nExecution cancelled by colab_stop".strip(),
+                        duration_sec=time.monotonic() - t0,
+                        timed_out=False,
+                        cancelled=True,
+                    )
+                else:
+                    res = ColabRunResult(
+                        returncode=int(proc.returncode if proc.returncode is not None else 1),
+                        stdout=stdout or "",
+                        stderr=stderr or "",
+                        duration_sec=time.monotonic() - t0,
+                        timed_out=False,
+                        cancelled=False,
+                    )
+            except subprocess.TimeoutExpired:
+                _kill_process_group(proc)
+                try:
+                    stdout, stderr = proc.communicate(timeout=5.0)
+                except subprocess.TimeoutExpired:
+                    stdout, stderr = "", ""
+                res = ColabRunResult(
+                    returncode=124,
+                    stdout=stdout or "",
+                    stderr=f"{stderr or ''}\nExecution timed out after {timeout_sec:.1f}s".strip(),
+                    duration_sec=time.monotonic() - t0,
+                    timed_out=True,
+                    cancelled=False,
+                )
         finally:
+            with self._proc_lock:
+                if self._active_proc is proc:
+                    self._active_proc = None
+                self._cancel_requested = False
             script_path.unlink(missing_ok=True)
 
         self.exec_history.append({
@@ -356,6 +485,7 @@ class MockColabBackend(ColabBackend):
             "pip_packages": list(pip_packages or []),
             "returncode": res.returncode,
             "timed_out": res.timed_out,
+            "cancelled": res.cancelled,
         })
         return res
 

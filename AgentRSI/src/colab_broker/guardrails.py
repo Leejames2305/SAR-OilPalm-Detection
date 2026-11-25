@@ -221,6 +221,23 @@ def verify_downloaded_outputs(
     return metadata
 
 
+_URL_QUERY_RE = re.compile(r"(https?://[^\s'\"`?]+)\?[^\s'\"`<>)}\]]+")
+_AUTH_HEADER_RE = re.compile(r"(?i)\b(Authorization)(\s*[:=]\s*)(?:Bearer\s+|Basic\s+)?[^\s,'\"`<>)}\]]+")
+_SECRET_KV_RE = re.compile(
+    r"(?i)\b(Bearer|access_token|id_token|refresh_token|authuser|X-Goog-[A-Za-z-]+)(\s*[:=]\s*|\s+)[^\s&,'\"`<>)}\]]+"
+)
+
+
+def sanitize_cli_output(text: str) -> str:
+    """Scrub URL query strings (e.g., Colab proxy tokens) and auth tokens from CLI output."""
+    if not text:
+        return ""
+    cleaned = _URL_QUERY_RE.sub(r"\1?<REDACTED>", text)
+    cleaned = _AUTH_HEADER_RE.sub(r"\1\2<REDACTED>", cleaned)
+    cleaned = _SECRET_KV_RE.sub(r"\1\2<REDACTED>", cleaned)
+    return cleaned
+
+
 def sanitized_colab_env() -> dict[str, str]:
     """Return a copy of `os.environ` with LLM/GCP/MCP secret variables stripped."""
     env = os.environ.copy()

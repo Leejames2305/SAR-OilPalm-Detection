@@ -19,6 +19,7 @@ class ColabBrokerConfig:
     max_job_timeout_min: float = 30.0
     max_session_gpu_min: float = 60.0
     idle_teardown_sec: float = 300.0
+    sync_wait_sec: float = 180.0
     ephemeral_vm: bool = False
     max_upload_mb: float = 256.0
     max_download_mb: float = 128.0
@@ -41,5 +42,7 @@ class ColabBrokerConfig:
             raise ValueError("max_session_gpu_min must be > 0")
         if self.idle_teardown_sec <= 0:
             raise ValueError("idle_teardown_sec must be > 0")
+        if self.sync_wait_sec < 0:
+            raise ValueError("sync_wait_sec must be >= 0")
         if self.max_upload_mb <= 0 or self.max_download_mb <= 0:
             raise ValueError("max_upload_mb and max_download_mb must be > 0")

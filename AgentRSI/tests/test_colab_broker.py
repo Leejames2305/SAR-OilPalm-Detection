@@ -24,6 +24,7 @@ from colab_broker.backend import CliColabBackend, MockColabBackend  # noqa: E402
 from colab_broker.config import CONTAINER_IO_ROOT, ColabBrokerConfig  # noqa: E402
 from colab_broker.guardrails import (  # noqa: E402
     resolve_staged_inputs,
+    sanitize_cli_output,
     sanitized_colab_env,
     scan_script,
     validate_gpu,
@@ -622,6 +623,18 @@ class TestColabBrokerServerAndRelay(unittest.TestCase):
             calls.append((cmd, dict(kwargs.get("env") or {})))  # type: ignore[arg-type]
             return subprocess.CompletedProcess(cmd, 0, "ok\n", "")
 
+        class _FakePopen:
+            def __init__(self, cmd: list[str], **kwargs: object) -> None:
+                calls.append((cmd, dict(kwargs.get("env") or {})))  # type: ignore[arg-type]
+                self.pid = 99999
+                self.returncode = 0
+
+            def communicate(self, timeout: float | None = None) -> tuple[str, str]:
+                return ("ok\n", "")
+
+            def poll(self) -> int | None:
+                return self.returncode
+
         with tempfile.TemporaryDirectory() as td:
             local_in = Path(td) / "in.bin"
             local_in.write_bytes(b"123")
@@ -629,10 +642,14 @@ class TestColabBrokerServerAndRelay(unittest.TestCase):
 
             with mock.patch.dict(os.environ, {"API_KEY": "secret", "AGENTRSI_VERIFIER_MCP_TOKEN": "tok"}, clear=False):
                 with mock.patch("shutil.which", return_value="/usr/bin/colab"):
-                    with mock.patch("subprocess.run", side_effect=fake_run):
+                    with (
+                        mock.patch("subprocess.run", side_effect=fake_run),
+                        mock.patch("subprocess.Popen", side_effect=_FakePopen),
+                    ):
                         be = CliColabBackend()
                         be.start_vm("agentrsi-s1", "T4")
                         be.upload_file("agentrsi-s1", local_in, "/content/in.bin")
+                        be.upload_file("agentrsi-s1", local_in, "/content/nested/in.bin")
                         res = be.exec_script("agentrsi-s1", "print(1)", 30.0, pip_packages=["scipy>=1.10"])
                         be.download_file("agentrsi-s1", "/content/out.bin", local_out)
                         be.stop_vm("agentrsi-s1")
@@ -640,12 +657,153 @@ class TestColabBrokerServerAndRelay(unittest.TestCase):
         self.assertEqual(res.returncode, 0)
         self.assertEqual(calls[0][0], ["/usr/bin/colab", "new", "-s", "agentrsi-s1", "--gpu", "T4"])
         self.assertEqual(calls[1][0][:4], ["/usr/bin/colab", "upload", "-s", "agentrsi-s1"])
+        # Nested upload creates parent directory first via `colab exec -s ... -f ...` then uploads
         self.assertEqual(calls[2][0][:4], ["/usr/bin/colab", "exec", "-s", "agentrsi-s1"])
-        self.assertEqual(calls[3][0][:4], ["/usr/bin/colab", "download", "-s", "agentrsi-s1"])
-        self.assertEqual(calls[4][0], ["/usr/bin/colab", "stop", "-s", "agentrsi-s1"])
+        self.assertEqual(calls[3][0][:4], ["/usr/bin/colab", "upload", "-s", "agentrsi-s1"])
+        self.assertEqual(calls[4][0][:4], ["/usr/bin/colab", "exec", "-s", "agentrsi-s1"])
+        self.assertEqual(calls[5][0][:4], ["/usr/bin/colab", "download", "-s", "agentrsi-s1"])
+        self.assertEqual(calls[6][0], ["/usr/bin/colab", "stop", "-s", "agentrsi-s1"])
         for _, env in calls:
             self.assertNotIn("API_KEY", env)
             self.assertNotIn("AGENTRSI_VERIFIER_MCP_TOKEN", env)
+
+    def test_sanitize_cli_output_redacts_proxy_urls_and_tokens(self) -> None:
+        raw = (
+            "[colab] Upload failed: 500 Server Error for url: "
+            "https://8080-gpu-l4.prod.r.colab.dev/api/contents/content/s009/chips.npz"
+            "?authuser=0&token=SUPER_SECRET_TOKEN_123 "
+            "Authorization: Bearer SECRET_BEARER_XYZ"
+        )
+        cleaned = sanitize_cli_output(raw)
+        self.assertNotIn("SUPER_SECRET_TOKEN_123", cleaned)
+        self.assertNotIn("SECRET_BEARER_XYZ", cleaned)
+        self.assertIn("https://8080-gpu-l4.prod.r.colab.dev/api/contents/content/s009/chips.npz?<REDACTED>", cleaned)
+
+        # CliColabBackend upload error scrubs leaked URL query strings
+        def fail_upload(cmd: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+            if cmd[1] == "upload":
+                return subprocess.CompletedProcess(cmd, 1, "", raw)
+            return subprocess.CompletedProcess(cmd, 0, "", "")
+
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "a.bin"
+            p.write_bytes(b"x")
+            with mock.patch("shutil.which", return_value="/usr/bin/colab"):
+                with mock.patch("subprocess.run", side_effect=fail_upload):
+                    with self.assertRaises(RuntimeError) as ctx:
+                        CliColabBackend().upload_file("agentrsi-s1", p, "/content/a.bin")
+        self.assertNotIn("SUPER_SECRET_TOKEN_123", str(ctx.exception))
+        self.assertIn("<REDACTED>", str(ctx.exception))
+
+    def test_async_bounded_wait_status_fetch_and_preemptive_stop(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            cfg = self._make_config(td, sync_wait_sec=0.15)
+            backend = MockColabBackend()
+            with ColabBrokerServer(cfg, backend=backend):
+                # 1. Job exceeding sync_wait_sec returns status='running', then completes via status/fetch
+                script = (
+                    "import time\n"
+                    "from pathlib import Path\n"
+                    "time.sleep(0.45)\n"
+                    "Path('async_out.txt').write_text('hello-async')\n"
+                    "print('ASYNC_DONE')\n"
+                )
+                r1 = _rpc_over_socket(
+                    cfg.socket_path,
+                    [{
+                        "jsonrpc": "2.0",
+                        "id": 1,
+                        "method": "tools/call",
+                        "params": {
+                            "name": "colab_run",
+                            "arguments": {"script": script, "output_paths": ["async_out.txt"]},
+                        },
+                    }],
+                )
+                self.assertFalse(r1[0]["result"]["isError"])  # type: ignore[index]
+                p1 = json.loads(r1[0]["result"]["content"][0]["text"])  # type: ignore[index]
+                self.assertEqual(p1["status"], "running")
+                job_id = p1["job_id"]
+
+                # Poll colab_status(job_id) until completed
+                deadline = time.monotonic() + 5.0
+                final_status = "running"
+                while time.monotonic() < deadline:
+                    st = _rpc_over_socket(
+                        cfg.socket_path,
+                        [{
+                            "jsonrpc": "2.0",
+                            "id": 2,
+                            "method": "tools/call",
+                            "params": {"name": "colab_status", "arguments": {"job_id": job_id}},
+                        }],
+                    )
+                    st_p = json.loads(st[0]["result"]["content"][0]["text"])  # type: ignore[index]
+                    final_status = st_p["status"]
+                    if final_status != "running":
+                        break
+                    time.sleep(0.05)
+                self.assertEqual(final_status, "completed")
+
+                fetched = _rpc_over_socket(
+                    cfg.socket_path,
+                    [{
+                        "jsonrpc": "2.0",
+                        "id": 3,
+                        "method": "tools/call",
+                        "params": {"name": "colab_fetch", "arguments": {"job_id": job_id}},
+                    }],
+                )
+                fp = json.loads(fetched[0]["result"]["content"][0]["text"])  # type: ignore[index]
+                self.assertTrue(fp["ok"])
+                self.assertIn("ASYNC_DONE", fp["stdout"])
+                self.assertEqual(len(fp["outputs"]), 1)
+
+                # 2. Long stuck job can be preemptively cancelled & VM stopped immediately by colab_stop
+                t0 = time.monotonic()
+                r2 = _rpc_over_socket(
+                    cfg.socket_path,
+                    [{
+                        "jsonrpc": "2.0",
+                        "id": 4,
+                        "method": "tools/call",
+                        "params": {
+                            "name": "colab_run",
+                            "arguments": {"script": "import time\ntime.sleep(30)\n", "wait_sec": 0.1},
+                        },
+                    }],
+                )
+                p2 = json.loads(r2[0]["result"]["content"][0]["text"])  # type: ignore[index]
+                self.assertEqual(p2["status"], "running")
+                job2 = p2["job_id"]
+
+                r_stop = _rpc_over_socket(
+                    cfg.socket_path,
+                    [{
+                        "jsonrpc": "2.0",
+                        "id": 5,
+                        "method": "tools/call",
+                        "params": {"name": "colab_stop", "arguments": {"job_id": job2}},
+                    }],
+                )
+                stop_p = json.loads(r_stop[0]["result"]["content"][0]["text"])  # type: ignore[index]
+                elapsed = time.monotonic() - t0
+                self.assertTrue(stop_p["ok"])
+                self.assertTrue(stop_p["stopped"])
+                self.assertEqual(stop_p["cancelled_job_id"], job2)
+                self.assertLess(elapsed, 4.0)
+
+                st2 = _rpc_over_socket(
+                    cfg.socket_path,
+                    [{
+                        "jsonrpc": "2.0",
+                        "id": 6,
+                        "method": "tools/call",
+                        "params": {"name": "colab_status", "arguments": {"job_id": job2}},
+                    }],
+                )
+                st2_p = json.loads(st2[0]["result"]["content"][0]["text"])  # type: ignore[index]
+                self.assertEqual(st2_p["status"], "cancelled")
 
 
 if __name__ == "__main__":
