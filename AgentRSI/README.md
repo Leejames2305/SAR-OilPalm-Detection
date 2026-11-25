@@ -2,10 +2,10 @@
 
 Autonomous-agent modelling harness for oil-palm *Ganoderma* triage across three Malaysian estates (AirHitam, Palong, Serting), inspired by RSI4EO and built on **Harbor `0.27.0`** + **rootful Podman**.
 
-Each session gives a coding agent (`codex` or `claude-code`) a CPU-only sandbox with the multi-date ALOS-2 SAR + Sentinel-2 NDVI base tables, raw ROI-masked SAR rasters, prior research notes, carried-over derived datasets, and read-only Google Earth Engine access. Sessions can also opt into two MCP extensions:
+Each default session runs for **4 hours** (`14400 s`, `$10` cost/daily spend cap) and gives a coding agent (`codex` or `claude-code`) a CPU-only sandbox with the multi-date ALOS-2 SAR + Sentinel-2 NDVI base tables, raw ROI-masked SAR rasters, prior research notes, carried-over derived datasets, read-only Google Earth Engine access, and two MCP extensions enabled by default:
 
 - **M7 (`agentrsi-verifier`):** a multi-container sealed sidecar exposing a query-budgeted, noisy validation-split (`V`) scoring tool during the run.
-- **M8 (`agentrsi-colab`):** a hardened host-side WSL MCP broker wrapping `google-colab-cli` for on-demand Colab GPU offload (T4/L4, opt-in A100) without exposing host Google OAuth/ADC tokens to containers.
+- **M8 (`agentrsi-colab`):** a hardened host-side WSL MCP broker wrapping `google-colab-cli` for on-demand Colab GPU offload (`T4`/`L4` allowed; `A100` restricted unless explicitly opted in) without exposing host Google OAuth/ADC tokens to containers.
 
 When the session finishes, a **separate sealed verifier container** scores the agent's submitted `pipeline.py` (CPU-only, offline) on held-out 80 m spatial blocks against the current promoted incumbent and reports:
 
@@ -25,7 +25,7 @@ Several files are intentionally `.gitignore`d (secrets, raw labels, heavy raster
 - **Rootful Podman** running with socket exposed at:
   `/mnt/wsl/podman-sockets/podman-machine-default/podman-root.sock`
 - **Linux `podman` and `docker-compose` binaries** placed in `AgentRSI/.tools/bin/` (gitignored; placed first on `PATH` by the runner scripts so `podman compose` uses Linux `docker-compose`).
-- *(Optional, for M8 Colab GPU offload)* **`google-colab-cli`** installed and authenticated on the **WSL host only**:
+- *(Required for default sessions with M8 Colab GPU offload; or build tasks with `--disable-colab`)* **`google-colab-cli`** installed and authenticated on the **WSL host only**:
   ```bash
   uv tool install google-colab-cli
   colab auth
@@ -84,26 +84,27 @@ Session IDs use **`YYMMDD-sXXX-<lens>`** (e.g., `261124-s001-open`, `261124-s006
 
 ```bash
 # 1. Build a Harbor task folder (runs allowlist copy + placeholder/T-leak canary + leak check)
+#    Defaults from config/session.yaml: 4 h timeout (14400 s), M7 in-run verifier ON,
+#    M8 Colab GPU broker ON (T4/L4 allowed, A100 restricted), $10 cost/daily spend cap.
 #    Available lenses (templates/lenses/): open | literature | data-expansion | ablation
 #    Optional flags:
-#      --datasets-from <session_id>     carry derived datasets from a specific prior session
-#      --timeout <sec>                  override agent wall-clock timeout
+#      --datasets-from <session_id>         carry derived datasets from a specific prior session
+#      --timeout <sec>                      override agent wall-clock timeout (default: 14400)
 #      --agent-cpus / --agent-memory-mb / --verifier-cpus / --verifier-memory-mb
-#      --enable-inrun-verifier          attach M7 noisy-V verifier sidecar MCP
-#      --enable-colab [--colab-allow-a100]  attach M8 host Colab GPU MCP broker
+#      --disable-inrun-verifier             disable M7 noisy-V verifier sidecar MCP
+#      --disable-colab                      disable M8 host Colab GPU MCP broker
+#      --colab-allow-a100                   opt into A100 GPU selection (restricted by default)
 AgentRSI/.venv/bin/python AgentRSI/scripts/build_task.py \
   --next \
   --focus open \
-  --parent 261124-s006-data-expansion \
-  --enable-inrun-verifier \
-  --enable-colab
+  --parent 261124-s006-data-expansion
 
 # 2. (Optional) Dry run before spending API budget (add --colab-mock to skip live Colab auth)
 AgentRSI/.venv/bin/python AgentRSI/scripts/run_session.py \
   --session-id <session_id> \
   --dry-run
 
-# 3. Run the session (agent sandbox + optional M7 sidecar & M8 host broker + separate sealed verifier)
+# 3. Run the session (agent sandbox + M7 sidecar & M8 host broker + separate sealed verifier)
 #    Defaults come from config/session.yaml; flags below are optional overrides.
 AgentRSI/.venv/bin/python AgentRSI/scripts/run_session.py \
   --session-id <session_id> \
@@ -118,9 +119,9 @@ AgentRSI/.venv/bin/python AgentRSI/scripts/collect.py \
   --parent 261124-s006-data-expansion
 ```
 
-### Optional MCP Extensions (M7 & M8)
+### MCP Extensions (M7 & M8 — Enabled by Default)
 
-Both MCP servers are **disabled by default** in `config/session.yaml` and enabled per task via CLI flags (or toggled in `config/session.yaml`):
+Both MCP servers are **enabled by default** in `config/session.yaml` (alongside the 4 h timeout and `$10` cost cap) and can be disabled per task via `--disable-inrun-verifier` / `--disable-colab` (or toggled in `config/session.yaml`):
 
 - **M7 — In-Run Verifier v2 (`agentrsi-verifier`):**
   - Runs as a Compose sidecar (`verifier-sidecar`, built from `localhost/agentrsi-sealed:epoch1` + current promoted incumbent) at `http://verifier-sidecar:8765/mcp` (Streamable HTTP) authenticated with a per-session ephemeral `AGENTRSI_VERIFIER_MCP_TOKEN` held only in process memory and scrubbed from trial logs.
@@ -148,7 +149,7 @@ AgentRSI/.venv/bin/python AgentRSI/scripts/regrade.py \
 # Inspect raw Harbor trial logs & agent trajectories in Harbor's viewer
 AgentRSI/.venv/bin/harbor view AgentRSI/jobs/<session_id>
 
-# Run all 54 host unit tests (verifier, M7 sidecar, M8 broker, builder/collector, MCP wiring, dashboard)
+# Run all 55 host unit tests (verifier, M7 sidecar, M8 broker, builder/collector, MCP wiring, dashboard)
 AgentRSI/.venv/bin/python -m unittest discover -s AgentRSI/tests -v
 
 # Standalone leak audit across generated trees
@@ -192,7 +193,7 @@ AgentRSI/
 ├── verifier/                   # Sealed grading library + M7 sidecar (`inrun_server.py`)
 ├── starter/                    # Session-0 baseline pipeline.py & requirements.txt
 ├── templates/                  # Instruction base, lenses/, task.toml/Dockerfiles/compose, agentrsi CLI & MCP relay
-├── tests/                      # 54 host unit tests (verifier, M7, M8, builder/collector, MCP wiring, dashboard)
+├── tests/                      # 55 host unit tests (verifier, M7, M8, builder/collector, MCP wiring, dashboard)
 │
 ├── tasks/<session_id>/         # (gitignored) Generated Harbor task directories
 ├── jobs/<session_id>/          # (gitignored) Raw Harbor job outputs, logs, and trajectories
@@ -207,10 +208,10 @@ AgentRSI/
 
 ## Operational Notes
 
-- **Kill switch & spend cap:** Set `"kill_switch": true` in `state/lineage.json` to block new sessions immediately, or lower `DAILY_SPEND_CAP_USD` in `.env`.
+- **Kill switch & spend cap:** Default cost limits are `$10` (`max_budget_usd: 10.0` in `config/session.yaml` for `claude-code`, and `DAILY_SPEND_CAP_USD=10` in `.env` enforced before launch by `run_session.py`). Set `"kill_switch": true` in `state/lineage.json` to block new sessions immediately, or lower `DAILY_SPEND_CAP_USD` in `.env`.
 - **Agent gateway differences:** `run_session.py` automatically normalizes `BASE_URL` and flags per agent — `codex` uses `.../v1` (`openai_responses`, `OPENAI_API_KEY`) and does not accept `max_turns`/`max_budget_usd`; `claude-code` strips `/v1` (`anthropic_messages`, `ANTHROPIC_AUTH_TOKEN`) and honors both. `run_session.py` also passes `--yes` so Harbor does not pause on interactive MCP env-header prompts.
 - **Harbor linting on Podman-only hosts:**
-  - `harbor lint` passes directly on standard and M8-only tasks. On M7 tasks containing `environment/docker-compose.yaml`, `harbor lint` invokes the `docker compose` CLI plugin (absent on Podman-only hosts); validate Compose overlays via `AgentRSI/.tools/bin/docker-compose` plus `002-CheckLeaks.py`.
-  - Upstream Harbor (`0.25.0`–`0.27.0`) still hits `crun: chdir to /app` on `harbor check -e podman`; rely on `harbor lint` + `002-CheckLeaks.py`.
-- **Concurrent sessions:** Use per-task resource overrides (`--agent-cpus`, `--agent-memory-mb`, `--verifier-cpus`, `--verifier-memory-mb`) to stay within Podman's 12-CPU / 15.2 GiB envelope, and run `collect.py` sequentially after sessions finish.
+  - Default tasks include `environment/docker-compose.yaml` (M7 sidecar); because `harbor lint` invokes the `docker compose` CLI plugin (absent on Podman-only hosts), validate Compose overlays via `AgentRSI/.tools/bin/docker-compose config` plus `002-CheckLeaks.py`. `harbor lint` passes directly on tasks built with `--disable-inrun-verifier`.
+  - Upstream Harbor (`0.25.0`–`0.27.0`) still hits `crun: chdir to /app` on `harbor check -e podman`; rely on `harbor lint` (non-Compose) / `docker-compose config` + `002-CheckLeaks.py`.
+- **Concurrent sessions:** Use per-task resource overrides (`--agent-cpus`, `--agent-memory-mb`, `--verifier-cpus`, `--verifier-memory-mb`) to stay within Podman's 12-CPU / 15.2 GiB envelope (note each M7 `verifier-sidecar` adds `2` CPUs / `2048 MB`; disable with `--disable-inrun-verifier` / `--disable-colab` if packing several parallel runs), and run `collect.py` sequentially after sessions finish.
 - **Adding new SAR dates:** Drop complete ALOS-2 scenes into `data/SAR-scenes/`, re-run `001-BuildData.py --extract-sar` + `002-CheckLeaks.py`, and rebuild `localhost/agentrsi-sealed:epoch1` via `scripts/build_verifier_base.py`.

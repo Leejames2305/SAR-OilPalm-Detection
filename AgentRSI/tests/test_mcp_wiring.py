@@ -109,9 +109,54 @@ def _write_mock_job_with_sidecar(
 
 
 class McpWiringTests(unittest.TestCase):
-    def test_defaults_backward_compatible_disabled(self) -> None:
+    def test_defaults_enable_m7_m8_and_4h_timeout(self) -> None:
+        session_cfg = yaml.safe_load((AGENT_ROOT / "config" / "session.yaml").read_text())
+        self.assertEqual(int(session_cfg["agent_timeout_sec"]), 14400)
+        self.assertAlmostEqual(float(session_cfg["max_budget_usd"]), 10.0)
+        self.assertTrue(bool(session_cfg["inrun_verifier"]))
+        self.assertTrue(bool(session_cfg["colab_broker"]["enabled"]))
+        self.assertEqual(list(session_cfg["colab_broker"]["allowed_gpus"]), ["T4", "L4"])
+        self.assertFalse(bool(session_cfg["colab_broker"]["allow_a100"]))
+
         with tempfile.TemporaryDirectory() as td:
-            tdir = build_task("261124-m0-compat", timeout_override=300, output_root=Path(td))
+            tdir = build_task("261125-default-check", output_root=Path(td))
+            self.assertTrue((tdir / "environment" / "docker-compose.yaml").is_file())
+            self.assertTrue((tdir / "environment" / "sidecar" / "Dockerfile").is_file())
+
+            raw = tomllib.loads((tdir / "task.toml").read_text())
+            cfg = TaskConfig.model_validate(raw)
+            self.assertEqual(cfg.agent.timeout_sec, 14400.0)
+            self.assertEqual(
+                [s.name for s in cfg.environment.mcp_servers],
+                ["agentrsi-verifier", "agentrsi-colab"],
+            )
+            self.assertIn(
+                ArtifactConfig(
+                    source="/var/log/agentrsi-verifier/queries.jsonl",
+                    destination="sidecar/queries.jsonl",
+                    service="verifier-sidecar",
+                ),
+                cfg.artifacts,
+            )
+
+            instr = (tdir / "instruction.md").read_text()
+            self.assertIn("### MCP Tools", instr)
+            self.assertIn("agentrsi-verifier", instr)
+            self.assertIn("agentrsi-colab", instr)
+            self.assertIn("`T4`, `L4`", instr)
+            self.assertNotIn("A100", instr)
+            self.assertIn("You have 14400 seconds to complete this task.", instr)
+            self.assertEqual(_run_leak_check(tdir).returncode, 0)
+
+    def test_explicit_disable_m7_m8_backward_compatible(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            tdir = build_task(
+                "261124-m0-compat",
+                timeout_override=300,
+                enable_inrun_verifier=False,
+                enable_colab=False,
+                output_root=Path(td),
+            )
             self.assertFalse((tdir / "environment" / "docker-compose.yaml").exists())
             self.assertFalse((tdir / "environment" / "sidecar").exists())
 

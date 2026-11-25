@@ -125,7 +125,7 @@ def run_session(
         if v and k in ("API_KEY", "BASE_URL", "GCP_PROJECT", "GCP_SA_KEY_PATH", "DAILY_SPEND_CAP_USD", "ENV"):
             env_map[k] = v
 
-    daily_cap = float(env_map.get("DAILY_SPEND_CAP_USD") or 1.0)
+    daily_cap = float(env_map.get("DAILY_SPEND_CAP_USD") or 10.0)
     allowed, reason = check_budget_guard(lineage, daily_cap)
     if not allowed:
         if not dry_run:
@@ -144,7 +144,7 @@ def run_session(
     use_agent = agent or str(session_cfg["agent"])
     use_model = model or str(session_cfg["model"])
     use_turns = max_turns if max_turns is not None else int(session_cfg.get("max_turns", 120))
-    use_budget = max_budget_usd if max_budget_usd is not None else float(session_cfg.get("max_budget_usd", 4.0))
+    use_budget = max_budget_usd if max_budget_usd is not None else float(session_cfg.get("max_budget_usd", 10.0))
     use_effort = str(session_cfg.get("reasoning_effort", "medium"))
     use_env = env_map.get("ENV") or "podman"
 
