@@ -1,0 +1,5 @@
+# ALOS window statistics
+
+Extracted from `/app/rasters` with explicit filename mapping: `spk`=Cal_Spk_TC linear backscatter, `ha`=Cal_mat_HAlpha_Spk_TC, `yam`=Cal_mat_Yamaguchi_Spk_TC signed dB, and `t3`=AirHitam Cal_mat_Spk_TC coherency. Coordinates are reprojected from EPSG:4326 to each native raster CRS before radius-1/radius-2 sampling. Power/HAlpha use finite positive masks; T3 uses finite positive T11 support; Yamaguchi uses finite signed values. Each band stores mean, std, min, max, p10, p90, and valid count. Matched-date deltas and ratios are stored for spk, ha, and yam.
+
+Session 261125-s007 audit: 7,220 rows, 459 columns, exact unique public-tree keys, 593,334 NaNs. Every missing value is in the 126 T3 columns unavailable outside AirHitam (4,709 rows × 126). The prior Yamaguchi extractor used finite-only masking and ratios of signed dB means; these are not physically appropriate normalized powers. This carried table is retained for provenance and is not used by the final submission. The corrected `alos_physics` dataset applies the required backscatter support mask and computes linear-power fractions.

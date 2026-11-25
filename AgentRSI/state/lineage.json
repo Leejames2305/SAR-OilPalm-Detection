@@ -2,13 +2,13 @@
   "schema_version": 1,
   "epoch": 1,
   "split_sha256": "26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed",
-  "t_attempts_used": 3,
+  "t_attempts_used": 4,
   "t_attempt_budget": 20,
   "kill_switch": false,
   "daily_spend_usd": {
     "2026-11-23": 0.012239,
     "2026-11-24": 1.829948,
-    "2026-11-25": 1.854174
+    "2026-11-25": 4.604725
   },
   "incumbent": {
     "id": "261124-s001-open",
@@ -164,6 +164,23 @@
       "promoted": false,
       "cost_usd": 1.8541739999999995,
       "collected_at": "2026-11-25T06:20:06+00:00"
+    },
+    "261125-s008-open": {
+      "session_id": "261125-s008-open",
+      "job_id": "2026-11-25__14-46-35",
+      "parent_id": "261125-s007-open",
+      "epoch": 1,
+      "dry_session": false,
+      "status": "ok",
+      "submission_valid": true,
+      "v_score": 0.15266474000063582,
+      "v_delta_vs_incumbent": 0.033914228101429765,
+      "gate_passed": false,
+      "t_comp_delta": 0.004105030971907231,
+      "t_ci_low": -0.019571482405915875,
+      "promoted": false,
+      "cost_usd": 2.7505512000000003,
+      "collected_at": "2026-11-25T07:30:28+00:00"
     }
   }
 }
