@@ -1,9 +1,0 @@
-# Frozen multiscale optical DINOv2 embeddings
-
-Source cloud-controlled Sentinel-2 mosaic as optical_jitter: S2 SR Harmonized Apr15–Aug15 2026, SCL4 and CloudScore+ cs_cdf>=.65; wider SCL4 Mar15–Sep15 fallback. Bands B4/B3/B2 and B8/B4/B3, reflectance DN/10000. Native10m RGB/NIR; no resolution enhancement claim. sampleRectangle centre/corner offset corrected to true grid corners (-5m east,+5m north relative to saved raster origin). Integer pixel window anchored on trunk-containing pixel, sizes8/16/32 =>80/160/320m. No label-derived centering, no label use.
-
-Frozen facebookresearch/dinov2 dinov2_vits14 weights (official dl.fbaipublicfiles.com). RGB3 views scaled by.3, NIR-red-green160m view by.5, clipped0..1, bilinear upsample224, ImageNet mean/SD normalization. CLS384-dimensional embedding per view; no finetuning or trained GPU head. Compressed each view to64 PCA components using all7220 covariate-only patches, allowed transductive feature preparation. Downstream supervised learning and any further PCA use training rows only. Compression does not use ground truth. Four64-PC views plus3 exact key columns,7220 rows. No missing/duplicate keys or forbidden columns. pca_transform.npz allows projection of reproduced full encoder outputs. Source keys preserved without rounding.
-
-Reproduce extract_optical_chips.py, prepare_gpu.py, remotely execute dino_gpu.py via broker, then compress_dino.py (update only raw output job path). GPU not required at fit_predict: final features are offline CPU-readable. DINOv2 citation https://arxiv.org/abs/2304.07193. No pathogen-specific interpretation assigned to embedding axes.
-
-Reproducibility pin: repository commit7764ea0f912e53c92e82eb78a2a1631e92725fc8 (main at extraction; commit date2026-06-03). Official weights SHA256b938bf1bc15cd2ec0feacfe3a1bb553fe8ea9ca46a7e1d8d00217f29aef60cd9,88283115bytes. Extraction script now resolves the audited commit explicitly. Runtime only uses saved covariates.
