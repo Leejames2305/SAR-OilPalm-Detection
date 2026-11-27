@@ -1,0 +1,39 @@
+{
+  "support": {
+    "AirHitam_260610": {
+      "min": 1.0,
+      "mean": 1.0
+    },
+    "AirHitam_261014": {
+      "min": 1.0,
+      "mean": 1.0
+    },
+    "Palong_260610": {
+      "min": 1.0,
+      "mean": 1.0
+    },
+    "Palong_261014": {
+      "min": 1.0,
+      "mean": 1.0
+    },
+    "Serting_260610": {
+      "min": 1.0,
+      "mean": 1.0
+    },
+    "Serting_261014": {
+      "min": 1.0,
+      "mean": 1.0
+    }
+  },
+  "shape": [
+    7220,
+    311
+  ],
+  "nan": 0,
+  "patch_shape": [
+    7220,
+    22,
+    12,
+    12
+  ]
+}

@@ -2,14 +2,14 @@
   "schema_version": 1,
   "epoch": 1,
   "split_sha256": "26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed",
-  "t_attempts_used": 7,
+  "t_attempts_used": 8,
   "t_attempt_budget": 20,
   "kill_switch": false,
   "daily_spend_usd": {
     "2026-11-23": 0.012239,
     "2026-11-24": 1.829948,
     "2026-11-25": 8.427393,
-    "2026-11-27": 1.419985
+    "2026-11-27": 3.918508
   },
   "incumbent": {
     "id": "261124-s001-open",
@@ -233,6 +233,23 @@
       "promoted": false,
       "cost_usd": 1.4199852000000002,
       "collected_at": "2026-11-27T04:14:05+00:00"
+    },
+    "261127-s012-open": {
+      "session_id": "261127-s012-open",
+      "job_id": "2026-11-27__12-29-21",
+      "parent_id": "261127-s011-ablation",
+      "epoch": 1,
+      "dry_session": false,
+      "status": "ok",
+      "submission_valid": true,
+      "v_score": 0.20341131405050797,
+      "v_delta_vs_incumbent": 0.08466080215130194,
+      "gate_passed": false,
+      "t_comp_delta": 0.04993270503325325,
+      "t_ci_low": 0.012819802745499846,
+      "promoted": false,
+      "cost_usd": 2.4985232,
+      "collected_at": "2026-11-27T05:16:48+00:00"
     }
   }
 }
