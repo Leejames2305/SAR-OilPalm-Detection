@@ -191,9 +191,9 @@ class BuilderCollectorTests(unittest.TestCase):
             out_root = Path(td) / "tasks"
             tdir = build_task(
                 "unit-parent-check",
-                focus_lens="open",
+                focus_lens="synthesis",
                 parent_session="261127-s012-open",
-                ref_sessions=["261125-s009-open", "261127-s011-ablation", "261127-s012-open"],
+                ref_sessions=["261125-s009-open", "261125-s010-open", "261127-s011-ablation", "261127-s012-open"],
                 timeout_override=600,
                 output_root=out_root,
             )
@@ -205,7 +205,7 @@ class BuilderCollectorTests(unittest.TestCase):
             self.assertFalse((prev_sub / "__pycache__").exists())
 
             # Reference sessions carry HANDOFF.md, REPORT.md, submission/ — NEVER certification.json
-            for ref_id in ("261125-s009-open", "261127-s011-ablation"):
+            for ref_id in ("261125-s009-open", "261125-s010-open", "261127-s011-ablation"):
                 ref_dir = prior_dir / "ref_sessions" / ref_id
                 self.assertTrue((ref_dir / "HANDOFF.md").is_file())
                 self.assertTrue((ref_dir / "REPORT.md").is_file())
@@ -216,9 +216,11 @@ class BuilderCollectorTests(unittest.TestCase):
             self.assertFalse((prior_dir / "ref_sessions" / "261127-s012-open").exists())
 
             instr = (tdir / "instruction.md").read_text()
+            self.assertIn("Focus Lens: Cross-Session Synthesis & Crossover", instr)
             self.assertIn("/app/prior/prev_submission/", instr)
             self.assertIn("/app/prior/ref_sessions/", instr)
             self.assertIn("261125-s009-open", instr)
+            self.assertIn("261125-s010-open", instr)
             self.assertIn("261127-s011-ablation", instr)
             self.assertNotIn("certification", instr.lower())
             self.assertNotIn("gate_passed", instr.lower())
@@ -227,6 +229,7 @@ class BuilderCollectorTests(unittest.TestCase):
         lenses_dir = AGENT_ROOT / "templates" / "lenses"
         self.assertEqual(infer_lens_from_session_id("261123-s001-data-expansion", lenses_dir), "data-expansion")
         self.assertEqual(infer_lens_from_session_id("261123-s002-ablation", lenses_dir), "ablation")
+        self.assertEqual(infer_lens_from_session_id("261127-s013-synthesis", lenses_dir), "synthesis")
         self.assertIsNone(infer_lens_from_session_id("s000-dry", lenses_dir))
 
         lin = default_lineage(self.split_cfg, self.verifier_cfg)

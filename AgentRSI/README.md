@@ -86,8 +86,11 @@ Session IDs use **`YYMMDD-sXXX-<lens>`** (e.g., `261124-s001-open`, `261124-s006
 # 1. Build a Harbor task folder (runs allowlist copy + placeholder/T-leak canary + leak check)
 #    Defaults from config/session.yaml: 4 h timeout (14400 s), M7 in-run verifier ON,
 #    M8 Colab GPU broker ON (T4/L4 allowed, A100 restricted), $10 cost/daily spend cap.
-#    Available lenses (templates/lenses/): open | literature | data-expansion | ablation
+#    Available lenses (templates/lenses/): open | literature | data-expansion | ablation | synthesis
 #    Optional flags:
+#      --parent <session_id>                carry prev_HANDOFF.md, prev_REPORT.md, prev_submission/, and datasets/
+#      --ref <session_id>                   (repeatable) stage extra reference sessions' HANDOFF.md, REPORT.md,
+#                                           submission/, and V-only summary under /app/prior/ref_sessions/<id>/
 #      --datasets-from <session_id>         carry derived datasets from a specific prior session
 #      --timeout <sec>                      override agent wall-clock timeout (default: 14400)
 #      --agent-cpus / --agent-memory-mb / --verifier-cpus / --verifier-memory-mb
@@ -97,7 +100,16 @@ Session IDs use **`YYMMDD-sXXX-<lens>`** (e.g., `261124-s001-open`, `261124-s006
 AgentRSI/.venv/bin/python AgentRSI/scripts/build_task.py \
   --next \
   --focus open \
-  --parent 261124-s006-data-expansion
+  --parent 261127-s012-open
+
+#    Or build a cross-session synthesis task comparing multiple prior branches (V-only, zero T leakage):
+AgentRSI/.venv/bin/python AgentRSI/scripts/build_task.py \
+  --next \
+  --focus synthesis \
+  --parent 261127-s012-open \
+  --ref 261125-s009-open \
+  --ref 261125-s010-open \
+  --ref 261127-s011-ablation
 
 # 2. (Optional) Dry run before spending API budget (add --colab-mock to skip live Colab auth)
 AgentRSI/.venv/bin/python AgentRSI/scripts/run_session.py \
@@ -109,14 +121,14 @@ AgentRSI/.venv/bin/python AgentRSI/scripts/run_session.py \
 AgentRSI/.venv/bin/python AgentRSI/scripts/run_session.py \
   --session-id <session_id> \
   --agent codex \
-  --model gpt-6.1-terra
+  --model gpt-6.1-sol
 
 # 4. Collect outputs, run secret/smell scans, evaluate T gate, archive datasets/queries, refresh dashboard
 #    Add --dry-session when testing to skip spending a T certification attempt or promoting.
 #    Note: collect concurrent sessions sequentially (lineage.json is not file-locked).
 AgentRSI/.venv/bin/python AgentRSI/scripts/collect.py \
   --session-id <session_id> \
-  --parent 261124-s006-data-expansion
+  --parent 261127-s012-open
 ```
 
 ### MCP Extensions (M7 & M8 — Enabled by Default)
@@ -125,11 +137,12 @@ Both MCP servers are **enabled by default** in `config/session.yaml` (alongside 
 
 - **M7 — In-Run Verifier v2 (`agentrsi-verifier`):**
   - Runs as a Compose sidecar (`verifier-sidecar`, built from `localhost/agentrsi-sealed:epoch1` + current promoted incumbent) at `http://verifier-sidecar:8765/mcp` (Streamable HTTP) authenticated with a per-session ephemeral `AGENTRSI_VERIFIER_MCP_TOKEN` held only in process memory and scrubbed from trial logs.
-  - Exposes `score_v`, `verifier_budget`, and `verifier_health`. Loads `V`-only labels (strips all `T` rows immediately), enforces a query cap (`15` default in `config/verifier.yaml`), adds content-hash-cached CSPRNG Gaussian noise ($\sigma = 0.005$ default, preventing noise-averaging by resubmission), and accepts inline `pipeline_code` or larger staged submissions/datasets under the Compose `/shared` volume.
+  - Exposes `score_v`, `verifier_budget`, and `verifier_health`. Loads `V`-only labels (strips all `T` rows immediately), enforces a query cap (`15` default in `config/verifier.yaml`), adds content-hash-cached CSPRNG Gaussian noise ($\sigma = 0.005$ default, preventing noise-averaging by resubmission), and accepts inline `pipeline_code` or larger staged submissions/datasets under the read-only Compose `/shared` volume (copied into an isolated writable temp directory per query before unprivileged execution to prevent `EROFS` and TOCTOU edits).
   - Harbor downloads `/var/log/agentrsi-verifier/queries.jsonl` from the sidecar; `collect.py` archives it as `sessions/<session_id>/sidecar_queries.jsonl` and records `inrun_queries_used` in `meta.json`.
 - **M8 — Host Colab GPU Offload (`agentrsi-colab`):**
   - `run_session.py` starts `ColabBrokerServer` on the WSL host over a per-session Unix domain socket (`/mnt/wsl/agentrsi/colab-<session_id>.sock` -> `/run/agentrsi/colab-mcp.sock`) plus a jailed exchange directory (`/mnt/wsl/agentrsi/colab-io-<session_id>` -> `/run/agentrsi/colab-io/{in,out}`). Inside the container, `/usr/local/bin/agentrsi_mcp_relay.py` bridges MCP `stdio` to the socket.
   - Exposes only `colab_run`, `colab_status`, `colab_fetch`, and `colab_stop`. Blocks `google.colab.auth`, `drive.mount`, `gcloud`/`gsutil`, `sar-oilpalm`, repo identifiers, metadata IPs, unsafe `pip` flags, path traversal, and symlinks; enforces GPU allowlist (`T4`, `L4`; `A100` opt-in), max 1 active VM, per-job & per-session GPU wall-clock caps, idle auto-teardown, and unconditional `colab stop` + socket/IO cleanup on exit (`finally:`).
+  - Long jobs run asynchronously with a bounded inline wait (`sync_wait_sec = 180 s`, returning `status="running"` + `job_id` for `colab_status` / `colab_fetch` polling so MCP calls never hit client timeouts); nested staged uploads automatically create remote parent directories; `colab_stop` preemptively cancels in-flight remote `colab exec` subprocesses; and CLI error/log outputs redact URL query strings and bearer/token patterns.
   - Final `/app/submission/pipeline.py` still grades **CPU-only and offline** — GPU outputs must be saved as reproducible artifacts/features under `/app/datasets/<name>/`.
 
 ### Dashboard, Regrading & Verification Utilities
@@ -149,7 +162,7 @@ AgentRSI/.venv/bin/python AgentRSI/scripts/regrade.py \
 # Inspect raw Harbor trial logs & agent trajectories in Harbor's viewer
 AgentRSI/.venv/bin/harbor view AgentRSI/jobs/<session_id>
 
-# Run all 55 host unit tests (verifier, M7 sidecar, M8 broker, builder/collector, MCP wiring, dashboard)
+# Run all 59 host unit tests (verifier, M7 sidecar, M8 broker, builder/collector, MCP wiring, dashboard)
 AgentRSI/.venv/bin/python -m unittest discover -s AgentRSI/tests -v
 
 # Standalone leak audit across generated trees
@@ -192,8 +205,8 @@ AgentRSI/
 │   └── colab_broker/           # M8 host-side Colab GPU MCP broker (config, guardrails, backend, server)
 ├── verifier/                   # Sealed grading library + M7 sidecar (`inrun_server.py`)
 ├── starter/                    # Session-0 baseline pipeline.py & requirements.txt
-├── templates/                  # Instruction base, lenses/, task.toml/Dockerfiles/compose, agentrsi CLI & MCP relay
-├── tests/                      # 55 host unit tests (verifier, M7, M8, builder/collector, MCP wiring, dashboard)
+├── templates/                  # Instruction base, lenses/ (open/literature/data-expansion/ablation/synthesis), Dockerfiles, CLI & MCP relay
+├── tests/                      # 59 host unit tests (verifier, M7, M8, builder/collector, MCP wiring, dashboard)
 │
 ├── tasks/<session_id>/         # (gitignored) Generated Harbor task directories
 ├── jobs/<session_id>/          # (gitignored) Raw Harbor job outputs, logs, and trajectories
@@ -209,7 +222,8 @@ AgentRSI/
 ## Operational Notes
 
 - **Kill switch & spend cap:** Default cost limits are `$10` (`max_budget_usd: 10.0` in `config/session.yaml` for `claude-code`, and `DAILY_SPEND_CAP_USD=10` in `.env` enforced before launch by `run_session.py`). Set `"kill_switch": true` in `state/lineage.json` to block new sessions immediately, or lower `DAILY_SPEND_CAP_USD` in `.env`.
-- **Agent gateway differences:** `run_session.py` automatically normalizes `BASE_URL` and flags per agent — `codex` uses `.../v1` (`openai_responses`, `OPENAI_API_KEY`) and does not accept `max_turns`/`max_budget_usd`; `claude-code` strips `/v1` (`anthropic_messages`, `ANTHROPIC_AUTH_TOKEN`) and honors both. `run_session.py` also passes `--yes` so Harbor does not pause on interactive MCP env-header prompts.
+- **Agent gateway differences:** `run_session.py` automatically normalizes `BASE_URL` and flags per agent — `codex` uses `.../v1` (`openai_responses`, `OPENAI_API_KEY`) and does not accept `max_turns`/`max_budget_usd`; `claude-code` strips `/v1` (`anthropic_messages`, `ANTHROPIC_AUTH_TOKEN`) and honors both. `run_session.py` also passes `--yes` so Harbor does not pause on interactive MCP env-header prompts. When using OpenRouter, pass bare/dashed model slugs (e.g., `gpt-6-luna` for `codex`, `claude-haiku-5-5` for `claude-code`) so Harbor preserves LiteLLM cost tracking and prompt caching.
+- **Dataset carryover hygiene:** `build_task.py` automatically carries forward derived datasets up to `prior_datasets_max_mb` (`128 MB` in `config/session.yaml`). Periodically prune rejected or duplicate tables from committed `sessions/<id>/datasets/` so the active pool stays compact and fast to stage.
 - **Harbor linting on Podman-only hosts:**
   - Default tasks include `environment/docker-compose.yaml` (M7 sidecar); because `harbor lint` invokes the `docker compose` CLI plugin (absent on Podman-only hosts), validate Compose overlays via `AgentRSI/.tools/bin/docker-compose config` plus `002-CheckLeaks.py`. `harbor lint` passes directly on tasks built with `--disable-inrun-verifier`.
   - Upstream Harbor (`0.25.0`–`0.27.0`) still hits `crun: chdir to /app` on `harbor check -e podman`; rely on `harbor lint` (non-Compose) / `docker-compose config` + `002-CheckLeaks.py`.
