@@ -437,6 +437,38 @@ class BuilderCollectorTests(unittest.TestCase):
             sym_errs = mod._audit_submission_imports(sub, ["rasterio==1.5.2", "lightgbm==4.6.0"])
             self.assertTrue(any("Symlink" in e for e in sym_errs))
 
+    def test_agentrsi_cv_block_keys_match_full_estate_grid(self) -> None:
+        import importlib.util
+        import numpy as np
+        import pandas as pd
+
+        cli_path = AGENT_ROOT / "templates" / "agentrsi_cli.py"
+        spec = importlib.util.spec_from_file_location("agentrsi_cli_grid_mod", cli_path)
+        assert spec and spec.loader
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+
+        l_df = pd.read_csv(AGENT_ROOT / ".work" / "agent_view" / "L_labelled.csv")
+        u_df = pd.read_csv(AGENT_ROOT / ".work" / "agent_view" / "unlabelled.csv", usecols=["estate", "Long", "Lat"])
+        split_df = pd.read_csv(AGENT_ROOT / "config" / "split_assignment.csv")
+
+        for estate in ("AirHitam", "Palong", "Serting"):
+            le = l_df[l_df["estate"] == estate]
+            ue = u_df[u_df["estate"] == estate]
+            all_lon = np.concatenate([le["Long"].to_numpy(float), ue["Long"].to_numpy(float)])
+            all_lat = np.concatenate([le["Lat"].to_numpy(float), ue["Lat"].to_numpy(float)])
+            got_keys = set(
+                mod._block_keys(
+                    le["Long"].to_numpy(float),
+                    le["Lat"].to_numpy(float),
+                    lon_min=float(all_lon.min()),
+                    lat_min=float(all_lat.min()),
+                    lat_mean=float(all_lat.mean()),
+                ).tolist()
+            )
+            want_keys = set(split_df[(split_df["estate"] == estate) & (split_df["part"] == "L")]["block"].tolist())
+            self.assertEqual(got_keys, want_keys, f"{estate} L block keys diverged from full-estate split grid")
+
     def test_smell_ignores_prompt_echo_but_catches_real_repo_access(self) -> None:
         from libbuilder.collect import scan_smells
 

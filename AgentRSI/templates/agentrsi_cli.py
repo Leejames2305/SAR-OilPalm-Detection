@@ -34,9 +34,20 @@ VERIFIER_BASE_MODULES = frozenset(
 )
 
 
-def _block_keys(lon: np.ndarray, lat: np.ndarray, bs: int = BLOCK_M) -> np.ndarray:
-    mx = (lon - lon.min()) * 111320 * np.cos(np.radians(lat.mean()))
-    my = (lat - lat.min()) * 110540
+def _block_keys(
+    lon: np.ndarray,
+    lat: np.ndarray,
+    bs: int = BLOCK_M,
+    *,
+    lon_min: float | None = None,
+    lat_min: float | None = None,
+    lat_mean: float | None = None,
+) -> np.ndarray:
+    x0 = float(lon.min()) if lon_min is None else float(lon_min)
+    y0 = float(lat.min()) if lat_min is None else float(lat_min)
+    ym = float(lat.mean()) if lat_mean is None else float(lat_mean)
+    mx = (lon - x0) * 111320 * np.cos(np.radians(ym))
+    my = (lat - y0) * 110540
     return np.floor(mx / bs).astype(np.int64) * 100000 + np.floor(my / bs).astype(np.int64)
 
 
@@ -264,6 +275,8 @@ def cmd_cv(args: argparse.Namespace) -> None:
     sub = args.submission
     pipeline = _load_pipeline(sub)
     l_all = pd.read_csv(DATA_DIR / "L_labelled.csv")
+    u_path = DATA_DIR / "unlabelled.csv"
+    u_all = pd.read_csv(u_path, usecols=["estate", "Long", "Lat"]) if u_path.exists() else None
     estates = sorted(l_all["estate"].unique())
     cpus = int(os.environ.get("AGENTRSI_CPUS", "6"))
 
@@ -274,7 +287,20 @@ def cmd_cv(args: argparse.Namespace) -> None:
         for e in estates:
             le = l_all[l_all["estate"] == e].reset_index(drop=True)
             other = {o: l_all[l_all["estate"] == o].reset_index(drop=True) for o in estates if o != e}
-            groups = _block_keys(le["Long"].to_numpy(float), le["Lat"].to_numpy(float))
+            if u_all is not None:
+                ue = u_all[u_all["estate"] == e]
+                all_lon = np.concatenate([le["Long"].to_numpy(float), ue["Long"].to_numpy(float)])
+                all_lat = np.concatenate([le["Lat"].to_numpy(float), ue["Lat"].to_numpy(float)])
+            else:
+                all_lon = le["Long"].to_numpy(float)
+                all_lat = le["Lat"].to_numpy(float)
+            groups = _block_keys(
+                le["Long"].to_numpy(float),
+                le["Lat"].to_numpy(float),
+                lon_min=float(all_lon.min()),
+                lat_min=float(all_lat.min()),
+                lat_mean=float(all_lat.mean()),
+            )
             oof_cand = np.full(len(le), np.nan)
             oof_base = np.full(len(le), np.nan)
             for fold, (tr_idx, va_idx) in enumerate(GroupKFold(5).split(le, groups=groups)):
