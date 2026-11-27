@@ -98,7 +98,7 @@ Every `features.parquet` / `features.csv` must satisfy:
 - Key columns `estate`, `Long`, `Lat` covering all 7,220 trees (`L_labelled.csv` ∪ `unlabelled.csv`) with zero duplicate keys and exact float coordinates preserved from `/app/data/*.csv` (do not round `Long`/`Lat`).
 - Zero forbidden column names (case-insensitive): `label`, `class`, `id`, `fid`, `objectid`, `tree_id`, `treeid`, `row_id`, `block`, `part`.
 - Total `/app/datasets/` size <= {{MAX_DATASETS_MB}} MB (keep under {{PRIOR_DATASETS_MAX_MB}} MB so derived datasets automatically carry forward into the next session) and zero symlinks.
-- Keep experiment metrics/summary CSVs under `/app/report/` only (do not archive report CSVs inside `/app/datasets/`).
+- Keep `/app/datasets/` strictly to derived per-tree feature tables (`features.parquet`), `MANIFEST.md`, and their extraction script — do **not** archive report/metrics CSVs, `research/`, `candidates/`, or `recipes/` directories inside `/app/datasets/` (keep reports and experiment logs under `/app/report/`).
 - `fit_predict()` must load derived datasets via `ctx["datasets_dir"]`.
 
 ### 3. Research Documentation (`/app/report/`)
