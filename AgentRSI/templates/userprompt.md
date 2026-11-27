@@ -1,49 +1,39 @@
 ## User Prompt (Manual Researcher Observations & Guidance)
 
-> **Note:** This section is a **manual user prompt** written directly by the researcher (not an automated handoff). The points below represent **user-side domain and empirical observations** from reviewing past sessions, prior POC reports, and verified `V` behavior. Treat these as high-priority hypotheses to investigate, verify, and test empirically on `L`, `unlabelled.csv` covariate distributions, and M7 `V` — do not hardcode arbitrary rules without checking the data yourself.
+> **Note:** This section is a **manual user prompt** written directly by the researcher (not an automated handoff). It reflects **user-side observations** from reviewing sessions `s009`–`s015` and sets the primary objective for this run. Verify every hypothesis empirically on `L`, `unlabelled.csv`, and M7 `V`.
 
-### 1. User-Side Observations: What May Be Going Wrong on `AirHitam`
+### Primary Mission for This Session: Focus on `AirHitam` & Ship a Balanced, Tail-Safe Upgrade Over `/app/incumbent/`
 
-Reviewing sessions `s009` through `s014` side-by-side reveals a striking pattern specific to `AirHitam`:
+1. **Critical course correction — judge candidates against `/app/incumbent/` (`s001`, V `+0.1188`), NOT unpromoted `s014` (`+0.2247`):**
+   - **Every session from `s010` through `s015` failed promotion (`promoted = False`)**, even as composite `V` climbed to `+0.2247`.
+   - In `s015`, you discovered two tail-safe / strongly regularized milestones that **matched `s009`'s all-time-best `AirHitam` `V` (`+0.0655`) while STILL beating `/app/incumbent/` by `+0.070` to `+0.076` across all three estates on `V`**:
+     - `V2` (`clip3_C02`: Clip `±3`, `C = 0.02`): `AirHitam V = +0.0654 (+0.0284 vs inc)`, `Palong V = +0.3022 (+0.0489)`, `Serting V = +0.1974 (+0.1315)`, composite `+0.1883 (+0.0696 vs inc)`.
+     - `V3` (`guard25`: physical-base fallback below `z < -2.5`): `AirHitam V = +0.0651 (+0.0280 vs inc)`, `Palong V = +0.2625 (+0.0092)`, `Serting V = +0.2564 (+0.1905)`, composite `+0.1947 (+0.0759 vs inc)`.
+   - `s015` discarded both `V2` and `V3` and fell back to `s014` **only because its self-imposed rule required beating unpromoted `s014` (`+0.2247`)**! **Do NOT repeat that mistake.** A balanced, tail-safe model that protects `AirHitam` and delivers `+0.07` to `+0.10` composite lift over `/app/incumbent/` is far better than chasing `+0.225` composite `V` with an inverted `AirHitam` tail.
 
-1. **`L`-CV vs verified `V` disconnect on `AirHitam`:**
-   - Recent high-capacity joint recipes (`s010`–`s014`, 29–49 local features at `C = 0.10–0.15`) push `AirHitam` honest 80 m `L`-CV up to `+0.15–+0.16`, yet **none of them has surpassed `s009`'s verified `AirHitam` `V` lift (`+0.0655`)**, even though `s009` only scored `+0.0301` on `AirHitam` `L`-CV.
-   - This suggests that much of the apparent `AirHitam` `L`-CV gain in `s010`–`s014` may be fitting `L`-specific pockets and collinear noise rather than generalizable disease signal.
-
-2. **Different spatial & biophysical regime on `AirHitam` vs `Palong` / `Serting`:**
-   - As visible directly in `L_labelled.csv`, `/app/datasets/`, and `/app/prior/POCReport/`, `AirHitam` has much weaker spatial clustering (~`2×` 10-NN positive enrichment vs ~`3.7–5.7×` in `Palong`/`Serting`), narrower `L` `NDVI` variance, no `Middle` class, weak prior-year `AlphaEarth` / historical height separation, and **opposite marginal signs** on canopy texture/structure variables (`ndvi_sd20`, `ndvi_edge`, `height_mean6`) compared to `Palong` and `Serting`.
-   - Fitting the same 30–50 feature joint model at light regularization (`C = 0.10–0.15`) across only ~`56` `AirHitam` positives risks severe variance and domain mismatch.
-
-3. **Unlabelled (`U`) tail shift & quadratic / collinear extrapolation risk:**
-   - Inspecting `unlabelled.csv` vs `L_labelled.csv` shows unseen trees in the extreme low-`NDVI` / high-edge canopy tail that are sparse or absent in `AirHitam` `L`.
-   - In joint unclipped polynomial models (`s011`–`s014`), negative `NDVI^2` curvature, `NDVI × coordinate` interactions, and large collinear suppressor pairs (e.g., strong positive weights on `log_green_red` / `deblur_GRVI` opposing negative `NDVI`/`qNDVI`/`qNDRE`, or inverted conditional signs on `ndvi_dip`, `ndre_contrast`, and `deblur_*`) can **dilute or even invert** the core physical vegetation-stress response (`-NDVI` / `-qNDVI`) on out-of-range `U` trees.
-
-4. **Cross-estate pooling / source-prior sign contamination:**
-   - In `s010`, `s013`, and `s014`, sharing or prior-centering all 12 optical coefficients across all three estates transfers `Palong`/`Serting`'s strong negative conditional weights on `ndvi_sd20` / `ndvi_edge` (and suppressor patterns) onto `AirHitam`, even though those texture features have the **opposite marginal sign** on `AirHitam`.
+2. **Why `AirHitam` is the #1 focus this round (confirmed by `s015`'s own audit):**
+   - `s015` proved that `s014` **inverts `AirHitam`'s `unlabelled.csv` low-`NDVI` tail**:
+     - The `92` `AirHitam` `U` trees below `-2.5 SD` raw `NDVI` average the **21st risk percentile** (`1 / 92` in top 25%) under `s014`, versus **85th** under `/app/incumbent/` and **83rd** (`63 / 92` in top 25%) under `s009`.
+     - The `57` `AirHitam` `U` trees below `-3 SD` drop to the **16th percentile** under `s014` vs **86th** under `s009`, and overall `AirHitam` `U` `Spearman(score, -NDVI)` flips to **`-0.133`** (`s014`) vs **`+0.529`** (`s009`).
+   - Because `AirHitam` `L` happens to have `0 / 16` positives below `-3 SD` (and weak ~`2×` spatial clustering, narrower `L` `NDVI` variance, and opposite marginal signs on `ndvi_sd20` / `ndvi_edge` / `height_mean6`), light-regularization 49-feature joint models (`C = 0.15` + quadratic `NDVI^2` + collinear `log_green_red` / `deblur_GRVI` suppressors + cross-estate optical priors) actively push severely low-`NDVI` `AirHitam` crowns to the bottom of the risk ranking.
+   - **Do NOT waste time re-testing `s015` dead ends** (block DRO, `Cov(NDVI, logit) <= 0` moment constraints, `late_psri`, `temporal_sar` CNN, or clustering-ridge heuristics — those did not resolve the `AirHitam` tail inversion or improve `AirHitam` `V`).
 
 ---
 
-### 2. Suggested Directions to Investigate & Verify Yourself
+### Concrete Directions to Push Through on `AirHitam` (While Keeping Strong `Palong` & `Serting` Gains)
 
-Please test these systematically using honest union-anchored (`L ∪ U`) 80 m spatial-block CV, coarse/buffered/quadrant holdouts, `L`-vs-`U` covariate diagnostics, and strategic M7 `score_v` checks:
+The exact code for `s015`'s `V2` (`clip3_C02`) and `V3` (`guard25`) is already preserved under `/app/datasets/triage_v12/recipes/s015/verified/`, and `s009`'s full code is under `/app/prior/ref_sessions/261125-s009-open/submission/`. Start directly from those insights:
 
-1. **Audit `L` vs `U` tail behavior & monotonicity on `unlabelled.csv` (no labels needed):**
-   - Compare `s001`, `s009`, `s012`, `s013`, and `s014` predictions specifically on `unlabelled.csv` trees in the **extreme low-`NDVI` tail** (`zNDVI < -2.5` or `-3.0`) and high-`ndvi_sd20`/`ndvi_edge` regions of each estate.
-   - Check whether joint/quadratic models are actually assigning *lower* risk scores (or inverting correlation with `-NDVI` / `-qNDVI`) on severely degraded crowns in `unlabelled.csv`!
+1. **Fix the `AirHitam` tail inversion cleanly — and diagnose why `guard25` / `clip3_C02` lost `Palong` or `Serting` `V`:**
+   - Look closely at `V3` (`guard25`): it recovered `AirHitam V = +0.0651` AND kept `Serting V = +0.2564`, only dropping `Palong V` to `+0.2625` — check whether a **scale/rank mismatch** between the fallback score and the in-support score (or firing the fallback too aggressively on `Palong`) caused that drop! Test smooth, rank- or z-score-calibrated tail transitions, or applying the fallback only where `L` support is genuinely sparse/extrapolating.
+   - Look closely at `V2` (`clip3_C02`): it hit `AirHitam V = +0.0654` AND kept `Palong V = +0.3022`. Test whether **input clipping (`±2.5` or `±3`) + removing `NDVI^2` & `NDVI × coord` extrapolation + strong differential shrinkage on high-D context blocks (`C` / block weights) WITHOUT pooling sign-flipping texture features (`ndvi_sd20`, `ndvi_edge`)** unlocks **both** `AirHitam V >= +0.065` **and** stronger `Palong` (`+0.30–+0.34`) + `Serting` (`+0.22–+0.27`) `V`!
 
-2. **Test tail-safe input bounds & strong regularization (not just dropping a few columns):**
-   - Removing only a handful of columns in a joint 40-feature fit often lets the remaining correlated predictors re-absorb the same overfit.
-   - Instead, test **architectural restraint**:
-     - Standardized input clipping (e.g., `[-3, 3]` or Winsorization) and removing/bounding `NDVI^2` and `NDVI × coord` extrapolation terms.
-     - Much stronger ridge shrinkage (`C` swept down to `0.002–0.02`) and/or stronger differential penalty on contextual/optical/patch blocks relative to the core physical vegetation signal.
+2. **Test a truly protected low-D monotonic core (`s009`-style frozen base) + bounded OOF residual with modern features:**
+   - Remember why `s009` achieved the highest `AirHitam` `V` (`+0.0655`) and kept `AirHitam` `U` `Spearman(score, -NDVI) = +0.529`: its linear `NDVI/qNDVI + coords` base stayed dominant and could never be inverted by high-D collinear features.
+   - Explore a **protected monotonic core + bounded OOF residual** (or **strong-shrinkage linear base + clipped/regularized residual** using `triage_v12` + `dino_sar`) where the core vegetation-vigor signal (`-NDVI` / `-qNDVI` / `-qNDRE`) remains strictly intact on unseen low-`NDVI` tails, while richer context (`alphaearth`, `highres_canopy`, `crown_mixture`, `dino_sar`) refines rankings inside the well-supported body of each estate.
+   - Test dropping cross-estate optical source pooling altogether vs pooling only the strictly sign-consistent vegetation indices (`qNDVI`, `qNDRE`, `NDVI_contrast35`, `NDRE1_contrast35`, `ndvi_dip`, `ndre_contrast`) — never pooling `ndvi_sd20`, `ndvi_edge`, or `log_green_red`.
 
-3. **Revisit `s009`'s protected low-D base + bounded OOF residual — paired with data-driven per-estate shrinkage:**
-   - Note that `s009` preserved its top `AirHitam` `V` score (`+0.0655`) by **freezing a compact linear `NDVI/qNDVI + coords` base** and learning only clipped, heavily regularized, damped OOF residuals on top of it.
-   - Test an **estate-agnostic, data-driven** architecture that can adapt its effective complexity / residual strength to each estate's observed training regime (e.g., via inner union-anchored spatial CV, spatial-clustering / SNR diagnostics, or `L`-vs-`U` support/tail shift): staying strongly anchored near the monotonic low-D physical base when spatial clustering is weak or `L`-to-`U` covariate shift is high, while leveraging richer `highres_canopy`, `crown_mixture`, `alphaearth`, and `dino_sar` context where signal-to-noise and spatial support are strong.
-
-4. **Restrict cross-estate transfer to sign-consistent physical features (or test no pooling):**
-   - If using partial pooling or a source-centered ridge prior (`s014`), test restricting shared/prior-centered coefficients strictly to features whose marginal `Unhealthy - Healthy` signs are **consistent across all source and target estates** (excluding sign-flipping texture/structure features like `ndvi_sd20`, `ndvi_edge`, `height`), and compare directly against zero-pooling.
-
-5. **Validation & selection discipline:**
-   - Compare every candidate against `incumbent`, `coords_only`, raw `-NDVI`, `s009`, and `s014`.
-   - Use M7 `score_v` selectively to check whether a tail-safe, sign-disciplined, adaptively regularized architecture can **simultaneously preserve or beat `s009`'s `AirHitam` `V` (`+0.0655`) while keeping strong `Palong` and `Serting` `V` gains** — without hardcoding estate-name branches (`ctx["estate"] == ...`).
+3. **Target shipping criteria (strictly anchored to `/app/incumbent/`):**
+   - **Must fix `AirHitam` tail safety:** verify positive `Spearman(score, -NDVI)` on `AirHitam` `unlabelled.csv` (and sane high risk percentiles on the `z < -2.5` / `z < -3.0` low-`NDVI` tail — no longer inverting severely low-`NDVI` crowns to the bottom 20%!), **and** aim for `AirHitam V >= +0.065` (matching/beating `s009`, clearly ahead of `/app/incumbent/` `+0.0370` and `coords_only` `+0.0398`).
+   - **Strong balanced gains over `/app/incumbent/` across all 3 estates:** target composite `V` well above `/app/incumbent/` (`+0.1188` — e.g., `+0.19` to `+0.22+`, `Δ >= +0.07` vs incumbent) with solid `Palong` (`>= +0.30`) and `Serting` (`>= +0.20`) `V`, strong separation from `coords_only`, and clean offline CPU execution.
+   - **Do NOT fall back to `s014`!** Even if a balanced, `AirHitam`-safe model has a slightly lower composite `V` than unpromoted `s014` (`+0.20` vs `+0.225`), **ship the `AirHitam`-safe balanced model** if it decisively beats `/app/incumbent/` across all 3 estates and eliminates `AirHitam`'s tail inversion!
