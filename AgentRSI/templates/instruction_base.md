@@ -41,7 +41,9 @@ All 19 ROI-masked GeoTIFFs carry **no embedded band descriptions and `nodata=Non
 - `/app/prior/Plan-GEECatalogSurvey.md` — surveyed Google Earth Engine collections and sensor caveats (e.g., Sentinel-2 baseline 04.00 `+1000` harmonisation offset).
 - `/app/incumbent/` — current best verified `pipeline.py` and `requirements.txt`.
 - `/app/prior/prev_HANDOFF.md` — previous session handoff (present when continuing from a prior session).
+- `/app/prior/prev_REPORT.md` — previous session technical report (present when continuing from a prior session).
 - `/app/prior/prev_submission/` — previous session's submitted `pipeline.py`, helper modules, and `requirements.txt` (present when continuing from a prior session, even if it did not replace `/app/incumbent/`).
+- `/app/prior/ref_sessions/<session_id>/` — optional reference sessions' `HANDOFF.md`, `REPORT.md`, and `submission/` staged for cross-session comparison or synthesis (present when built with `--ref`).
 - `agentrsi` CLI:
   - `agentrsi cv [--submission /app/submission]` — 5-fold 80 m spatial-block `GroupKFold` CV on `/app/data/L_labelled.csv` against the NDVI baseline.
   - `agentrsi selfcheck [--submission /app/submission]` — validates `/app/submission/requirements.txt` pins, audits non-base third-party imports and symlinks, and runs `fit_predict()` on all three estates.

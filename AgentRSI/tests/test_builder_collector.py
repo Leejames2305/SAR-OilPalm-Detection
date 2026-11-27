@@ -186,21 +186,42 @@ class BuilderCollectorTests(unittest.TestCase):
             self.assertIn("4 CPUs, 4096 MB RAM, 300 s per estate", raw_instr)
             self.assertFalse((env_dir / "prior" / "prev_submission").exists())
 
-    def test_build_task_carries_forward_prev_submission_from_parent(self) -> None:
+    def test_build_task_carries_forward_prev_submission_and_ref_sessions(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             out_root = Path(td) / "tasks"
             tdir = build_task(
                 "unit-parent-check",
                 focus_lens="open",
-                parent_session="261127-s011-ablation",
+                parent_session="261127-s012-open",
+                ref_sessions=["261125-s009-open", "261127-s011-ablation", "261127-s012-open"],
                 timeout_override=600,
                 output_root=out_root,
             )
-            prev_sub = tdir / "environment" / "prior" / "prev_submission"
+            prior_dir = tdir / "environment" / "prior"
+            prev_sub = prior_dir / "prev_submission"
             self.assertTrue((prev_sub / "pipeline.py").is_file())
             self.assertTrue((prev_sub / "requirements.txt").is_file())
+            self.assertTrue((prior_dir / "prev_REPORT.md").is_file())
             self.assertFalse((prev_sub / "__pycache__").exists())
-            self.assertIn("/app/prior/prev_submission/", (tdir / "instruction.md").read_text())
+
+            # Reference sessions carry HANDOFF.md, REPORT.md, submission/ — NEVER certification.json
+            for ref_id in ("261125-s009-open", "261127-s011-ablation"):
+                ref_dir = prior_dir / "ref_sessions" / ref_id
+                self.assertTrue((ref_dir / "HANDOFF.md").is_file())
+                self.assertTrue((ref_dir / "REPORT.md").is_file())
+                self.assertTrue((ref_dir / "submission" / "pipeline.py").is_file())
+                self.assertFalse((ref_dir / "certification.json").exists())
+                self.assertFalse((ref_dir / "meta.json").exists())
+            # Parent session is not duplicated inside ref_sessions/
+            self.assertFalse((prior_dir / "ref_sessions" / "261127-s012-open").exists())
+
+            instr = (tdir / "instruction.md").read_text()
+            self.assertIn("/app/prior/prev_submission/", instr)
+            self.assertIn("/app/prior/ref_sessions/", instr)
+            self.assertIn("261125-s009-open", instr)
+            self.assertIn("261127-s011-ablation", instr)
+            self.assertNotIn("certification", instr.lower())
+            self.assertNotIn("gate_passed", instr.lower())
 
     def test_yymmdd_session_naming_lens_inference_and_seq(self) -> None:
         lenses_dir = AGENT_ROOT / "templates" / "lenses"

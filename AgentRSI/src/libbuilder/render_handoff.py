@@ -66,7 +66,59 @@ def _trim_handoff(text: str, limit: int = 12000) -> str:
     return trimmed
 
 
-def render_handoff_section(prev_session_dir: Path | None, lineage: dict[str, Any]) -> str:
+def render_reference_sessions_section(
+    ref_session_dirs: list[Path] | None,
+    lineage: dict[str, Any],
+) -> str:
+    """Render verifier-backed V-only summary for additional reference sessions (never reads certification.json!)."""
+    if not ref_session_dirs:
+        return ""
+
+    lines = [
+        "",
+        "### Reference Sessions (`/app/prior/ref_sessions/<session_id>/`)",
+        "",
+        "Additional prior sessions staged for comparison/synthesis (each directory includes available `HANDOFF.md`, `REPORT.md`, and `submission/`):",
+        "",
+        "| Session | Promoted | Verified V Lift | Δ Incumbent | Δ Coords | AirHitam V | Palong V | Serting V | Staged Artifacts |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
+    for ref_dir in ref_session_dirs:
+        sid = ref_dir.name
+        smeta = (lineage.get("sessions") or {}).get(sid, {})
+        promoted = bool(smeta.get("promoted"))
+        reward_path = ref_dir / "reward.json"
+        if reward_path.exists():
+            reward = json.loads(reward_path.read_text())
+            v_score = f"`{float(reward['score']):+.6f}`"
+            v_inc = f"`{float(reward['v_delta_vs_incumbent']):+.6f}`"
+            v_crd = f"`{float(reward['v_delta_vs_coords']):+.6f}`"
+            v_ah = f"`{float(reward['v_lift_AirHitam']):+.6f}`" if "v_lift_AirHitam" in reward else "—"
+            v_pa = f"`{float(reward['v_lift_Palong']):+.6f}`" if "v_lift_Palong" in reward else "—"
+            v_se = f"`{float(reward['v_lift_Serting']):+.6f}`" if "v_lift_Serting" in reward else "—"
+        else:
+            v_score = v_inc = v_crd = v_ah = v_pa = v_se = "—"
+
+        staged: list[str] = []
+        if (ref_dir / "HANDOFF.md").is_file():
+            staged.append("`HANDOFF.md`")
+        if (ref_dir / "REPORT.md").is_file():
+            staged.append("`REPORT.md`")
+        sub_dir = ref_dir / "submission"
+        if sub_dir.is_dir() and any(sub_dir.iterdir()):
+            staged.append("`submission/`")
+        staged_str = ", ".join(staged) if staged else "none"
+        lines.append(
+            f"| `{sid}` | `{promoted}` | {v_score} | {v_inc} | {v_crd} | {v_ah} | {v_pa} | {v_se} | {staged_str} |"
+        )
+    return "\n".join(lines)
+
+
+def render_handoff_section(
+    prev_session_dir: Path | None,
+    lineage: dict[str, Any],
+    ref_session_dirs: list[Path] | None = None,
+) -> str:
     """Render verifier-backed V summary + previous/ancestor HANDOFF.md (never reads certification.json!)."""
     inc = lineage.get("incumbent", {})
     inc_id = inc.get("id", "starter")
@@ -79,6 +131,9 @@ def render_handoff_section(prev_session_dir: Path | None, lineage: dict[str, Any
 
     if prev_session_dir is None or not prev_session_dir.exists():
         lines.append("- **Previous session:** None (initial session from Session-0 NDVI-LogReg starter).")
+        ref_md = render_reference_sessions_section(ref_session_dirs, lineage)
+        if ref_md:
+            lines.append(ref_md)
         return "\n".join(lines) + "\n"
 
     reward_path = prev_session_dir / "reward.json"
@@ -163,5 +218,9 @@ def render_handoff_section(prev_session_dir: Path | None, lineage: dict[str, Any
                 "",
                 _trim_handoff(anc_path.read_text()),
             ])
+
+    ref_md = render_reference_sessions_section(ref_session_dirs, lineage)
+    if ref_md:
+        lines.append(ref_md)
 
     return "\n".join(lines) + "\n"

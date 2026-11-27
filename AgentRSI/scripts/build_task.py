@@ -24,6 +24,13 @@ def main() -> None:
     ap.add_argument("--focus", default=None, help="Focus lens name under templates/lenses/")
     ap.add_argument("--parent", default=None, help="Previous session ID whose HANDOFF.md to inject")
     ap.add_argument(
+        "--ref",
+        action="append",
+        default=[],
+        dest="ref_sessions",
+        help="Optional reference session ID(s) whose HANDOFF.md, REPORT.md, and submission/ to stage under /app/prior/ref_sessions/ (repeatable)",
+    )
+    ap.add_argument(
         "--datasets-from",
         default=None,
         help="Optional session ID whose datasets/ directory to carry into /app/datasets/",
@@ -91,6 +98,7 @@ def main() -> None:
         session_id,
         focus_lens=args.focus,
         parent_session=args.parent,
+        ref_sessions=args.ref_sessions,
         datasets_from=args.datasets_from,
         timeout_override=args.timeout,
         agent_cpus_override=args.agent_cpus,

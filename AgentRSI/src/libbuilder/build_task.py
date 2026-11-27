@@ -182,6 +182,7 @@ def build_task(
     *,
     focus_lens: str | None = None,
     parent_session: str | None = None,
+    ref_sessions: list[str] | None = None,
     datasets_from: str | None = None,
     timeout_override: int | None = None,
     agent_cpus_override: int | None = None,
@@ -218,6 +219,17 @@ def build_task(
             raise FileNotFoundError(f"Parent session directory missing: {prev_session_dir}")
     else:
         prev_session_dir = None
+
+    ref_session_dirs: list[Path] = []
+    seen_refs: set[str] = set()
+    for ref_id in ref_sessions or []:
+        if not ref_id or ref_id in seen_refs or ref_id == parent_session:
+            continue
+        seen_refs.add(ref_id)
+        rdir = agent_root / "sessions" / ref_id
+        if not rdir.exists():
+            raise FileNotFoundError(f"Reference session directory missing: {rdir}")
+        ref_session_dirs.append(rdir)
 
     inc_rel = str(lineage.get("incumbent", {}).get("source_dir", "starter"))
     incumbent_dir = (agent_root / inc_rel).resolve()
@@ -267,11 +279,29 @@ def build_task(
     if handoff_fallback is not None:
         shutil.copyfile(handoff_fallback[1], prior_dst / "prev_HANDOFF.md")
     if prev_session_dir is not None:
+        if (prev_session_dir / "REPORT.md").is_file():
+            shutil.copyfile(prev_session_dir / "REPORT.md", prior_dst / "prev_REPORT.md")
         prev_sub_src = prev_session_dir / "submission"
         if prev_sub_src.is_dir() and any(prev_sub_src.iterdir()):
             shutil.copytree(
                 prev_sub_src,
                 prior_dst / "prev_submission",
+                dirs_exist_ok=True,
+                symlinks=False,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+            )
+    for rdir in ref_session_dirs:
+        ref_dst = prior_dst / "ref_sessions" / rdir.name
+        ref_dst.mkdir(parents=True, exist_ok=True)
+        for doc_name in ("HANDOFF.md", "REPORT.md"):
+            doc_src = rdir / doc_name
+            if doc_src.is_file():
+                shutil.copyfile(doc_src, ref_dst / doc_name)
+        ref_sub_src = rdir / "submission"
+        if ref_sub_src.is_dir() and any(ref_sub_src.iterdir()):
+            shutil.copytree(
+                ref_sub_src,
+                ref_dst / "submission",
                 dirs_exist_ok=True,
                 symlinks=False,
                 ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
@@ -390,7 +420,7 @@ def build_task(
     agent_memory_mb = int(agent_memory_mb_override or session_cfg["agent_memory_mb"])
     verifier_cpus = int(verifier_cpus_override or session_cfg["verifier_cpus"])
     verifier_memory_mb = int(verifier_memory_mb_override or session_cfg["verifier_memory_mb"])
-    handoff_md = render_handoff_section(prev_session_dir, lineage)
+    handoff_md = render_handoff_section(prev_session_dir, lineage, ref_session_dirs=ref_session_dirs)
 
     # Render templates (avoid doubling -<lens> when session_id already ends with -<lens>)
     task_name = session_id if session_id.endswith(f"-{lens}") else f"{session_id}-{lens}"
