@@ -266,6 +266,16 @@ def build_task(
     handoff_fallback = find_latest_handoff_path(prev_session_dir, lineage)
     if handoff_fallback is not None:
         shutil.copyfile(handoff_fallback[1], prior_dst / "prev_HANDOFF.md")
+    if prev_session_dir is not None:
+        prev_sub_src = prev_session_dir / "submission"
+        if prev_sub_src.is_dir() and any(prev_sub_src.iterdir()):
+            shutil.copytree(
+                prev_sub_src,
+                prior_dst / "prev_submission",
+                dirs_exist_ok=True,
+                symlinks=False,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+            )
 
     # 4. Current incumbent pipeline (in /app/incumbent, solution/ for oracle, and tests/incumbent for verifier)
     for item in sorted(incumbent_dir.iterdir()):

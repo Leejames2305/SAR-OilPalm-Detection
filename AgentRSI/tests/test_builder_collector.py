@@ -184,6 +184,23 @@ class BuilderCollectorTests(unittest.TestCase):
             self.assertIn("`Pd` (double-bounce), 2: `Pv` (volume), 3: `Ps` (surface), 4: `Pc` (helix)", raw_instr)
             self.assertIn("`xgboost`, `lightgbm`, `geopandas`, or `rasterio`", raw_instr)
             self.assertIn("4 CPUs, 4096 MB RAM, 300 s per estate", raw_instr)
+            self.assertFalse((env_dir / "prior" / "prev_submission").exists())
+
+    def test_build_task_carries_forward_prev_submission_from_parent(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            out_root = Path(td) / "tasks"
+            tdir = build_task(
+                "unit-parent-check",
+                focus_lens="open",
+                parent_session="261127-s011-ablation",
+                timeout_override=600,
+                output_root=out_root,
+            )
+            prev_sub = tdir / "environment" / "prior" / "prev_submission"
+            self.assertTrue((prev_sub / "pipeline.py").is_file())
+            self.assertTrue((prev_sub / "requirements.txt").is_file())
+            self.assertFalse((prev_sub / "__pycache__").exists())
+            self.assertIn("/app/prior/prev_submission/", (tdir / "instruction.md").read_text())
 
     def test_yymmdd_session_naming_lens_inference_and_seq(self) -> None:
         lenses_dir = AGENT_ROOT / "templates" / "lenses"
