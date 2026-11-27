@@ -1,0 +1,10 @@
+{
+  "score": 0.22398599213816883,
+  "v_lift_AirHitam": 0.0597344166131013,
+  "v_lift_Palong": 0.34209607368993544,
+  "v_lift_Serting": 0.27012748611146975,
+  "v_delta_vs_incumbent": 0.10523548023896279,
+  "v_delta_vs_coords": 0.15752414616332847,
+  "submission_valid": 1,
+  "runtime_sec": 10.979
+}

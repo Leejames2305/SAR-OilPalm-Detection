@@ -2,14 +2,14 @@
   "schema_version": 1,
   "epoch": 1,
   "split_sha256": "26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed",
-  "t_attempts_used": 10,
+  "t_attempts_used": 11,
   "t_attempt_budget": 20,
   "kill_switch": false,
   "daily_spend_usd": {
     "2026-11-23": 0.012239,
     "2026-11-24": 1.829948,
     "2026-11-25": 8.427393,
-    "2026-11-27": 8.153315
+    "2026-11-27": 10.198429
   },
   "incumbent": {
     "id": "261124-s001-open",
@@ -284,6 +284,23 @@
       "promoted": false,
       "cost_usd": 1.8105896,
       "collected_at": "2026-11-27T08:32:40+00:00"
+    },
+    "261127-s015-open": {
+      "session_id": "261127-s015-open",
+      "job_id": "2026-11-27__17-07-35",
+      "parent_id": "261127-s014-synthesis",
+      "epoch": 1,
+      "dry_session": false,
+      "status": "ok",
+      "submission_valid": true,
+      "v_score": 0.22398599213816883,
+      "v_delta_vs_incumbent": 0.10523548023896279,
+      "gate_passed": false,
+      "t_comp_delta": 0.06766158487769289,
+      "t_ci_low": 0.023635019289532704,
+      "promoted": false,
+      "cost_usd": 2.0451139999999994,
+      "collected_at": "2026-11-27T09:39:09+00:00"
     }
   }
 }
