@@ -421,6 +421,40 @@ class DashboardTests(unittest.TestCase):
             self.assertIn("<title>261123-s001-data-expansion</title>261123-s001</text>", html_txt)
             self.assertIn("<title>261124-s003-ablation</title>261124-s003</text>", html_txt)
             self.assertIn("<strong>261123-s001-data-expansion</strong>", html_txt)
+            self.assertNotIn('transform="rotate(-40 ', html_txt)
+
+    def test_many_sessions_angled_ticks_and_grid_containment_css(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            sessions_root = root / "sessions"
+            lp = root / "state" / "lineage.json"
+            ep = root / "state" / "events.jsonl"
+            out = root / "dashboard" / "index.html"
+
+            lin = default_lineage(self.split_cfg, self.verifier_cfg)
+            for idx in range(1, 16):
+                sid = f"261127-s{idx:03d}-synthesis"
+                ts = f"2026-11-27T{idx:02d}:00:00Z"
+                _write_session_fixture(
+                    sessions_root, sid, epoch=1, parent_id="starter",
+                    v_score=0.05 + idx * 0.01, v_estates=(0.05, 0.05, 0.05),
+                    v_delta_inc=idx * 0.01, t_delta=0.01, t_ci_low=-0.01, t_ci_high=0.03,
+                    worst_estate="AirHitam", worst_delta=0.0, gate_passed=False, started_at=ts,
+                )
+                lin["sessions"][sid] = {"epoch": 1, "parent_id": "starter", "promoted": False, "collected_at": ts}
+            save_lineage(lp, lin)
+            ep.parent.mkdir(parents=True, exist_ok=True)
+            ep.write_text("")
+
+            generate_dashboard(AGENT_ROOT, output_path=out, sessions_root=sessions_root, lineage_path=lp, events_path=ep)
+            errs = verify_dashboard(out, sessions_root=sessions_root, lineage_path=lp, events_path=ep)
+            self.assertEqual(errs, [], f"Verification mismatches: {errs}")
+
+            html_txt = out.read_text(encoding="utf-8")
+            self.assertIn("x-tick-angled", html_txt)
+            self.assertIn("transform=\"rotate(-40 ", html_txt)
+            self.assertIn("grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);", html_txt)
+            self.assertIn("min-width: 0;", html_txt)
 
 
 if __name__ == "__main__":

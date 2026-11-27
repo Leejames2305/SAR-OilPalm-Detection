@@ -363,16 +363,14 @@ def _epoch_spans(sessions: list[dict[str, Any]]) -> list[tuple[int, int, int]]:
 
 
 def _build_chart_geometry(sessions: list[dict[str, Any]]) -> dict[str, Any]:
-    w, h = 760, 260
-    pl, pr, pt, pb = 62, 18, 28, 42
+    w = 760
+    pl, pr, pt = 62, 18, 28
     pw = w - pl - pr
-    ph = h - pt - pb
     n = len(sessions)
     xs: list[float] = []
     if n == 1:
         xs = [pl + pw / 2.0]
     elif n > 1:
-        step = pw / max(1, n - 1)
         margin = min(36.0, pw * 0.12)
         if n == 2:
             xs = [pl + pw * 0.25, pl + pw * 0.75]
@@ -380,8 +378,37 @@ def _build_chart_geometry(sessions: list[dict[str, Any]]) -> dict[str, Any]:
             usable = pw - 2 * margin
             step = usable / (n - 1)
             xs = [pl + margin + i * step for i in range(n)]
+
+    # Adapt X-axis tick orientation and density so labels never collide as sessions grow.
+    step_px = (xs[1] - xs[0]) if n >= 2 else float(pw)
+    max_lbl_chars = max((len(_short_tick_label(str(s["session_id"]), n)) for s in sessions), default=0)
+    est_lbl_w = max_lbl_chars * 6.2
+    rotate_x = n >= 2 and step_px < max(72.0, est_lbl_w + 8.0)
+    if rotate_x:
+        pb = 74
+        # Perpendicular spacing between -40 deg rotated labels is step_px * sin(40 deg)
+        perp_spacing = max(1.0, step_px * math.sin(math.radians(40.0)))
+        tick_stride = max(1, math.ceil(13.5 / perp_spacing))
+    else:
+        pb = 42
+        tick_stride = 1
+    ph = 190
+    h = pt + ph + pb
     spans = _epoch_spans(sessions)
-    return {"w": w, "h": h, "pl": pl, "pr": pr, "pt": pt, "pb": pb, "pw": pw, "ph": ph, "xs": xs, "spans": spans}
+    return {
+        "w": w,
+        "h": h,
+        "pl": pl,
+        "pr": pr,
+        "pt": pt,
+        "pb": pb,
+        "pw": pw,
+        "ph": ph,
+        "xs": xs,
+        "spans": spans,
+        "rotate_x": rotate_x,
+        "tick_stride": tick_stride,
+    }
 
 
 def _short_tick_label(sid: str, n_sessions: int) -> str:
@@ -451,16 +478,40 @@ def _render_epoch_bands_and_axes(
             f'<line class="ref-zero" data-ref="zero" x1="{pl}" y1="{yz:.2f}" x2="{pl + pw}" y2="{yz:.2f}" />'
         )
 
-    # X axis labels (compact when 3+ long IDs appear; full ID on hover)
+    # X axis ticks + labels (angled when crowded; thinned beyond ~30 sessions; full ID on hover)
+    rotate_x = bool(geom.get("rotate_x", False))
+    tick_stride = int(geom.get("tick_stride", 1))
+    n_sess = len(sessions)
     for i, sess in enumerate(sessions):
         raw_sid = str(sess["session_id"])
         sid_full = html.escape(raw_sid)
-        tick_lbl = html.escape(_short_tick_label(raw_sid, len(sessions)))
+        tick_lbl = html.escape(_short_tick_label(raw_sid, n_sess))
         xp = xs[i]
         parts.append(
-            f'<text class="axis-text x-tick" data-session="{sid_full}" x="{xp:.2f}" '
-            f'y="{pt + ph + 16}" text-anchor="middle"><title>{sid_full}</title>{tick_lbl}</text>'
+            f'<line class="axis-tick" x1="{xp:.2f}" y1="{pt + ph}" x2="{xp:.2f}" y2="{pt + ph + 4}" />'
         )
+        show_lbl = (
+            tick_stride <= 1
+            or i == 0
+            or i == n_sess - 1
+            or (i % tick_stride == 0 and (n_sess - 1 - i) >= tick_stride / 2)
+            or bool(sess.get("promoted"))
+        )
+        if not show_lbl:
+            continue
+        if rotate_x:
+            lx = xp + 2.0
+            ly = pt + ph + 13.0
+            parts.append(
+                f'<text class="axis-text x-tick x-tick-angled" data-session="{sid_full}" '
+                f'x="{lx:.2f}" y="{ly:.2f}" text-anchor="end" '
+                f'transform="rotate(-40 {lx:.2f} {ly:.2f})"><title>{sid_full}</title>{tick_lbl}</text>'
+            )
+        else:
+            parts.append(
+                f'<text class="axis-text x-tick" data-session="{sid_full}" x="{xp:.2f}" '
+                f'y="{pt + ph + 17}" text-anchor="middle"><title>{sid_full}</title>{tick_lbl}</text>'
+            )
 
     parts.append(
         f'<rect class="plot-border" x="{pl}" y="{pt}" width="{pw}" height="{ph}" fill="none" />'
@@ -843,7 +894,7 @@ code, pre, .mono, .num { font-family: ui-monospace, SFMono-Regular, Menlo, Conso
 .ok { color: var(--green); }
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(460px, 100%), 1fr));
   gap: 14px;
   margin-bottom: 14px;
 }
@@ -852,6 +903,8 @@ code, pre, .mono, .num { font-family: ui-monospace, SFMono-Regular, Menlo, Conso
   border: 1px solid var(--border);
   padding: 12px 14px;
   margin-bottom: 14px;
+  min-width: 0;
+  max-width: 100%;
 }
 .charts-grid .card { margin-bottom: 0; }
 .card-head {
@@ -881,8 +934,10 @@ svg { width: 100%; height: auto; display: block; }
 .epoch-boundary { stroke: #64748b; stroke-width: 1.2; stroke-dasharray: 4 3; }
 .epoch-label { font-size: 11px; fill: #334155; font-weight: 600; }
 .grid-line { stroke: #e2e8f0; stroke-width: 1; }
+.axis-tick { stroke: #94a3b8; stroke-width: 1; }
 .plot-border { stroke: #94a3b8; stroke-width: 1; }
 .axis-text { font-size: 10px; fill: #475569; font-family: ui-monospace, monospace; }
+.x-tick-angled { font-size: 9.5px; }
 .ref-zero { stroke: #94a3b8; stroke-width: 1.1; }
 .ref-incumbent { stroke: #1d4ed8; stroke-width: 1.2; stroke-dasharray: 5 3; }
 .ref-baseline { stroke: #b45309; stroke-width: 1.4; stroke-dasharray: 2 3; }
@@ -894,7 +949,7 @@ svg { width: 100%; height: auto; display: block; }
 .ref-label-red { font-size: 10px; fill: #b91c1c; }
 .empty-msg { font-size: 12px; fill: #64748b; }
 .clickable { cursor: pointer; }
-.table-wrap { overflow-x: auto; }
+.table-wrap { overflow-x: auto; max-width: 100%; }
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
 th, td { border-bottom: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; white-space: nowrap; }
 th { background: #f1f5f9; font-weight: 600; color: #334155; border-top: 1px solid var(--border); }
@@ -917,13 +972,15 @@ tr.selected { background: #dbeafe !important; }
 .ev-review_flag, .ev-budget_alert { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
 .bottom-grid {
   display: grid;
-  grid-template-columns: 1fr 1.25fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
   gap: 14px;
   align-items: start;
 }
-@media (max-width: 980px) { .bottom-grid { grid-template-columns: 1fr; } }
-.events-wrap { max-height: 460px; overflow: auto; }
+.bottom-grid > *, .charts-grid > * { min-width: 0; }
+@media (max-width: 980px) { .bottom-grid { grid-template-columns: minmax(0, 1fr); } }
+.events-wrap { max-height: 460px; max-width: 100%; overflow: auto; }
 .events-wrap td:last-child { white-space: normal; min-width: 220px; }
+#inspector-body { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
 .tab-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; align-items: center; }
 .tab-btn, .mode-btn {
   border: 1px solid var(--border);
@@ -940,7 +997,9 @@ tr.selected { background: #dbeafe !important; }
   border: 1px solid #e2e8f0;
   padding: 10px 12px;
   max-height: 380px;
+  max-width: 100%;
   overflow: auto;
+  overflow-wrap: anywhere;
   font-size: 12px;
   line-height: 1.5;
 }
@@ -976,6 +1035,8 @@ pre.md-view {
   padding: 8px 10px;
   margin-bottom: 10px;
   font-size: 12px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 .tooltip {
   position: fixed;

@@ -164,7 +164,7 @@ AgentRSI/.venv/bin/python AgentRSI/scripts/regrade.py \
 # Inspect raw Harbor trial logs & agent trajectories in Harbor's viewer
 AgentRSI/.venv/bin/harbor view AgentRSI/jobs/<session_id>
 
-# Run all 61 host unit tests (verifier, M7 sidecar, M8 broker, builder/collector, MCP wiring, dashboard)
+# Run all 62 host unit tests (verifier, M7 sidecar, M8 broker, builder/collector, MCP wiring, dashboard)
 AgentRSI/.venv/bin/python -m unittest discover -s AgentRSI/tests -v
 
 # Standalone leak audit across generated trees
@@ -208,7 +208,7 @@ AgentRSI/
 ├── verifier/                   # Sealed grading library + M7 sidecar (`inrun_server.py`)
 ├── starter/                    # Session-0 baseline pipeline.py & requirements.txt
 ├── templates/                  # Instruction base, lenses/ (open/literature/data-expansion/ablation/synthesis), Dockerfiles, CLI & MCP relay
-├── tests/                      # 61 host unit tests (verifier, M7, M8, builder/collector, MCP wiring, dashboard)
+├── tests/                      # 62 host unit tests (verifier, M7, M8, builder/collector, MCP wiring, dashboard)
 │
 ├── tasks/<session_id>/         # (gitignored) Generated Harbor task directories
 ├── jobs/<session_id>/          # (gitignored) Raw Harbor job outputs, logs, and trajectories
