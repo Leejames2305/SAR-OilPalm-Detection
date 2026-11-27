@@ -1,0 +1,57 @@
+{
+  "ok": true,
+  "epoch": 1,
+  "status": "ok",
+  "submission_valid": true,
+  "error": null,
+  "content_sha256": "a3217b7eba638db5fe63ce47c705daf5f55c4ebdb879e79b7be59731e63ebd72",
+  "note": "s013 V5: planned orthogonal stability crossover, s012 spatial-block probability bagging (32 draws, fixed seed) with s010 frozen October SAR group and uniform compact physical/AE/height/mixture design. L confirmation mean gains all 3 estates.",
+  "cached": false,
+  "composite": {
+    "noisy_pr_auc_lift": 0.20632885610378218,
+    "noisy_delta_vs_incumbent": 0.08757834420457616,
+    "noisy_delta_vs_coords": 0.13986701012894182
+  },
+  "estates": {
+    "AirHitam": {
+      "noisy_pr_auc_lift": 0.052732044464543756,
+      "noisy_delta_vs_incumbent": 0.015704356375429336,
+      "noisy_delta_vs_coords": 0.012940245878718858
+    },
+    "Palong": {
+      "noisy_pr_auc_lift": 0.3282597935994639,
+      "noisy_delta_vs_incumbent": 0.0749538088803055,
+      "noisy_delta_vs_coords": 0.2004526999572283
+    },
+    "Serting": {
+      "noisy_pr_auc_lift": 0.23799473024733897,
+      "noisy_delta_vs_incumbent": 0.17207686735799363,
+      "noisy_delta_vs_coords": 0.2062080845508783
+    }
+  },
+  "datasets_audit": {
+    "exists": true,
+    "valid": true,
+    "total_mb": 18.926,
+    "datasets": {
+      "dino_sar": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 323,
+        "nans": 0
+      },
+      "triage_v12": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 109,
+        "nans": 0
+      }
+    },
+    "errors": []
+  },
+  "queries_used": 5,
+  "queries_remaining": 10,
+  "max_queries": 15,
+  "noise_sigma": 0.005,
+  "runtime_sec": 7.995
+}

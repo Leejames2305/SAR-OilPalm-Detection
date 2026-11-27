@@ -1,0 +1,143 @@
+{
+  "ok": true,
+  "epoch": 1,
+  "estates": [
+    "AirHitam",
+    "Palong",
+    "Serting"
+  ],
+  "queries_used": 8,
+  "queries_remaining": 7,
+  "max_queries": 15,
+  "noise_sigma": 0.005,
+  "history": [
+    {
+      "query_index": 1,
+      "timestamp": "2026-11-27T06:08:31.642976+00:00",
+      "content_sha256": "dba0b387db40aa32b223c556818b6e2c214e9d65f9f700034c4d8d00193d79e8",
+      "note": "s013 V1: L-confirmed uniform s012 compact physical/AE/height/mixture with s010 frozen October SAR PCs jointly fitted; fixed .3 patch penalty, no estate branch.",
+      "status": "ok",
+      "submission_valid": true,
+      "error": null,
+      "cached": false,
+      "composite": {
+        "noisy_pr_auc_lift": 0.20882508886186382,
+        "noisy_delta_vs_incumbent": 0.09007457696265779,
+        "noisy_delta_vs_coords": 0.14236324288702346
+      },
+      "runtime_sec": 7.823
+    },
+    {
+      "query_index": 2,
+      "timestamp": "2026-11-27T06:08:47.469816+00:00",
+      "content_sha256": "614d4800c51fcc438faec0e4b844dfb2c27b234c447fc532ff23ffbf0f7cd2a9",
+      "note": "s013 V2: s009 protected bounded block-OOF offset architecture transplanted onto frozen uniform s012; s010 optical+October SAR representations, 8 PCs each, .5 normalized ridge and .3 clipped correction.",
+      "status": "ok",
+      "submission_valid": true,
+      "error": null,
+      "cached": false,
+      "composite": {
+        "noisy_pr_auc_lift": 0.20172732210827182,
+        "noisy_delta_vs_incumbent": 0.08297681020906576,
+        "noisy_delta_vs_coords": 0.13526547613343143
+      },
+      "runtime_sec": 7.951
+    },
+    {
+      "query_index": 3,
+      "timestamp": "2026-11-27T06:09:01.805297+00:00",
+      "content_sha256": "6ac0c78af0addca25f289fc8a01fd921ecfd85f7473832b5e1bdb227411761b6",
+      "note": "s013 V3: s010 equal-estate partial pooling transplanted to s012 uniform compact recipe; all 12 shared optical features plus independent local deviations, compact AE/height/mixture, no patch representation. Matched self/permuted/no-share L controls retained.",
+      "status": "ok",
+      "submission_valid": true,
+      "error": null,
+      "cached": false,
+      "composite": {
+        "noisy_pr_auc_lift": 0.20318504042946295,
+        "noisy_delta_vs_incumbent": 0.0844345285302569,
+        "noisy_delta_vs_coords": 0.13672319445462258
+      },
+      "runtime_sec": 7.666
+    },
+    {
+      "query_index": 4,
+      "timestamp": "2026-11-27T06:09:17.404690+00:00",
+      "content_sha256": "8fa51f2576f589a224833f9b8bb7535da0ea434932080634867b065d47785aa3",
+      "note": "s013 V4: exact matched s010 parent except uniform s011/s012 quadratic shrinkage .3 replaces estate-name complexity branch. No feature-family or pooling change. L official composite .269130 and repeated/wider confirmation.",
+      "status": "ok",
+      "submission_valid": true,
+      "error": null,
+      "cached": false,
+      "composite": {
+        "noisy_pr_auc_lift": 0.2147642533248579,
+        "noisy_delta_vs_incumbent": 0.09601374142565183,
+        "noisy_delta_vs_coords": 0.1483024073500175
+      },
+      "runtime_sec": 7.65
+    },
+    {
+      "query_index": 5,
+      "timestamp": "2026-11-27T06:10:27.936467+00:00",
+      "content_sha256": "a3217b7eba638db5fe63ce47c705daf5f55c4ebdb879e79b7be59731e63ebd72",
+      "note": "s013 V5: planned orthogonal stability crossover, s012 spatial-block probability bagging (32 draws, fixed seed) with s010 frozen October SAR group and uniform compact physical/AE/height/mixture design. L confirmation mean gains all 3 estates.",
+      "status": "ok",
+      "submission_valid": true,
+      "error": null,
+      "cached": false,
+      "composite": {
+        "noisy_pr_auc_lift": 0.20632885610378218,
+        "noisy_delta_vs_incumbent": 0.08757834420457616,
+        "noisy_delta_vs_coords": 0.13986701012894182
+      },
+      "runtime_sec": 7.995
+    },
+    {
+      "query_index": 6,
+      "timestamp": "2026-11-27T06:14:57.178632+00:00",
+      "content_sha256": "f09df1754a74253040376aaa3389ac56a6d81d7090bb195dd87922942afc013e",
+      "note": "s013 V6: feature-gap crossover, uniform s010 core (unchanged shared optical coefficients) plus local s012 quality/moisture contrasts, physical-floor historical height and crown-mixture covariates. Joint local fit. Both current estates equally trusted; no name branches or V-fitted weights.",
+      "status": "ok",
+      "submission_valid": true,
+      "error": null,
+      "cached": false,
+      "composite": {
+        "noisy_pr_auc_lift": 0.21415984630453122,
+        "noisy_delta_vs_incumbent": 0.09540933440532516,
+        "noisy_delta_vs_coords": 0.14769800032969083
+      },
+      "runtime_sec": 8.722
+    },
+    {
+      "query_index": 7,
+      "timestamp": "2026-11-27T06:15:28.043345+00:00",
+      "content_sha256": "2b9c2185741c035b5b7cbeb00e670170549f9af858c9c82f5ea7d4bbc724e4fe",
+      "note": "s013 V7: matched feature-gap crossover with s009 block-honest bounded offset around frozen uniform s010. Same 16 missing quality/height/mixture features as V6. Fixed ridge .5 and max .3 logit correction.",
+      "status": "ok",
+      "submission_valid": true,
+      "error": null,
+      "cached": false,
+      "composite": {
+        "noisy_pr_auc_lift": 0.2135218523394147,
+        "noisy_delta_vs_incumbent": 0.09477134044020867,
+        "noisy_delta_vs_coords": 0.14706000636457434
+      },
+      "runtime_sec": 11.424
+    },
+    {
+      "query_index": 8,
+      "timestamp": "2026-11-27T06:15:43.107369+00:00",
+      "content_sha256": "0ebba5e7a34162954e60a5d6d521693f8681df2376f07cd6960cbf3c9623849f",
+      "note": "s013 V8 final planned batch: combine s010 shared optical/local-deviation architecture and local October SAR context with uniform s012 compact physical, AlphaEarth, height and mixture features. Fresh L10 repeats and wider/buffered/whole-block regions checked.",
+      "status": "ok",
+      "submission_valid": true,
+      "error": null,
+      "cached": false,
+      "composite": {
+        "noisy_pr_auc_lift": 0.220382473461831,
+        "noisy_delta_vs_incumbent": 0.10163196156262494,
+        "noisy_delta_vs_coords": 0.15392062748699062
+      },
+      "runtime_sec": 9.09
+    }
+  ]
+}

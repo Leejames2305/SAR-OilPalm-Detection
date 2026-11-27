@@ -1,0 +1,18 @@
+{
+  "pool": true,
+  "shared_cols": [
+    "qNDVI",
+    "qNDRE",
+    "qNDMI",
+    "qNIRv",
+    "log_green_red",
+    "NDVI_contrast35",
+    "NDRE1_contrast35",
+    "NDMI_contrast35",
+    "ndvi_dip",
+    "ndvi_sd20",
+    "ndvi_edge",
+    "ndre_contrast"
+  ],
+  "pool_self": true
+}

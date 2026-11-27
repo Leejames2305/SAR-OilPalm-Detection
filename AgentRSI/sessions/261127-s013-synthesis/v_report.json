@@ -1,0 +1,175 @@
+{
+  "epoch": 1,
+  "split_sha256": "26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed",
+  "status": "ok",
+  "submission_valid": true,
+  "error": null,
+  "runtime_sec": 10.498,
+  "composite": {
+    "score": 0.2173404977493849,
+    "delta_vs_incumbent": {
+      "comp_delta": 0.09858998585017888,
+      "ci_low": 0.0034123447298850195,
+      "ci_high": 0.16346045673133913,
+      "n_valid_draws": 1000,
+      "n_requested_draws": 1000
+    },
+    "delta_vs_coords": {
+      "comp_delta": 0.15087865177454454,
+      "ci_low": 0.07648371279172349,
+      "ci_high": 0.21794563959619165,
+      "n_valid_draws": 1000,
+      "n_requested_draws": 1000
+    }
+  },
+  "estates": {
+    "AirHitam": {
+      "pr_auc": 0.10731919106497069,
+      "prevalence": 0.052054794520547946,
+      "pr_auc_lift": 0.05526439654442274,
+      "recall_at_25": 0.47368421052631576,
+      "enrichment_top10": 2.631578947368421,
+      "roc_auc": 0.6559172497718284,
+      "n_scored": 730,
+      "n_pos": 38,
+      "delta_vs_incumbent": {
+        "delta": 0.018236708455308323,
+        "ci_low": -0.04972445588212517,
+        "ci_high": 0.08372268605701745
+      },
+      "delta_vs_coords": {
+        "delta": 0.015472597958597845,
+        "ci_low": -0.07665106927023158,
+        "ci_high": 0.08372378819765602
+      },
+      "incumbent_v_pr_auc": 0.08908248260966237,
+      "coords_v_pr_auc": 0.09184659310637285
+    },
+    "Palong": {
+      "pr_auc": 0.4150861398831985,
+      "prevalence": 0.0759493670886076,
+      "pr_auc_lift": 0.33913677279459087,
+      "recall_at_25": 0.8888888888888888,
+      "enrichment_top10": 6.296296296296296,
+      "roc_auc": 0.902249281244715,
+      "n_scored": 711,
+      "n_pos": 54,
+      "delta_vs_incumbent": {
+        "delta": 0.08583078807543248,
+        "ci_low": -0.08707119284785955,
+        "ci_high": 0.27610993163229036
+      },
+      "delta_vs_coords": {
+        "delta": 0.2113296791523553,
+        "ci_low": 0.07299003888561231,
+        "ci_high": 0.3463878747135448
+      },
+      "incumbent_v_pr_auc": 0.329255351807766,
+      "coords_v_pr_auc": 0.2037564607308432
+    },
+    "Serting": {
+      "pr_auc": 0.34670718359733715,
+      "prevalence": 0.08908685968819599,
+      "pr_auc_lift": 0.25762032390914114,
+      "recall_at_25": 0.75,
+      "enrichment_top10": 4.5,
+      "roc_auc": 0.8006723716381419,
+      "n_scored": 449,
+      "n_pos": 40,
+      "delta_vs_incumbent": {
+        "delta": 0.19170246101979582,
+        "ci_low": -0.01316041588005118,
+        "ci_high": 0.26943658511786384
+      },
+      "delta_vs_coords": {
+        "delta": 0.2258336782126805,
+        "ci_low": 0.062298092401947676,
+        "ci_high": 0.34212921729199874
+      },
+      "incumbent_v_pr_auc": 0.15500472257754133,
+      "coords_v_pr_auc": 0.12087350538465666
+    }
+  },
+  "datasets_audit": {
+    "exists": true,
+    "valid": true,
+    "total_mb": 48.916,
+    "datasets": {
+      "alphaearth": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 387,
+        "nans": 0
+      },
+      "compact_triage": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 79,
+        "nans": 0
+      },
+      "crown_mixture": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 30,
+        "nans": 0
+      },
+      "dino_optical": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 259,
+        "nans": 0
+      },
+      "dino_sar": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 323,
+        "nans": 0
+      },
+      "gee_canopy": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 49,
+        "nans": 0
+      },
+      "gee_quality": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 20,
+        "nans": 0
+      },
+      "highres_canopy": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 27,
+        "nans": 0
+      },
+      "optical_jitter": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 7,
+        "nans": 0
+      },
+      "triage_v12": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 109,
+        "nans": 0
+      }
+    },
+    "errors": []
+  },
+  "pip_freeze": [
+    "cloudpickle==3.1.3",
+    "joblib==1.6.0",
+    "narwhals==2.29.0",
+    "numpy==2.5.5",
+    "pandas==3.1.1",
+    "pyarrow==26.0.1",
+    "python-dateutil==4.0.0",
+    "PyYAML==6.0.3",
+    "scikit-learn==1.9.1",
+    "scipy==1.18.1",
+    "threadpoolctl==3.8.0",
+    "tzdata==2026.6"
+  ]
+}

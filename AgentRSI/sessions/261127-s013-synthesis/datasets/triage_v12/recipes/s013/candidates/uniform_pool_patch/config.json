@@ -1,0 +1,7 @@
+{
+  "pool": true,
+  "patches": [
+    "optical",
+    "sar"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "pool": true,
+  "shared_cols": [
+    "NDVI_contrast35",
+    "NDRE1_contrast35",
+    "ndvi_dip",
+    "ndvi_sd20",
+    "ndvi_edge",
+    "ndre_contrast"
+  ],
+  "quality_blend": true,
+  "optical": "legacy",
+  "alpha_std": false,
+  "opt_scale": 0.3,
+  "alpha_scale": 0.3,
+  "height": false,
+  "mixture": false,
+  "patches": [
+    "optical",
+    "sar"
+  ],
+  "C": 0.1,
+  "curvature": 1.0
+}
