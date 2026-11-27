@@ -1,1 +1,0 @@
-{"encoder": "dinov2_vits14", "torch": "2.14.1+cu130", "seconds": 43.37486815452576, "views": ["rgb80", "rgb160", "rgb320", "nrg160"], "training": "none; frozen pretrained", "input_shape": [7220, 4, 32, 32]}

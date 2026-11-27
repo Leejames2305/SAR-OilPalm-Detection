@@ -1,9 +1,0 @@
-# Frozen DINOv2 multitemporal SAR patch covariates
-
-Source ALOS2-Subset_EST_DATE_Cal_Spk_TC.tif dates260610 and261014,EPSG32648,6.43m. Native CRS reprojection from exact WGS84 source keys before pixel indexing. Channels HH/HV/VV (bands1/2/4), linear power ->10log10 dB; finite and>0 support, all extracted crops have100% support. Fixed display ranges[-25,0]/[-35,-5]/[-25,0]dB mapped/clipped0..255,uint8. Trunk-containing pixel centre anchored8x8 (~51m) and16x16(~103m) windows for each date. Change103 is.5+(OctoberDisplay-JuneDisplay),clipped0..1 before frozen encoder. Not a calibrated change in linear power; not radiometrically sharpened.
-
-Frozen official DINOv2 dinov2_vits14 RGB encoder,224 bilinear upsample,ImageNet normalization,CLS384 features; no labels/fine-tuning/GPU head. Five views jun51/oct51/jun103/oct103/change103 compressed independently to64 PCs on all7220 covariate-only vectors. PCA transforms saved. Downstream training-only PCA/scaling and spatially held-out labels. Exact7220 original coordinate keys,323columns,zeroNaNs/duplicates. No forbidden columns. Encoder outputs SHA256def388f02d668a49de34a51d19914a2ee99e11c6075abb75d0d1c512d5c11d76.
-
-Reproduce prepare_sar_gpu.py,remote dino_sar_gpu.py,then compress_sar.py (job-specific input path). No raster or GPU dependency at fit_predict. Out-of-domain RGB pretrained encoder may discard SAR-specific information; negative results do not rule out SAR-native pretraining. Citation https://arxiv.org/abs/2304.07193.
-
-Reproducibility pin: repository commit7764ea0f912e53c92e82eb78a2a1631e92725fc8 (main at extraction; commit date2026-06-03). Official weights SHA256b938bf1bc15cd2ec0feacfe3a1bb553fe8ea9ca46a7e1d8d00217f29aef60cd9,88283115bytes. Extraction script now resolves the audited commit explicitly. Runtime only uses saved covariates.

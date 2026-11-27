@@ -1,8 +1,0 @@
-{
-  "offset": true,
-  "extra_offset": true,
-  "patches": [
-    "optical",
-    "sar"
-  ]
-}

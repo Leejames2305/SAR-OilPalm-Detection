@@ -1,7 +1,0 @@
-{
-  "patches": [
-    "optical",
-    "sar"
-  ],
-  "bag": 32
-}

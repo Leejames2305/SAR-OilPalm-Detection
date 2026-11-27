@@ -1,5 +1,0 @@
-# Cloud/shadow controlled optical observations
-
-Source: COPERNICUS/S2_SR_HARMONIZED linked by system:index to GOOGLE/CLOUD_SCORE_PLUS/V1/S2_HARMONIZED. April15–August15 2026 (exclusive end). Strict SCL4 vegetation and cs_cdf>=.65. Reflectance DN is harmonised; no extra +1000 offset. Compute per-image NDVI=(B8-B4)/(B8+B4), NDRE=(B8A-B5)/(B8A+B5), NDMI=(B8-B11)/(B8+B11), NIRv=B8*NDVI/10000. Median and p75 over images; raw B2/B3/B4/B8/B5/B6/B8A/B11 median and per-pixel quality count. Fallback March15–September15 SCL4 vegetation composite is used where strict observations absent (implementation first masks4–7 then add enforces4). EPSG32648 scale10m reduceRegions(mean); native red-edge/SWIR20m not sharpened.
-
-7,220 exact keys, 20 columns, zero NaNs/duplicates. No labels used; wider acquisition window and quality differ from baseline, so effects cannot be attributed uniquely to cloud masking. extract.py reproduces the extraction. These are condition measurements, not pathogen-specific biomarkers.
