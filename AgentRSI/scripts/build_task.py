@@ -35,6 +35,12 @@ def main() -> None:
         default=None,
         help="Optional session ID whose datasets/ directory to carry into /app/datasets/",
     )
+    ap.add_argument(
+        "--user-prompt",
+        type=Path,
+        default=None,
+        help="Optional Markdown file with researcher guidance injected into instruction.md and /app/prior/user_prompt.md (must remain strictly T-free)",
+    )
     ap.add_argument("--timeout", type=int, default=None, help="Override agent timeout_sec")
     ap.add_argument("--agent-cpus", type=int, default=None, help="Override agent container CPUs")
     ap.add_argument("--agent-memory-mb", type=int, default=None, help="Override agent container memory (MB)")
@@ -100,6 +106,7 @@ def main() -> None:
         parent_session=args.parent,
         ref_sessions=args.ref_sessions,
         datasets_from=args.datasets_from,
+        user_prompt=args.user_prompt,
         timeout_override=args.timeout,
         agent_cpus_override=args.agent_cpus,
         agent_memory_mb_override=args.agent_memory_mb,

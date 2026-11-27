@@ -98,6 +98,7 @@ Every `features.parquet` / `features.csv` must satisfy:
 - Key columns `estate`, `Long`, `Lat` covering all 7,220 trees (`L_labelled.csv` ∪ `unlabelled.csv`) with zero duplicate keys and exact float coordinates preserved from `/app/data/*.csv` (do not round `Long`/`Lat`).
 - Zero forbidden column names (case-insensitive): `label`, `class`, `id`, `fid`, `objectid`, `tree_id`, `treeid`, `row_id`, `block`, `part`.
 - Total `/app/datasets/` size <= {{MAX_DATASETS_MB}} MB (keep under {{PRIOR_DATASETS_MAX_MB}} MB so derived datasets automatically carry forward into the next session) and zero symlinks.
+- Keep experiment metrics/summary CSVs under `/app/report/` only (do not archive report CSVs inside `/app/datasets/`).
 - `fit_predict()` must load derived datasets via `ctx["datasets_dir"]`.
 
 ### 3. Research Documentation (`/app/report/`)
@@ -131,7 +132,7 @@ Every `features.parquet` / `features.csv` must satisfy:
 ---
 
 {{FOCUS_LENS_SECTION}}
-
+{{USER_PROMPT_SECTION}}
 {{HANDOFF_SECTION}}
 
 You have {{AGENT_TIMEOUT_SEC}} seconds to complete this task. Use public literature, PyPI, and Google Earth Engine freely for research, but never access https://github.com/Leejames2305/SAR-OilPalm-Detection, touch /tests, attempt to recover sealed labels, or expose credentials.

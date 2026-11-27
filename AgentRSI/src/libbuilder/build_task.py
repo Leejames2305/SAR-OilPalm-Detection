@@ -184,6 +184,7 @@ def build_task(
     parent_session: str | None = None,
     ref_sessions: list[str] | None = None,
     datasets_from: str | None = None,
+    user_prompt: Path | str | None = None,
     timeout_override: int | None = None,
     agent_cpus_override: int | None = None,
     agent_memory_mb_override: int | None = None,
@@ -230,6 +231,19 @@ def build_task(
         if not rdir.exists():
             raise FileNotFoundError(f"Reference session directory missing: {rdir}")
         ref_session_dirs.append(rdir)
+
+    user_prompt_path: Path | None = None
+    user_prompt_section = ""
+    if user_prompt is not None:
+        user_prompt_path = Path(user_prompt).expanduser().resolve()
+        if not user_prompt_path.is_file():
+            raise FileNotFoundError(f"User prompt file missing: {user_prompt_path}")
+        up_text = user_prompt_path.read_text().strip()
+        if up_text:
+            if up_text.startswith("## "):
+                user_prompt_section = f"\n{up_text}\n"
+            else:
+                user_prompt_section = f"\n## Researcher Guidance\n\n{up_text}\n"
 
     inc_rel = str(lineage.get("incumbent", {}).get("source_dir", "starter"))
     incumbent_dir = (agent_root / inc_rel).resolve()
@@ -306,6 +320,8 @@ def build_task(
                 symlinks=False,
                 ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
             )
+    if user_prompt_path is not None:
+        shutil.copyfile(user_prompt_path, prior_dst / "user_prompt.md")
 
     # 4. Current incumbent pipeline (in /app/incumbent, solution/ for oracle, and tests/incumbent for verifier)
     for item in sorted(incumbent_dir.iterdir()):
@@ -457,6 +473,7 @@ def build_task(
                 "PRIOR_DATASETS_MAX_MB": str(int(max_ds_mb)),
                 "MCP_TOOLS_SECTION": mcp_tools_section,
                 "FOCUS_LENS_SECTION": lens_path.read_text().strip(),
+                "USER_PROMPT_SECTION": user_prompt_section,
                 "HANDOFF_SECTION": handoff_md.strip(),
             },
         )

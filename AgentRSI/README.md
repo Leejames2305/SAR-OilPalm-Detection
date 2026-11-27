@@ -92,6 +92,8 @@ Session IDs use **`YYMMDD-sXXX-<lens>`** (e.g., `261124-s001-open`, `261124-s006
 #      --ref <session_id>                   (repeatable) stage extra reference sessions' HANDOFF.md, REPORT.md,
 #                                           submission/, and V-only summary under /app/prior/ref_sessions/<id>/
 #      --datasets-from <session_id>         carry derived datasets from a specific prior session
+#      --user-prompt <path.md>              inject a custom T-free researcher guidance Markdown file into
+#                                           instruction.md and /app/prior/user_prompt.md (leak-checked)
 #      --timeout <sec>                      override agent wall-clock timeout (default: 14400)
 #      --agent-cpus / --agent-memory-mb / --verifier-cpus / --verifier-memory-mb
 #      --disable-inrun-verifier             disable M7 noisy-V verifier sidecar MCP
@@ -162,7 +164,7 @@ AgentRSI/.venv/bin/python AgentRSI/scripts/regrade.py \
 # Inspect raw Harbor trial logs & agent trajectories in Harbor's viewer
 AgentRSI/.venv/bin/harbor view AgentRSI/jobs/<session_id>
 
-# Run all 59 host unit tests (verifier, M7 sidecar, M8 broker, builder/collector, MCP wiring, dashboard)
+# Run all 61 host unit tests (verifier, M7 sidecar, M8 broker, builder/collector, MCP wiring, dashboard)
 AgentRSI/.venv/bin/python -m unittest discover -s AgentRSI/tests -v
 
 # Standalone leak audit across generated trees
@@ -206,7 +208,7 @@ AgentRSI/
 ├── verifier/                   # Sealed grading library + M7 sidecar (`inrun_server.py`)
 ├── starter/                    # Session-0 baseline pipeline.py & requirements.txt
 ├── templates/                  # Instruction base, lenses/ (open/literature/data-expansion/ablation/synthesis), Dockerfiles, CLI & MCP relay
-├── tests/                      # 59 host unit tests (verifier, M7, M8, builder/collector, MCP wiring, dashboard)
+├── tests/                      # 61 host unit tests (verifier, M7, M8, builder/collector, MCP wiring, dashboard)
 │
 ├── tasks/<session_id>/         # (gitignored) Generated Harbor task directories
 ├── jobs/<session_id>/          # (gitignored) Raw Harbor job outputs, logs, and trajectories

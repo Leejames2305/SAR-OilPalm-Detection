@@ -224,6 +224,41 @@ class BuilderCollectorTests(unittest.TestCase):
             self.assertIn("261127-s011-ablation", instr)
             self.assertNotIn("certification", instr.lower())
             self.assertNotIn("gate_passed", instr.lower())
+            self.assertFalse((prior_dir / "user_prompt.md").exists())
+
+    def test_build_task_user_prompt_injection_and_canary_enforcement(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            out_root = root / "tasks"
+            prompt_md = root / "guidance.md"
+            prompt_md.write_text(
+                "Investigate heavy ridge shrinkage and input clipping on low-clustering estates.\n"
+            )
+            tdir = build_task(
+                "unit-user-prompt",
+                focus_lens="open",
+                user_prompt=prompt_md,
+                timeout_override=600,
+                output_root=out_root,
+            )
+            staged = tdir / "environment" / "prior" / "user_prompt.md"
+            self.assertTrue(staged.is_file())
+            self.assertIn("heavy ridge shrinkage", staged.read_text())
+            instr = (tdir / "instruction.md").read_text()
+            self.assertIn("## Researcher Guidance", instr)
+            self.assertIn("heavy ridge shrinkage and input clipping", instr)
+
+            # T-leak canary must still reject forbidden terms inside --user-prompt
+            bad_md = root / "bad_guidance.md"
+            bad_md.write_text("Do not rely on certification scores.\n")
+            with self.assertRaisesRegex(RuntimeError, "T-leak canary"):
+                build_task(
+                    "unit-user-prompt-bad",
+                    focus_lens="open",
+                    user_prompt=bad_md,
+                    timeout_override=600,
+                    output_root=out_root,
+                )
 
     def test_yymmdd_session_naming_lens_inference_and_seq(self) -> None:
         lenses_dir = AGENT_ROOT / "templates" / "lenses"
