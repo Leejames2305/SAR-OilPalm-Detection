@@ -1,0 +1,62 @@
+[
+  {
+    "estate": "AirHitam",
+    "rows": 1547,
+    "seconds": 0.24024131600162946,
+    "peak_rss_MiB": 273.0390625,
+    "checks": [
+      "shape",
+      "float64",
+      "finite",
+      "immutability",
+      "determinism",
+      "shuffle",
+      "duplicates",
+      "Middle_ignored",
+      "estate_name_independent",
+      "empty",
+      "single_class",
+      "offline_IO_guard"
+    ]
+  },
+  {
+    "estate": "Palong",
+    "rows": 1696,
+    "seconds": 0.25651398400077596,
+    "peak_rss_MiB": 273.17578125,
+    "checks": [
+      "shape",
+      "float64",
+      "finite",
+      "immutability",
+      "determinism",
+      "shuffle",
+      "duplicates",
+      "Middle_ignored",
+      "estate_name_independent",
+      "empty",
+      "single_class",
+      "offline_IO_guard"
+    ]
+  },
+  {
+    "estate": "Serting",
+    "rows": 1230,
+    "seconds": 0.34374178600046434,
+    "peak_rss_MiB": 271.37109375,
+    "checks": [
+      "shape",
+      "float64",
+      "finite",
+      "immutability",
+      "determinism",
+      "shuffle",
+      "duplicates",
+      "Middle_ignored",
+      "estate_name_independent",
+      "empty",
+      "single_class",
+      "offline_IO_guard"
+    ]
+  }
+]

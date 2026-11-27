@@ -1,0 +1,6 @@
+requirements.txt: 1 pinned package(s)
+import-pin audit: OK
+  AirHitam : n_L=964 n_U=1547 dt=0.23s min=-8.0314 med=-0.9203 max=2.5890
+  Palong   : n_L=968 n_U=1696 dt=0.13s min=-25.4490 med=-1.6618 max=4.4067
+  Serting  : n_L=815 n_U=1230 dt=0.13s min=-7.8344 med=-1.3315 max=9.6228
+SELFCHECK PASS (0.50s)

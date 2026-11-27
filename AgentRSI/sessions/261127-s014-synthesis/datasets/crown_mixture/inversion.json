@@ -1,0 +1,41 @@
+{
+  "AirHitam": {
+    "pixels": 2407,
+    "trees": 2511,
+    "prior_pixel_rmse": 0.0030949201135536484,
+    "deblur": {
+      "pixel_rmse": 0.0017987306508101344,
+      "point_change_rms": 0.0025992383527508886
+    },
+    "stable": {
+      "pixel_rmse": 0.0024243103138097684,
+      "point_change_rms": 0.0011782015600842529
+    }
+  },
+  "Palong": {
+    "pixels": 2217,
+    "trees": 2664,
+    "prior_pixel_rmse": 0.004381638112988496,
+    "deblur": {
+      "pixel_rmse": 0.002372551341090161,
+      "point_change_rms": 0.0035039622758583668
+    },
+    "stable": {
+      "pixel_rmse": 0.003337996177689406,
+      "point_change_rms": 0.0016103839308105512
+    }
+  },
+  "Serting": {
+    "pixels": 1465,
+    "trees": 2045,
+    "prior_pixel_rmse": 0.0024251283175981274,
+    "deblur": {
+      "pixel_rmse": 0.0013283946077267527,
+      "point_change_rms": 0.0018802841409354689
+    },
+    "stable": {
+      "pixel_rmse": 0.0019085252428229442,
+      "point_change_rms": 0.0008103411496868233
+    }
+  }
+}

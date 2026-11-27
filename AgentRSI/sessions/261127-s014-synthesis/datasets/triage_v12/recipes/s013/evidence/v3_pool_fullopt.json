@@ -1,0 +1,51 @@
+{
+  "ok": true,
+  "epoch": 1,
+  "status": "ok",
+  "submission_valid": true,
+  "error": null,
+  "content_sha256": "6ac0c78af0addca25f289fc8a01fd921ecfd85f7473832b5e1bdb227411761b6",
+  "note": "s013 V3: s010 equal-estate partial pooling transplanted to s012 uniform compact recipe; all 12 shared optical features plus independent local deviations, compact AE/height/mixture, no patch representation. Matched self/permuted/no-share L controls retained.",
+  "cached": false,
+  "composite": {
+    "noisy_pr_auc_lift": 0.20318504042946295,
+    "noisy_delta_vs_incumbent": 0.0844345285302569,
+    "noisy_delta_vs_coords": 0.13672319445462258
+  },
+  "estates": {
+    "AirHitam": {
+      "noisy_pr_auc_lift": 0.04231670855191163,
+      "noisy_delta_vs_incumbent": 0.005289020462797211,
+      "noisy_delta_vs_coords": 0.002524909966086733
+    },
+    "Palong": {
+      "noisy_pr_auc_lift": 0.3413066545008334,
+      "noisy_delta_vs_incumbent": 0.08800066978167506,
+      "noisy_delta_vs_coords": 0.21349956085859786
+    },
+    "Serting": {
+      "noisy_pr_auc_lift": 0.2259317582356438,
+      "noisy_delta_vs_incumbent": 0.16001389534629845,
+      "noisy_delta_vs_coords": 0.19414511253918312
+    }
+  },
+  "datasets_audit": {
+    "exists": true,
+    "valid": true,
+    "total_mb": 5.809,
+    "datasets": {
+      "triage_v12": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 109,
+        "nans": 0
+      }
+    },
+    "errors": []
+  },
+  "queries_used": 3,
+  "queries_remaining": 12,
+  "max_queries": 15,
+  "noise_sigma": 0.005,
+  "runtime_sec": 7.666
+}

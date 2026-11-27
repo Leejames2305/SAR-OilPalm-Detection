@@ -1,0 +1,81 @@
+{
+  "ok": true,
+  "epoch": 1,
+  "status": "ok",
+  "submission_valid": true,
+  "error": null,
+  "content_sha256": "8fa51f2576f589a224833f9b8bb7535da0ea434932080634867b065d47785aa3",
+  "note": "s013 V4: exact matched s010 parent except uniform s011/s012 quadratic shrinkage .3 replaces estate-name complexity branch. No feature-family or pooling change. L official composite .269130 and repeated/wider confirmation.",
+  "cached": false,
+  "composite": {
+    "noisy_pr_auc_lift": 0.2147642533248579,
+    "noisy_delta_vs_incumbent": 0.09601374142565183,
+    "noisy_delta_vs_coords": 0.1483024073500175
+  },
+  "estates": {
+    "AirHitam": {
+      "noisy_pr_auc_lift": 0.05979091250040782,
+      "noisy_delta_vs_incumbent": 0.0227632244112934,
+      "noisy_delta_vs_coords": 0.019999113914582922
+    },
+    "Palong": {
+      "noisy_pr_auc_lift": 0.27989915814438804,
+      "noisy_delta_vs_incumbent": 0.026593173425229637,
+      "noisy_delta_vs_coords": 0.15209206450215243
+    },
+    "Serting": {
+      "noisy_pr_auc_lift": 0.3046026893297778,
+      "noisy_delta_vs_incumbent": 0.23868482644043246,
+      "noisy_delta_vs_coords": 0.27281604363331713
+    }
+  },
+  "datasets_audit": {
+    "exists": true,
+    "valid": true,
+    "total_mb": 35.432,
+    "datasets": {
+      "alphaearth": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 387,
+        "nans": 0
+      },
+      "dino_optical": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 259,
+        "nans": 0
+      },
+      "dino_sar": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 323,
+        "nans": 0
+      },
+      "gee_canopy": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 49,
+        "nans": 0
+      },
+      "gee_quality": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 20,
+        "nans": 0
+      },
+      "optical_jitter": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 7,
+        "nans": 0
+      }
+    },
+    "errors": []
+  },
+  "queries_used": 4,
+  "queries_remaining": 11,
+  "max_queries": 15,
+  "noise_sigma": 0.005,
+  "runtime_sec": 7.65
+}

@@ -1,0 +1,22 @@
+{
+  "rgb80": {
+    "variance_retained": 0.9385005831718445,
+    "n": 7220,
+    "dimension": 64
+  },
+  "rgb160": {
+    "variance_retained": 0.9459105134010315,
+    "n": 7220,
+    "dimension": 64
+  },
+  "rgb320": {
+    "variance_retained": 0.9604450464248657,
+    "n": 7220,
+    "dimension": 64
+  },
+  "nrg160": {
+    "variance_retained": 0.9473715424537659,
+    "n": 7220,
+    "dimension": 64
+  }
+}

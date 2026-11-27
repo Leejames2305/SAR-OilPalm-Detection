@@ -1,0 +1,7 @@
+{
+  "patches": [
+    "optical",
+    "sar"
+  ],
+  "offset": true
+}

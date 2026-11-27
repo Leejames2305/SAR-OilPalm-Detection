@@ -1,0 +1,87 @@
+{
+  "ok": true,
+  "epoch": 1,
+  "status": "ok",
+  "submission_valid": true,
+  "error": null,
+  "content_sha256": "2b9c2185741c035b5b7cbeb00e670170549f9af858c9c82f5ea7d4bbc724e4fe",
+  "note": "s013 V7: matched feature-gap crossover with s009 block-honest bounded offset around frozen uniform s010. Same 16 missing quality/height/mixture features as V6. Fixed ridge .5 and max .3 logit correction.",
+  "cached": false,
+  "composite": {
+    "noisy_pr_auc_lift": 0.2135218523394147,
+    "noisy_delta_vs_incumbent": 0.09477134044020867,
+    "noisy_delta_vs_coords": 0.14706000636457434
+  },
+  "estates": {
+    "AirHitam": {
+      "noisy_pr_auc_lift": 0.05531100556396487,
+      "noisy_delta_vs_incumbent": 0.01828331747485045,
+      "noisy_delta_vs_coords": 0.015519206978139972
+    },
+    "Palong": {
+      "noisy_pr_auc_lift": 0.28093126369738497,
+      "noisy_delta_vs_incumbent": 0.02762527897822659,
+      "noisy_delta_vs_coords": 0.1531241700551494
+    },
+    "Serting": {
+      "noisy_pr_auc_lift": 0.3043232877568943,
+      "noisy_delta_vs_incumbent": 0.23840542486754898,
+      "noisy_delta_vs_coords": 0.27253664206043365
+    }
+  },
+  "datasets_audit": {
+    "exists": true,
+    "valid": true,
+    "total_mb": 41.241,
+    "datasets": {
+      "alphaearth": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 387,
+        "nans": 0
+      },
+      "dino_optical": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 259,
+        "nans": 0
+      },
+      "dino_sar": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 323,
+        "nans": 0
+      },
+      "gee_canopy": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 49,
+        "nans": 0
+      },
+      "gee_quality": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 20,
+        "nans": 0
+      },
+      "optical_jitter": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 7,
+        "nans": 0
+      },
+      "triage_v12": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 109,
+        "nans": 0
+      }
+    },
+    "errors": []
+  },
+  "queries_used": 7,
+  "queries_remaining": 8,
+  "max_queries": 15,
+  "noise_sigma": 0.005,
+  "runtime_sec": 11.424
+}

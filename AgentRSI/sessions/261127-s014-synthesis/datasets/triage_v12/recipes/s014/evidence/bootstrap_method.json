@@ -1,0 +1,11 @@
+{
+  "resamples": 4000,
+  "seed": 261127014,
+  "method": "Resample original80m groups with replacement separately perestate; same block multiplicities for all models; step AP with weighted ties; fixed OOF predictions; unweighted mean of estate AP differences",
+  "limits": [
+    "No refitting",
+    "Conditions on selected fits and adaptive campaign",
+    "Adjacent blocks may be dependent",
+    "Same labels as model development; no prospective inference"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "session_id": "261127-s014-synthesis",
+  "job_id": "2026-11-27__16-02-52",
+  "trial_name": "261127-s014-synthesis__JTtMXqQ",
+  "parent_id": "261125-s009-open",
+  "dry_session": false,
+  "agent": "codex",
+  "model": "gpt-6.1-sol",
+  "started_at": "2026-11-27T08:02:59.548057Z",
+  "finished_at": "2026-11-27T08:32:25.920323Z",
+  "cost_usd": 1.8105896,
+  "n_input_tokens": 6382810,
+  "n_cache_tokens": 6111616,
+  "n_output_tokens": 65704,
+  "exception_info": null,
+  "smells": [],
+  "handoff_missing_sections": [],
+  "inrun_queries_used": 2
+}

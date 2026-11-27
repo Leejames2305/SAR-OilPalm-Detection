@@ -1,0 +1,14 @@
+{
+  "mixcols": [
+    "deblur_NDVI",
+    "deblur_NDRE",
+    "deblur_NDMI",
+    "deblur_NIRv",
+    "deblur_NDVI_contrast",
+    "deblur_NDRE_contrast",
+    "deblur_NDMI_contrast"
+  ],
+  "patches": [
+    "sar"
+  ]
+}

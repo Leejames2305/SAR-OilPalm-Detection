@@ -1,0 +1,57 @@
+{
+  "ok": true,
+  "epoch": 1,
+  "status": "ok",
+  "submission_valid": true,
+  "error": null,
+  "content_sha256": "9c21e7eb0f9e38aa44cfdf7e74360b7e7580a12eec6934e532b4799aeaf6a994",
+  "note": "Distinct modular optical-source coefficient prior: independent source full designs; freeze average optical slopes as target Gaussian ridge prior, keep local spatial/AlphaEarth/height/mixture/October SAR coefficients. Correct union80 L .28741 vs s013 .28062; repeat11-13 mean improves all3, broader160/40buffer/wholeblock quadrants improves all3. No V-fit ensemble.",
+  "cached": false,
+  "composite": {
+    "noisy_pr_auc_lift": 0.22670906383613132,
+    "noisy_delta_vs_incumbent": 0.10795855193692527,
+    "noisy_delta_vs_coords": 0.16024721786129095
+  },
+  "estates": {
+    "AirHitam": {
+      "noisy_pr_auc_lift": 0.05928632140157762,
+      "noisy_delta_vs_incumbent": 0.022258633312463198,
+      "noisy_delta_vs_coords": 0.01949452281575272
+    },
+    "Palong": {
+      "noisy_pr_auc_lift": 0.3442070884791901,
+      "noisy_delta_vs_incumbent": 0.09090110376003176,
+      "noisy_delta_vs_coords": 0.21639999483695457
+    },
+    "Serting": {
+      "noisy_pr_auc_lift": 0.27663378162762625,
+      "noisy_delta_vs_incumbent": 0.21071591873828088,
+      "noisy_delta_vs_coords": 0.24484713593116555
+    }
+  },
+  "datasets_audit": {
+    "exists": true,
+    "valid": true,
+    "total_mb": 18.469,
+    "datasets": {
+      "dino_sar": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 323,
+        "nans": 0
+      },
+      "triage_v12": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 109,
+        "nans": 0
+      }
+    },
+    "errors": []
+  },
+  "queries_used": 2,
+  "queries_remaining": 13,
+  "max_queries": 15,
+  "noise_sigma": 0.005,
+  "runtime_sec": 8.669
+}
