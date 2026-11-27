@@ -1,0 +1,187 @@
+{
+  "epoch": 1,
+  "split_sha256": "26f34d4d8e0159e53985fce735adf410e0cae392d7f1cb8aded8a7490cd0e2ed",
+  "status": "ok",
+  "submission_valid": true,
+  "error": null,
+  "runtime_sec": 9.777,
+  "composite": {
+    "score": 0.182471616855168,
+    "delta_vs_incumbent": {
+      "comp_delta": 0.06372110495596194,
+      "ci_low": -0.01764523578208043,
+      "ci_high": 0.11727393451216307,
+      "n_valid_draws": 1000,
+      "n_requested_draws": 1000
+    },
+    "delta_vs_coords": {
+      "comp_delta": 0.1160097708803276,
+      "ci_low": 0.05997529392937304,
+      "ci_high": 0.1744968788343339,
+      "n_valid_draws": 1000,
+      "n_requested_draws": 1000
+    }
+  },
+  "estates": {
+    "AirHitam": {
+      "pr_auc": 0.08908544774867586,
+      "prevalence": 0.052054794520547946,
+      "pr_auc_lift": 0.03703065322812791,
+      "recall_at_25": 0.47368421052631576,
+      "enrichment_top10": 2.1052631578947367,
+      "roc_auc": 0.6547383632491635,
+      "n_scored": 730,
+      "n_pos": 38,
+      "delta_vs_incumbent": {
+        "delta": 2.9651390134888267e-06,
+        "ci_low": -0.04580771313739911,
+        "ci_high": 0.045151399217067054
+      },
+      "delta_vs_coords": {
+        "delta": -0.0027611453576969897,
+        "ci_low": -0.09719906361222924,
+        "ci_high": 0.07179263404096513
+      },
+      "incumbent_v_pr_auc": 0.08908248260966237,
+      "coords_v_pr_auc": 0.09184659310637285
+    },
+    "Palong": {
+      "pr_auc": 0.41444297445556577,
+      "prevalence": 0.0759493670886076,
+      "pr_auc_lift": 0.33849360736695816,
+      "recall_at_25": 0.8888888888888888,
+      "enrichment_top10": 6.111111111111112,
+      "roc_auc": 0.9129319578330233,
+      "n_scored": 711,
+      "n_pos": 54,
+      "delta_vs_incumbent": {
+        "delta": 0.08518762264779978,
+        "ci_low": -0.04340889179780393,
+        "ci_high": 0.22723916443677852
+      },
+      "delta_vs_coords": {
+        "delta": 0.21068651372472258,
+        "ci_low": 0.11338571481820209,
+        "ci_high": 0.30507973880695993
+      },
+      "incumbent_v_pr_auc": 0.329255351807766,
+      "coords_v_pr_auc": 0.2037564607308432
+    },
+    "Serting": {
+      "pr_auc": 0.26097744965861386,
+      "prevalence": 0.08908685968819599,
+      "pr_auc_lift": 0.17189058997041787,
+      "recall_at_25": 0.65,
+      "enrichment_top10": 2.9999999999999996,
+      "roc_auc": 0.7718215158924205,
+      "n_scored": 449,
+      "n_pos": 40,
+      "delta_vs_incumbent": {
+        "delta": 0.10597272708107253,
+        "ci_low": -0.10886528912086585,
+        "ci_high": 0.17699188700911006
+      },
+      "delta_vs_coords": {
+        "delta": 0.1401039442739572,
+        "ci_low": 0.024657981735984547,
+        "ci_high": 0.26350042214410835
+      },
+      "incumbent_v_pr_auc": 0.15500472257754133,
+      "coords_v_pr_auc": 0.12087350538465666
+    }
+  },
+  "datasets_audit": {
+    "exists": true,
+    "valid": true,
+    "total_mb": 42.061,
+    "datasets": {
+      "alphaearth": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 387,
+        "nans": 0
+      },
+      "autumn": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 23,
+        "nans": 0
+      },
+      "compact_triage": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 79,
+        "nans": 0
+      },
+      "dino_optical": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 259,
+        "nans": 0
+      },
+      "dino_sar": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 323,
+        "nans": 0
+      },
+      "gee_canopy": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 49,
+        "nans": 0
+      },
+      "gee_quality": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 20,
+        "nans": 0
+      },
+      "gee_s2_stress": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 54,
+        "nans": 0
+      },
+      "optical_aligned": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 7,
+        "nans": 0
+      },
+      "optical_jitter": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 7,
+        "nans": 0
+      },
+      "optical_texture": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 15,
+        "nans": 0
+      },
+      "terrain_canopy": {
+        "file": "features.parquet",
+        "rows": 7220,
+        "cols": 14,
+        "nans": 0
+      }
+    },
+    "errors": []
+  },
+  "pip_freeze": [
+    "cloudpickle==3.1.3",
+    "joblib==1.6.0",
+    "narwhals==2.29.0",
+    "numpy==2.5.5",
+    "pandas==3.1.1",
+    "pyarrow==26.0.1",
+    "python-dateutil==4.0.0",
+    "PyYAML==6.0.3",
+    "scikit-learn==1.9.1",
+    "scipy==1.18.1",
+    "threadpoolctl==3.8.0",
+    "tzdata==2026.6"
+  ]
+}

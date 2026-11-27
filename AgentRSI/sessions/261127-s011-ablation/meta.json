@@ -1,0 +1,19 @@
+{
+  "session_id": "261127-s011-ablation",
+  "job_id": "2026-11-27__11-51-34",
+  "trial_name": "261127-s011-ablation__5E5CiJG",
+  "parent_id": "261125-s010-open",
+  "dry_session": false,
+  "agent": "codex",
+  "model": "gpt-6.1-sol",
+  "started_at": "2026-11-27T03:51:39.903117Z",
+  "finished_at": "2026-11-27T04:13:50.987694Z",
+  "cost_usd": 1.4199852000000002,
+  "n_input_tokens": 5749585,
+  "n_cache_tokens": 5604992,
+  "n_output_tokens": 57030,
+  "exception_info": null,
+  "smells": [],
+  "handoff_missing_sections": [],
+  "inrun_queries_used": 2
+}
